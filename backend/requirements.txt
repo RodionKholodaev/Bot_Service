@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic # нужно это впихнуть в проект
+psycopg2-binary #  может лучше sqlite
+python-dotenv
+bcrypt
+python-jose # не знаю что это
+pydantic[email]
+pydantic-settings
