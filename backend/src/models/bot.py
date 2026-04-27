@@ -39,6 +39,19 @@ class Bot(Base):
 
     dry_run: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
+    exchange_key_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("exchange_api_keys.id", ondelete="SET NULL"), nullable=True
+    )
+    # False — бот архивирован (soft delete)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    
+    # накопленная прибыль в USDT, обновляется при каждом закрытии сделки
+    total_profit: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    
+    # суммарно списанная комиссия сервиса
+    total_commission_paid: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    
+
     # ── Что задаёт бэкенд ─────────────────────────────────
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="created")
     # created / starting / running / stopped / error
