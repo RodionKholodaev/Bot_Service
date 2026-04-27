@@ -37,7 +37,7 @@ class BotCreate(BaseModel):
 
     dry_run: bool = True
 
-    api_key_id: str | None
+    api_key_id: int | None
     stake_amount: float
     tradable_balance_ratio: float
 

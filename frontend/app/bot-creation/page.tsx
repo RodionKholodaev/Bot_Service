@@ -38,6 +38,7 @@ const CreateBotPage = () => {
     stopLoss: '',
     useStopLoss: false,
     trailingStop: false,
+    dryRun: true,
   });
 
   // Список API-ключей из БД
@@ -55,7 +56,7 @@ const CreateBotPage = () => {
       setApiKeysLoading(true);
       setApiKeysError(null);
       try {
-        const data = await apiFetch<ApiKey[]>('/api-keys');
+        const data = await apiFetch<ApiKey[]>('/api/api-keys');
         setApiKeys(data);
         // Автовыбор первого ключа если список не пустой
         if (data.length > 0) {
@@ -66,7 +67,7 @@ const CreateBotPage = () => {
           }));
         }
       } catch (err) {
-        setApiKeysError('Не удалось загрузить API-ключи');
+        setApiKeysError('Не удалось загрузить API-ключи. Добавьте их в настройках');
       } finally {
         setApiKeysLoading(false);
       }
@@ -158,16 +159,16 @@ const CreateBotPage = () => {
   // Когда меняется выбранный ключ — синхронизируем exchange
   const handleApiKeyChange = (keyId: string) => {
     const found = apiKeys.find(k => k.id === keyId);
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       selectedApiKeyId: keyId,
-      exchange: found ? found.exchange : formData.exchange,
-    });
+      exchange: found ? found.exchange : prev.exchange,
+    }));
   };
 
   const handleNext = () => {
     if (currentStep === 1) {
-      if (!formData.selectedApiKeyId) {
+      if (!formData.dryRun && !formData.selectedApiKeyId) {
         setSubmitError('Выберите API-ключ');
         return;
       }
@@ -224,8 +225,7 @@ const CreateBotPage = () => {
       take_profit_percent: Number(formData.takeProfit),
       stop_loss_enabled: formData.useStopLoss,
       stop_loss_percent: formData.useStopLoss ? Number(formData.stopLoss) : null,
-      dry_run: true,
-      // Новые поля
+      dry_run: formData.dryRun,
       api_key_id: formData.selectedApiKeyId,
       stake_amount: Number(formData.stakeAmount),
       tradable_balance_ratio: Number(formData.balanceRatio) / 100,
@@ -292,67 +292,97 @@ const CreateBotPage = () => {
           <p>Выберите API-ключ и укажите, сколько средств выделить боту</p>
         </div>
 
-        {/* API-ключ */}
+        {/* Режим торговли */}
         <div className="form-group">
-          <label>
-            API-ключ
-            <span
-              className="tooltip-trigger"
-              onMouseEnter={() => setShowIndicatorTooltip('apiKey')}
-              onMouseLeave={() => setShowIndicatorTooltip(null)}
+          <label>Режим торговли</label>
+          <div className="trading-mode-toggle">
+            <button
+              type="button"
+              className={`mode-btn ${formData.dryRun ? 'mode-btn--active mode-btn--dry' : ''}`}
+              onClick={() => setFormData({ ...formData, dryRun: true })}
             >
-              <Info size={14} />
-            </span>
-          </label>
-
-          {apiKeysLoading ? (
-            <div className="api-keys-loading">
-              <Loader2 size={18} className="spin" />
-              <span>Загрузка ключей...</span>
-            </div>
-          ) : apiKeysError ? (
-            <div className="warning-banner">
+              🧪 Dry Run
+              <span className="mode-desc">Тестовый режим — без реальных денег</span>
+            </button>
+            <button
+              type="button"
+              className={`mode-btn ${!formData.dryRun ? 'mode-btn--active mode-btn--live' : ''}`}
+              onClick={() => setFormData({ ...formData, dryRun: false })}
+            >
+              🔴 Боевой
+              <span className="mode-desc">Реальная торговля</span>
+            </button>
+          </div>
+          {!formData.dryRun && (
+            <div className="warning-banner" style={{ marginTop: 8 }}>
               <AlertCircle size={16} />
-              <span>{apiKeysError}</span>
-            </div>
-          ) : apiKeys.length === 0 ? (
-            <div className="info-banner">
-              <AlertCircle size={18} />
-              <div>
-                <strong>Нет сохранённых ключей.</strong>{' '}
-                <a href="/settings/api-keys" className="link">
-                  Добавьте API-ключ в настройках
-                </a>
-              </div>
-            </div>
-          ) : (
-            <select
-              value={formData.selectedApiKeyId}
-              onChange={(e) => handleApiKeyChange(e.target.value)}
-              className="form-select"
-            >
-              {apiKeys.map((key) => (
-                <option key={key.id} value={key.id}>
-                  {key.name} ({key.exchange.toUpperCase()})
-                </option>
-              ))}
-            </select>
-          )}
-
-          {showIndicatorTooltip === 'apiKey' && (
-            <div className="tooltip">
-              Ключи добавляются в Настройки → API-ключи
-            </div>
-          )}
-
-          {/* Показываем биржу выбранного ключа */}
-          {selectedKey && (
-            <div className="field-hint">
-              Биржа: <strong>{selectedKey.exchange.toUpperCase()}</strong>
+              <span>Внимание: бот будет торговать реальными средствами</span>
             </div>
           )}
         </div>
 
+        {/* API-ключ */}
+        {!formData.dryRun && (
+          <div className="form-group">
+            <label>
+              API-ключ
+              <span
+                className="tooltip-trigger"
+                onMouseEnter={() => setShowIndicatorTooltip('apiKey')}
+                onMouseLeave={() => setShowIndicatorTooltip(null)}
+              >
+                <Info size={14} />
+              </span>
+            </label>
+
+            {apiKeysLoading ? (
+              <div className="api-keys-loading">
+                <Loader2 size={18} className="spin" />
+                <span>Загрузка ключей...</span>
+              </div>
+            ) : apiKeysError ? (
+              <div className="warning-banner">
+                <AlertCircle size={16} />
+                <span>{apiKeysError}</span>
+              </div>
+            ) : apiKeys.length === 0 ? (
+              <div className="info-banner">
+                <AlertCircle size={18} />
+                <div>
+                  <strong>Нет сохранённых ключей.</strong>{' '}
+                  <a href="/settings/api-keys" className="link">
+                    Добавьте API-ключ в настройках
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <select
+                value={formData.selectedApiKeyId}
+                onChange={(e) => handleApiKeyChange(e.target.value)}
+                className="form-select"
+              >
+                {apiKeys.map((key) => (
+                  <option key={key.id} value={key.id}>
+                    {key.name} ({key.exchange.toUpperCase()})
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {showIndicatorTooltip === 'apiKey' && (
+              <div className="tooltip">
+                Ключи добавляются в Настройки → API-ключи
+              </div>
+            )}
+
+            {/* Показываем биржу выбранного ключа */}
+            {selectedKey && (
+              <div className="field-hint">
+                Биржа: <strong>{selectedKey.exchange.toUpperCase()}</strong>
+              </div>
+            )}
+          </div>
+        )}
         {/* Депозит бота */}
         <div className="form-group">
           <label>
@@ -403,7 +433,7 @@ const CreateBotPage = () => {
               max="100"
               step="5"
               value={formData.balanceRatio}
-              onChange={(e) => setFormData({ ...formData, balanceRatio: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, balanceRatio: e.target.value }))}
               className="leverage-slider"
             />
             <div className="leverage-value">{formData.balanceRatio}%</div>
@@ -423,25 +453,18 @@ const CreateBotPage = () => {
               <strong>{stakeNum} USDT</strong>
             </div>
             <div className="summary-row">
-              <span>На каждую сделку:</span>
+              <span>На сделку:</span>
               <strong className="profit-text">
                 {perTradeUsdt.toFixed(2)} USDT ({formData.balanceRatio}%)
               </strong>
             </div>
-            <div className="summary-row">
+            {/* <div className="summary-row">
               <span>Максимальных сделок одновременно:</span>
               <strong>{ratioNum > 0 ? Math.floor(100 / ratioNum) : '—'}</strong>
-            </div>
+            </div> */}
           </div>
         )}
 
-        <div className="info-banner">
-          <AlertCircle size={18} />
-          <div>
-            <strong>Режим тестирования (dry-run):</strong> реальные деньги не используются.
-            API-ключ потребуется при переходе в боевой режим.
-          </div>
-        </div>
       </div>
     );
   };

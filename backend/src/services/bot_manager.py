@@ -104,18 +104,21 @@ def create_bot_record(db: Session, user_id: int, body: BotCreate) -> Bot:
         api_port=api_port,
         api_username=api_username,
         api_password=api_password,
+        api_key_id = body.api_key_id,
+        stake_amount=body.stake_amount,                   
+        tradable_balance_ratio=body.tradable_balance_ratio,
     )
 
     db.add(bot)
     db.commit()
     db.refresh(bot)
 
-    _materialize_files(bot)
+    _materialize_files(db,bot, user_id)
 
     return bot
 
 
-def _materialize_files(bot: Bot) -> None:
+def _materialize_files(db: Session, bot: Bot, user_id: int) -> None:
     """Создаёт папку бота, кладёт config.json и файл стратегии."""
     bot_dir = _bot_dir(bot.id)
     bot_dir.mkdir(parents=True, exist_ok=True)
@@ -131,6 +134,11 @@ def _materialize_files(bot: Bot) -> None:
         api_username=bot.api_username,
         api_password=bot.api_password,
         dry_run=bot.dry_run,
+        api_key_id = bot.api_key_id,
+        stake_amount = bot.stake_amount,
+        tradable_balance_ratio=bot.tradable_balance_ratio,
+        db = db,
+        user_id = user_id
     )
     write_config(cfg, bot_dir / "config.json")
 
@@ -156,7 +164,7 @@ def start_bot(db: Session, bot: Bot) -> Bot:
     """Запускает контейнер для уже созданного бота."""
     bot_dir = _bot_dir(bot.id)
     if not (bot_dir / "config.json").exists():
-        _materialize_files(bot)
+        _materialize_files(db,bot, bot.user_id)
 
     bot.status = "starting"
     bot.error_message = None

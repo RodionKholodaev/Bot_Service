@@ -858,3 +858,55 @@
   font-size: 18px;
   line-height: 1;
 }
+
+/* Переключатель режима торговли */
+.trading-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 12px;
+  border-radius: 10px;
+  border: 2px solid var(--border, rgba(255,255,255,0.1));
+  background: transparent;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.mode-btn:hover {
+  border-color: rgba(255,255,255,0.25);
+  color: var(--text-primary, #fff);
+}
+
+.mode-desc {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.7;
+  text-align: center;
+}
+
+.mode-btn--active {
+  color: #fff;
+}
+
+.mode-btn--dry.mode-btn--active {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  color: #60a5fa;
+}
+
+.mode-btn--live.mode-btn--active {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
+}

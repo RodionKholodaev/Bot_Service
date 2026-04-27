@@ -2,7 +2,8 @@
 
 import json
 from pathlib import Path
-
+from sqlalchemy.orm import Session
+from src.services.api_key_service import get_api_key_by_id
 TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "templates" / "config.template.json"
 
 
@@ -13,10 +14,12 @@ def generate_config(
     ws_token: str,
     api_username: str,
     api_password: str,
-    api_key_id: str | None,
+    api_key_id: int | None,
     stake_amount: float,
     tradable_balance_ratio: float,
-    dry_run: bool = True
+    db: Session,
+    user_id: int,
+    dry_run: bool = True,
 ) -> dict:
     """
     Возвращает готовый dict с конфигом для одного бота.
@@ -25,6 +28,14 @@ def generate_config(
     Снаружи мы пробросим его на bot.api_port из БД через docker port mapping.
     Внутри пусть всегда будет 8080 (как в шаблоне) — это просто удобство.
     """
+    if api_key_id is not None: 
+        api_keys = get_api_key_by_id(api_key_id, user_id, db)
+        key = api_keys.api_key
+        secret = api_keys.api_secret
+    else:
+        key = ""
+        secret = ""
+        
     with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
         config = json.load(f)
 
@@ -32,7 +43,8 @@ def generate_config(
     config["tradable_balance_ratio"] = tradable_balance_ratio
     config["exchange"]["pair_whitelist"] = [pair]
     config["dry_run"] = dry_run
-
+    config["exchange"]["key"] = key
+    config["exchange"]["secret"] = secret
     config["api_server"]["listen_port"] = api_port_inside_container
     config["api_server"]["jwt_secret_key"] = jwt_secret
     config["api_server"]["ws_token"] = ws_token

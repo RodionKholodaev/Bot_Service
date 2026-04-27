@@ -18,8 +18,10 @@ class Bot(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     pair: Mapped[str] = mapped_column(String(50), nullable=False)
     leverage: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    direction: Mapped[str] = mapped_column(String(10), nullable=False)
-    # long / short / both
+    direction: Mapped[str] = mapped_column(String(10), nullable=False) # long / short / both
+    
+    tradable_balance_ratio: Mapped[float]
+    stake_amount: Mapped[float]
 
     strategy_preset: Mapped[str] = mapped_column(String(20), nullable=False)
     # custom / conservative / moderate / aggressive
@@ -39,7 +41,7 @@ class Bot(Base):
 
     dry_run: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    exchange_key_id: Mapped[int | None] = mapped_column(
+    api_key_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("exchange_api_keys.id", ondelete="SET NULL"), nullable=True
     )
     # False — бот архивирован (soft delete)

@@ -633,3 +633,473 @@ ccxt.base.errors.NetworkError: Connection closed by remote server, closing code 
 2026-04-27 03:54:58,410 - freqtrade.worker - INFO - Bot heartbeat. PID=1, version='2026.3', state='RUNNING'
 2026-04-27 03:56:01,007 - freqtrade.worker - INFO - Bot heartbeat. PID=1, version='2026.3', state='RUNNING'
 2026-04-27 03:57:01,026 - freqtrade.worker - INFO - Bot heartbeat. PID=1, version='2026.3', state='RUNNING'
+2026-04-27 16:34:37,767 - freqtrade.loggers - INFO - Enabling colorized output.
+2026-04-27 16:34:37,770 - freqtrade.loggers - INFO - Logfile configured
+2026-04-27 16:34:37,770 - freqtrade.loggers - INFO - Verbosity set to 0
+2026-04-27 16:34:37,772 - freqtrade.configuration.configuration - INFO - Runmode set to dry_run.
+2026-04-27 16:34:37,773 - freqtrade.configuration.configuration - INFO - Using additional Strategy lookup path: /freqtrade/user_data_mount/user_data/strategies
+2026-04-27 16:34:37,774 - freqtrade.configuration.configuration - INFO - Parameter --db-url detected ...
+2026-04-27 16:34:37,775 - freqtrade.configuration.configuration - INFO - Dry run is enabled
+2026-04-27 16:34:37,776 - freqtrade.configuration.configuration - INFO - Using DB: "sqlite:////freqtrade/user_data_mount/user_data/tradesv3.sqlite"
+2026-04-27 16:34:37,777 - freqtrade.configuration.configuration - INFO - Using max_open_trades: 1 ...
+2026-04-27 16:34:37,835 - freqtrade.configuration.configuration - INFO - Using user-data directory: /freqtrade/user_data ...
+2026-04-27 16:34:37,837 - freqtrade.configuration.configuration - INFO - Using data directory: /freqtrade/user_data_mount/user_data/data ...
+2026-04-27 16:34:37,839 - freqtrade.exchange.check_exchange - INFO - Checking exchange...
+2026-04-27 16:34:37,848 - freqtrade.exchange.check_exchange - INFO - Exchange "bybit" is officially supported by the Freqtrade development team.
+2026-04-27 16:34:37,848 - freqtrade.configuration.configuration - INFO - Using pairlist from configuration.
+2026-04-27 16:34:37,851 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2026-04-27 16:34:37,851 - freqtrade.exchange.exchange - INFO - Using CCXT 4.5.44
+2026-04-27 16:34:37,852 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'swap', 'defaultSettle': 'USDT'}}
+2026-04-27 16:34:37,861 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'swap', 'defaultSettle': 'USDT'}}
+2026-04-27 16:34:37,869 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'swap', 'defaultSettle': 'USDT'}}
+2026-04-27 16:34:37,878 - freqtrade.exchange.exchange - INFO - Using Exchange "Bybit"
+2026-04-27 16:34:47,962 - freqtrade.exchange.common - WARNING - _load_async_markets() returned exception: "Error in reload_markets due to RequestTimeout. Message: bybit GET https://api.bybit.com/v5/market/instruments-info?category=spot". Retrying still for 3 times.
+2026-04-27 16:34:58,963 - freqtrade.exchange.common - WARNING - _load_async_markets() returned exception: "Error in reload_markets due to RequestTimeout. Message: bybit GET https://api.bybit.com/v5/market/instruments-info?category=option&baseCoin=BTC". Retrying still for 2 times.
+2026-04-27 16:35:09,965 - freqtrade.exchange.common - WARNING - _load_async_markets() returned exception: "Error in reload_markets due to RequestTimeout. Message: bybit GET https://api.bybit.com/v5/market/instruments-info?category=option&baseCoin=DOGE". Retrying still for 1 times.
+2026-04-27 16:35:20,969 - freqtrade.exchange.common - WARNING - _load_async_markets() returned exception: "Error in reload_markets due to RequestTimeout. Message: bybit GET https://api.bybit.com/v5/market/instruments-info?category=option&baseCoin=DOGE". Giving up.
+2026-04-27 16:35:20,975 - freqtrade.exchange.exchange - ERROR - Could not load markets.
+Traceback (most recent call last):
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 779, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 734, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        req, traces=traces, timeout=real_timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 672, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1239, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1580, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1313, in _wrap_create_connection
+    return await self._loop.create_connection(*args, **kwargs, sock=sock)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 1201, in create_connection
+    transport, protocol = await self._create_connection_transport(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        ssl_shutdown_timeout=ssl_shutdown_timeout)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 1234, in _create_connection_transport
+    await waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 241, in fetch
+    async with session_method(yarl.URL(url, encoded=True),
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              data=encoded_body,
+                              ^^^^^^^^^^^^^^^^^^
+                              headers=request_headers,
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+                              timeout=(self.timeout / 1000),
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              proxy=final_proxy) as response:
+                              ^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 1510, in __aenter__
+    self._resp: _RetType = await self._coro
+                           ^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 624, in _request
+    with timer:
+         ^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/helpers.py", line 713, in __exit__
+    raise asyncio.TimeoutError from exc_val
+TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 680, in _api_reload_markets
+    await self._api_async.load_markets(reload=reload, params={})
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 365, in load_markets
+    raise e
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 357, in load_markets
+    result = await self.markets_loading
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 324, in load_markets_helper
+    markets = await self.fetch_markets(params)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/bybit.py", line 1802, in fetch_markets
+    promises = await asyncio.gather(*promisesUnresolved)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/bybit.py", line 1829, in fetch_spot_markets
+    response = await self.publicGetV5MarketInstrumentsInfo(self.extend(request, params))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1022, in request
+    return await self.fetch2(path, api, method, params, headers, body, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1016, in fetch2
+    raise e
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1006, in fetch2
+    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 277, in fetch
+    raise RequestTimeout(details) from e
+ccxt.base.errors.RequestTimeout: bybit GET https://api.bybit.com/v5/market/instruments-info?category=spot
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/common.py", line 179, in wrapper
+    return f(*args, **kwargs)
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 693, in _load_async_markets
+    markets = self.loop.run_until_complete(self._api_reload_markets(reload=reload))
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 684, in _api_reload_markets
+    raise TemporaryError(
+        f"Error in reload_markets due to {e.__class__.__name__}. Message: {e}"
+    ) from e
+freqtrade.exceptions.TemporaryError: Error in reload_markets due to RequestTimeout. Message: bybit GET https://api.bybit.com/v5/market/instruments-info?category=spot
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 779, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 734, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        req, traces=traces, timeout=real_timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 672, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1239, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1580, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1313, in _wrap_create_connection
+    return await self._loop.create_connection(*args, **kwargs, sock=sock)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 1201, in create_connection
+    transport, protocol = await self._create_connection_transport(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        ssl_shutdown_timeout=ssl_shutdown_timeout)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 1234, in _create_connection_transport
+    await waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 241, in fetch
+    async with session_method(yarl.URL(url, encoded=True),
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              data=encoded_body,
+                              ^^^^^^^^^^^^^^^^^^
+                              headers=request_headers,
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+                              timeout=(self.timeout / 1000),
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              proxy=final_proxy) as response:
+                              ^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 1510, in __aenter__
+    self._resp: _RetType = await self._coro
+                           ^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 624, in _request
+    with timer:
+         ^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/helpers.py", line 713, in __exit__
+    raise asyncio.TimeoutError from exc_val
+TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 680, in _api_reload_markets
+    await self._api_async.load_markets(reload=reload, params={})
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 365, in load_markets
+    raise e
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 357, in load_markets
+    result = await self.markets_loading
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 324, in load_markets_helper
+    markets = await self.fetch_markets(params)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/bybit.py", line 1802, in fetch_markets
+    promises = await asyncio.gather(*promisesUnresolved)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/bybit.py", line 2126, in fetch_option_markets
+    response = await self.publicGetV5MarketInstrumentsInfo(self.extend(request, params))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1022, in request
+    return await self.fetch2(path, api, method, params, headers, body, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1016, in fetch2
+    raise e
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1006, in fetch2
+    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 277, in fetch
+    raise RequestTimeout(details) from e
+ccxt.base.errors.RequestTimeout: bybit GET https://api.bybit.com/v5/market/instruments-info?category=option&baseCoin=BTC
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/common.py", line 179, in wrapper
+    return f(*args, **kwargs)
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 693, in _load_async_markets
+    markets = self.loop.run_until_complete(self._api_reload_markets(reload=reload))
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 684, in _api_reload_markets
+    raise TemporaryError(
+        f"Error in reload_markets due to {e.__class__.__name__}. Message: {e}"
+    ) from e
+freqtrade.exceptions.TemporaryError: Error in reload_markets due to RequestTimeout. Message: bybit GET https://api.bybit.com/v5/market/instruments-info?category=option&baseCoin=BTC
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 779, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 734, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        req, traces=traces, timeout=real_timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 672, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1239, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1580, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1313, in _wrap_create_connection
+    return await self._loop.create_connection(*args, **kwargs, sock=sock)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 1201, in create_connection
+    transport, protocol = await self._create_connection_transport(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        ssl_shutdown_timeout=ssl_shutdown_timeout)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 1234, in _create_connection_transport
+    await waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 241, in fetch
+    async with session_method(yarl.URL(url, encoded=True),
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              data=encoded_body,
+                              ^^^^^^^^^^^^^^^^^^
+                              headers=request_headers,
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+                              timeout=(self.timeout / 1000),
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              proxy=final_proxy) as response:
+                              ^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 1510, in __aenter__
+    self._resp: _RetType = await self._coro
+                           ^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 624, in _request
+    with timer:
+         ^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/helpers.py", line 713, in __exit__
+    raise asyncio.TimeoutError from exc_val
+TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 680, in _api_reload_markets
+    await self._api_async.load_markets(reload=reload, params={})
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 365, in load_markets
+    raise e
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 357, in load_markets
+    result = await self.markets_loading
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 324, in load_markets_helper
+    markets = await self.fetch_markets(params)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/bybit.py", line 1802, in fetch_markets
+    promises = await asyncio.gather(*promisesUnresolved)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/bybit.py", line 2126, in fetch_option_markets
+    response = await self.publicGetV5MarketInstrumentsInfo(self.extend(request, params))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1022, in request
+    return await self.fetch2(path, api, method, params, headers, body, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1016, in fetch2
+    raise e
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1006, in fetch2
+    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 277, in fetch
+    raise RequestTimeout(details) from e
+ccxt.base.errors.RequestTimeout: bybit GET https://api.bybit.com/v5/market/instruments-info?category=option&baseCoin=DOGE
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/common.py", line 179, in wrapper
+    return f(*args, **kwargs)
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 693, in _load_async_markets
+    markets = self.loop.run_until_complete(self._api_reload_markets(reload=reload))
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 684, in _api_reload_markets
+    raise TemporaryError(
+        f"Error in reload_markets due to {e.__class__.__name__}. Message: {e}"
+    ) from e
+freqtrade.exceptions.TemporaryError: Error in reload_markets due to RequestTimeout. Message: bybit GET https://api.bybit.com/v5/market/instruments-info?category=option&baseCoin=DOGE
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 779, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 734, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        req, traces=traces, timeout=real_timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 672, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1239, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1580, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/connector.py", line 1313, in _wrap_create_connection
+    return await self._loop.create_connection(*args, **kwargs, sock=sock)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 1201, in create_connection
+    transport, protocol = await self._create_connection_transport(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        ssl_shutdown_timeout=ssl_shutdown_timeout)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 1234, in _create_connection_transport
+    await waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 241, in fetch
+    async with session_method(yarl.URL(url, encoded=True),
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              data=encoded_body,
+                              ^^^^^^^^^^^^^^^^^^
+                              headers=request_headers,
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+                              timeout=(self.timeout / 1000),
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              proxy=final_proxy) as response:
+                              ^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 1510, in __aenter__
+    self._resp: _RetType = await self._coro
+                           ^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/client.py", line 624, in _request
+    with timer:
+         ^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/aiohttp/helpers.py", line 713, in __exit__
+    raise asyncio.TimeoutError from exc_val
+TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 680, in _api_reload_markets
+    await self._api_async.load_markets(reload=reload, params={})
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 365, in load_markets
+    raise e
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 357, in load_markets
+    result = await self.markets_loading
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 324, in load_markets_helper
+    markets = await self.fetch_markets(params)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/bybit.py", line 1802, in fetch_markets
+    promises = await asyncio.gather(*promisesUnresolved)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/bybit.py", line 2126, in fetch_option_markets
+    response = await self.publicGetV5MarketInstrumentsInfo(self.extend(request, params))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1022, in request
+    return await self.fetch2(path, api, method, params, headers, body, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1016, in fetch2
+    raise e
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 1006, in fetch2
+    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/async_support/base/exchange.py", line 277, in fetch
+    raise RequestTimeout(details) from e
+ccxt.base.errors.RequestTimeout: bybit GET https://api.bybit.com/v5/market/instruments-info?category=option&baseCoin=DOGE
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 720, in reload_markets
+    retrier(self._load_async_markets, retries=retries)(reload=True)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/freqtrade/freqtrade/exchange/common.py", line 191, in wrapper
+    return wrapper(*args, **kwargs)
+  File "/freqtrade/freqtrade/exchange/common.py", line 191, in wrapper
+    return wrapper(*args, **kwargs)
+  File "/freqtrade/freqtrade/exchange/common.py", line 191, in wrapper
+    return wrapper(*args, **kwargs)
+  File "/freqtrade/freqtrade/exchange/common.py", line 194, in wrapper
+    raise ex
+  File "/freqtrade/freqtrade/exchange/common.py", line 179, in wrapper
+    return f(*args, **kwargs)
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 693, in _load_async_markets
+    markets = self.loop.run_until_complete(self._api_reload_markets(reload=reload))
+  File "/usr/local/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/freqtrade/freqtrade/exchange/exchange.py", line 684, in _api_reload_markets
+    raise TemporaryError(
+        f"Error in reload_markets due to {e.__class__.__name__}. Message: {e}"
+    ) from e
+freqtrade.exceptions.TemporaryError: Error in reload_markets due to RequestTimeout. Message: bybit GET https://api.bybit.com/v5/market/instruments-info?category=option&baseCoin=DOGE
+2026-04-27 16:35:21,019 - freqtrade - ERROR - Could not load markets, therefore cannot start. Please investigate the above error for more details.

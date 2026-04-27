@@ -102,9 +102,10 @@ def run_bot_container(
             "--logfile", "/freqtrade/user_data_mount/user_data/logs/freqtrade.log",
             "--db-url", "sqlite:////freqtrade/user_data_mount/user_data/tradesv3.sqlite",
         ],
-        restart_policy={"Name": "unless-stopped"},
+        restart_policy={"Name": "unless-stopped"}, #type: ignore
         mem_limit="512m",
-    )
+    ) #type: ignore
+
 
     logger.info(f"Запущен контейнер {container_name} (id={container.short_id})")
     return container
