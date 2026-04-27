@@ -13,16 +13,17 @@ class BalanceTransaction(Base):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
-    amount: Mapped[float] = mapped_column(Float, nullable=False)
     # положительный — пополнение, отрицательный — списание
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
 
-    type: Mapped[str] = mapped_column(String(30), nullable=False)
     # deposit / commission / refund
-
+    type: Mapped[str] = mapped_column(String(30), nullable=False)
+    
+    # привязка к сделке если тип — commission
     trade_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("trades.id", ondelete="SET NULL"), nullable=True
     )
-    # привязка к сделке если тип — commission
+    
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
