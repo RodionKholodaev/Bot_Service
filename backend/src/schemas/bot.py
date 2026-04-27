@@ -62,5 +62,5 @@ class BotPublic(BaseModel):
 
     api_port: int
     created_at: datetime
-
+    total_profit: float = 0.0
     model_config = {"from_attributes": True}

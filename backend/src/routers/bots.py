@@ -74,7 +74,7 @@ def list_bots(
 ):
     bots = (
         db.query(Bot)
-        .filter(Bot.user_id == current_user.id)
+        .filter(Bot.user_id == current_user.id, Bot.is_active == True)
         .order_by(Bot.created_at.desc())
         .all()
     )

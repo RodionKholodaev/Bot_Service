@@ -1,25 +1,129 @@
 "use client"
-import React, { useState } from 'react';
-import { TrendingUp, Bot, Wallet, DollarSign, Plus, Settings, BookOpen, MessageCircle, BarChart3, Pause, AlertCircle, Zap, ChevronRight, CreditCard } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TrendingUp, Bot, Wallet, DollarSign, Plus, Settings, BookOpen, MessageCircle, BarChart3, Pause, Play, AlertCircle, Zap, ChevronRight, CreditCard, Loader2, Trash2, AlertTriangle, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
+
+// ── Типы под BotPublic с бэка ─────────────────────────────
+type BotStatus = 'created' | 'starting' | 'running' | 'stopped' | 'error';
+
+interface BotPublic {
+  id: string;
+  name: string;
+  pair: string;
+  leverage: number;
+  direction: string;
+  strategy_preset: string;
+  entry_filters_long: Array<Record<string, unknown>>;
+  entry_filters_short: Array<Record<string, unknown>>;
+  take_profit: Record<string, number>;
+  stop_loss: number;
+  dry_run: boolean;
+  status: BotStatus;
+  error_message: string | null;
+  api_port: number;
+  created_at: string;
+  total_profit?: number;
+}
+
+// Запросы идут через Next.js-прокси на /api/...
+const API_BASE = '/api';
+
+const getAuthHeader = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('access_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 const TradingBotDashboard = () => {
   const [serviceBalance, setServiceBalance] = useState(850); // ₽
   const [showTopUpModal, setShowTopUpModal] = useState(false);
-  
-  // Mock data
-  const stats = {
-    activeBots: 3,
-    weeklyProfit: 247.50,
-    fundsUnderManagement: 5420.00,
-    exchangeBalance: 6150.30
+
+  // ── Боты с бэка ─────────────────────────────────────────
+  const [bots, setBots] = useState<BotPublic[]>([]);
+  const [botsLoading, setBotsLoading] = useState(true);
+  const [botsError, setBotsError] = useState<string | null>(null);
+  // id ботов, по которым сейчас идёт start/stop/delete — чтобы блокировать кнопки
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const fetchBots = useCallback(async () => {
+    try {
+      setBotsError(null);
+      const res = await fetch(`${API_BASE}/bots`, {
+        headers: { ...getAuthHeader() },
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: BotPublic[] = await res.json();
+      setBots(data);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Неизвестная ошибка';
+      setBotsError(`Не удалось загрузить ботов: ${msg}`);
+    } finally {
+      setBotsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBots();
+    // авто-обновление раз в 15 секунд, чтобы видеть смену статусов
+    const interval = setInterval(fetchBots, 15000);
+    return () => clearInterval(interval);
+  }, [fetchBots]);
+
+  const markPending = (id: string, on: boolean) => {
+    setPendingIds(prev => {
+      const next = new Set(prev);
+      on ? next.add(id) : next.delete(id);
+      return next;
+    });
   };
 
-  const bots = [
-    { id: 1, name: 'BTC Scalper Pro', status: 'active', profit: 125.40, exchange: 'Binance', pair: 'BTC/USDT' },
-    { id: 2, name: 'ETH Grid Trader', status: 'active', profit: 89.30, exchange: 'Bybit', pair: 'ETH/USDT' },
-    { id: 3, name: 'DOGE Momentum', status: 'active', profit: 32.80, exchange: 'Binance', pair: 'DOGE/USDT' },
-  ];
+  const handleStartStop = async (bot: BotPublic) => {
+    const action = bot.status === 'running' || bot.status === 'starting' ? 'stop' : 'start';
+    markPending(bot.id, true);
+    try {
+      const res = await fetch(`${API_BASE}/bots/${bot.id}/${action}`, {
+        method: 'POST',
+        headers: { ...getAuthHeader() },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const updated: BotPublic = await res.json();
+      setBots(prev => prev.map(b => (b.id === updated.id ? updated : b)));
+    } catch (e) {
+      console.error(e);
+      // мягкий фоллбэк — просто перечитаем список
+      fetchBots();
+    } finally {
+      markPending(bot.id, false);
+    }
+  };
+
+  const handleDelete = async (botId: string) => {
+    markPending(botId, true);
+    try {
+      const res = await fetch(`${API_BASE}/bots/${botId}`, {
+        method: 'DELETE',
+        headers: { ...getAuthHeader() },
+      });
+      if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+      setBots(prev => prev.filter(b => b.id !== botId));
+    } catch (e) {
+      console.error(e);
+      fetchBots();
+    } finally {
+      markPending(botId, false);
+      setDeleteConfirmId(null);
+    }
+  };
+
+  // ── Производные метрики для верхних карточек ───────────
+  const stats = {
+    activeBots: bots.filter(b => b.status === 'running' || b.status === 'starting').length,
+    weeklyProfit: 247.50, // TODO: подтянуть отдельной ручкой когда будет
+    fundsUnderManagement: 5420.00,
+    exchangeBalance: 6150.30,
+  };
 
   const getBalanceStatus = (balance) => {
     if (balance < 100) return { color: 'red', daysLeft: 1, status: 'critical' };
@@ -149,50 +253,126 @@ const TradingBotDashboard = () => {
         {/* Active Bots */}
         <section className="bots-section">
           <div className="section-header">
-            <h2>Активные боты</h2>
-            <button className="btn-text">
-              Смотреть все <ChevronRight size={16} />
+            <h2>Мои боты</h2>
+            <button className="btn-text" onClick={fetchBots} disabled={botsLoading}>
+              Обновить <ChevronRight size={16} />
             </button>
           </div>
 
-          {bots.length > 0 ? (
+          {botsLoading && bots.length === 0 ? (
+            <div className="bots-loading">
+              <Loader2 size={32} className="spin" />
+              <span>Загружаем ботов...</span>
+            </div>
+          ) : botsError ? (
+            <div className="bots-error">
+              <AlertTriangle size={20} />
+              <span>{botsError}</span>
+              <button className="btn-text" onClick={fetchBots}>Повторить</button>
+            </div>
+          ) : bots.length > 0 ? (
             <div className="bots-list">
-              {bots.map(bot => (
-                <div key={bot.id} className="bot-card">
-                  <div className="bot-header">
-                    <div className="bot-info">
-                      <div className="bot-status-indicator active"></div>
-                      <div>
-                        <h3>{bot.name}</h3>
-                        <p className="bot-meta">{bot.exchange} • {bot.pair}</p>
+              {bots.map(bot => {
+                const isPending = pendingIds.has(bot.id);
+                const isRunning = bot.status === 'running';
+                const isStarting = bot.status === 'starting';
+                const isError = bot.status === 'error';
+                const isStopped = bot.status === 'stopped' || bot.status === 'created';
+
+                const statusLabel: Record<BotStatus, string> = {
+                  running: 'Работает',
+                  starting: 'Запускается',
+                  stopped: 'Остановлен',
+                  created: 'Создан',
+                  error: 'Ошибка',
+                };
+
+                const profit = bot.total_profit ?? 0;
+                const profitSign = profit >= 0 ? '+' : '';
+
+                return (
+                  <div key={bot.id} className={`bot-card status-${bot.status}`}>
+                    <div className="bot-header">
+                      <div className="bot-info">
+                        <div className={`bot-status-indicator ${bot.status}`}></div>
+                        <div className="bot-title-block">
+                          <div className="bot-title-row">
+                            <h3>{bot.name}</h3>
+                            {bot.dry_run && (
+                              <span className="badge badge-dry" title="Демо-режим, реальные сделки не совершаются">
+                                <FlaskConical size={12} />
+                                DEMO
+                              </span>
+                            )}
+                          </div>
+                          <p className="bot-meta">
+                            {bot.pair} • {bot.direction} • x{bot.leverage} • {bot.strategy_preset}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bot-actions">
+                        <button
+                          className="btn-icon-small"
+                          onClick={() => handleStartStop(bot)}
+                          disabled={isPending || isStarting}
+                          title={isRunning ? 'Остановить' : 'Запустить'}
+                        >
+                          {isPending ? (
+                            <Loader2 size={16} className="spin" />
+                          ) : isRunning || isStarting ? (
+                            <Pause size={16} />
+                          ) : (
+                            <Play size={16} />
+                          )}
+                        </button>
+                        <Link href={`/bot/${bot.id}`}>
+                          <button className="btn-icon-small" title="Настройки">
+                            <Settings size={16} />
+                          </button>
+                        </Link>
+                        <button
+                          className="btn-icon-small btn-icon-danger"
+                          onClick={() => setDeleteConfirmId(bot.id)}
+                          disabled={isPending}
+                          title="Удалить"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
-                    <div className="bot-actions">
-                      <button className="btn-icon-small">
-                        <Pause size={16} />
-                      </button>
-                      <button className="btn-icon-small">
-                        <Settings size={16} />
-                      </button>
+
+                    <div className={`bot-status-row status-${bot.status}`}>
+                      <span className="status-dot"></span>
+                      <span className="status-text">{statusLabel[bot.status]}</span>
+                      {isError && bot.error_message && (
+                        <span className="status-error-msg" title={bot.error_message}>
+                          — {bot.error_message}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="bot-stats">
+                      <div className="bot-stat">
+                        <span className="bot-stat-label">Прибыль</span>
+                        <span className={`bot-stat-value ${profit >= 0 ? 'profit' : 'loss'}`}>
+                          {profitSign}${profit.toFixed(2)}
+                        </span>
+                      </div>
+                      <Link href={`/bot/${bot.id}`}>
+                        <button className="btn-bot-details">
+                          <BarChart3 size={16} />
+                          Подробнее
+                        </button>
+                      </Link>
                     </div>
                   </div>
-                  <div className="bot-stats">
-                    <div className="bot-stat">
-                      <span className="bot-stat-label">Прибыль</span>
-                      <span className="bot-stat-value profit">+${bot.profit}</span>
-                    </div>
-                    <button className="btn-bot-details">
-                      <BarChart3 size={16} />
-                      Статистика
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="empty-state">
               <Bot size={64} />
-              <h3>У вас пока нет активных ботов</h3>
+              <h3>У вас пока нет ботов</h3>
               <p>Создайте своего первого торгового бота за пару минут</p>
               <Link href="/bot-creation">
                 <button className="btn-primary">
@@ -232,6 +412,31 @@ const TradingBotDashboard = () => {
           </button>
         </section>
       </main>
+
+      {/* Delete confirmation modal */}
+      {deleteConfirmId && (
+        <div className="modal-overlay" onClick={() => setDeleteConfirmId(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h2>Удалить бота?</h2>
+            <p className="modal-description">
+              Бот будет остановлен и удалён. История сделок сохранится в статистике, но восстановить настройки нельзя.
+            </p>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setDeleteConfirmId(null)}>
+                Отмена
+              </button>
+              <button
+                className="btn-danger"
+                onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+                disabled={pendingIds.has(deleteConfirmId)}
+              >
+                {pendingIds.has(deleteConfirmId) ? <Loader2 size={16} className="spin" /> : <Trash2 size={16} />}
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top-up Modal */}
       {showTopUpModal && (
@@ -973,6 +1178,190 @@ const TradingBotDashboard = () => {
         .modal-actions .btn-secondary {
           flex: 1;
           justify-content: center;
+        }
+
+        /* Loading / Error states for bots */
+        .bots-loading,
+        .bots-error {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          padding: 60px 20px;
+          background: rgba(26, 31, 53, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 16px;
+          color: #9ca3af;
+          font-size: 15px;
+        }
+
+        .bots-error {
+          color: #fca5a5;
+          border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .spin {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        /* Bot status indicator (по новым статусам) */
+        .bot-status-indicator.running {
+          background: #10b981;
+          box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+          animation: pulse 2s ease-in-out infinite;
+        }
+        .bot-status-indicator.starting {
+          background: #fbbf24;
+          box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+          animation: pulse 1s ease-in-out infinite;
+        }
+        .bot-status-indicator.stopped,
+        .bot-status-indicator.created {
+          background: #6b7280;
+        }
+        .bot-status-indicator.error {
+          background: #ef4444;
+          box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
+        /* Bot card подсветка по статусу */
+        .bot-card.status-error {
+          border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .bot-title-block {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .bot-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        /* Бэйджи (DEMO и т.п.) */
+        .badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 2px 8px;
+          border-radius: 6px;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+
+        .badge-dry {
+          background: rgba(168, 85, 247, 0.15);
+          color: #c4b5fd;
+          border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        /* Status row под заголовком карточки */
+        .bot-status-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 12px 0 16px;
+          padding: 8px 12px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          background: rgba(255, 255, 255, 0.03);
+        }
+
+        .bot-status-row .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        .bot-status-row.status-running { color: #6ee7b7; }
+        .bot-status-row.status-running .status-dot {
+          background: #10b981;
+          box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+        }
+        .bot-status-row.status-starting { color: #fcd34d; }
+        .bot-status-row.status-starting .status-dot { background: #fbbf24; }
+        .bot-status-row.status-stopped,
+        .bot-status-row.status-created { color: #9ca3af; }
+        .bot-status-row.status-stopped .status-dot,
+        .bot-status-row.status-created .status-dot { background: #6b7280; }
+        .bot-status-row.status-error {
+          color: #fca5a5;
+          background: rgba(239, 68, 68, 0.08);
+        }
+        .bot-status-row.status-error .status-dot { background: #ef4444; }
+
+        .status-error-msg {
+          color: #fca5a5;
+          opacity: 0.85;
+          font-weight: 400;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 60%;
+        }
+
+        /* Кнопки действий */
+        .btn-icon-small:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .btn-icon-danger:hover:not(:disabled) {
+          background: rgba(239, 68, 68, 0.15) !important;
+          color: #fca5a5 !important;
+        }
+
+        .bot-stat-value.loss {
+          color: #fca5a5;
+        }
+
+        /* Кнопка удаления в модалке */
+        .btn-danger {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px 20px;
+          background: #ef4444;
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          flex: 1;
+        }
+        .btn-danger:hover:not(:disabled) {
+          background: #dc2626;
+          transform: translateY(-1px);
+        }
+        .btn-danger:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .btn-text:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         @media (max-width: 768px) {
