@@ -1,40 +1,59 @@
 "use client"
 import React, { useState } from 'react';
-import { Bot, Key, TrendingUp, TrendingDown, Settings, AlertCircle, Info, ChevronDown, ChevronRight, ArrowLeft, Check, Target, Shield } from 'lucide-react';
-import './create-bot.css'; // Импортируйте отдельный CSS файл
+import { useRouter } from 'next/navigation';
+import { Bot, Key, TrendingUp, TrendingDown, Settings, AlertCircle, Info, ChevronRight, ArrowLeft, Check, Target, Shield } from 'lucide-react';
+import { apiFetch, ApiError } from '@/lib/api';
+import type { BotCreatePayload, FilterRule, Indicator, Timeframe } from '@/lib/types';
+import './create-bot.css';
 
 const CreateBotPage = () => {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    // Шаг 1: API ключ
+    // Шаг 1: API ключ (на MVP не отправляются на бэкенд — поля просто визуально)
     apiKey: '',
     apiSecret: '',
     exchange: 'binance',
-    
+
     // Шаг 2: Торговая пара и плечо
     tradingPair: '',
     leverage: '1',
-    algorithm: 'long', // long, short, both
-    
+    algorithm: 'long', // long | short
+
     // Шаг 3: Индикаторы
-    strategyPreset: 'custom', // conservative, moderate, aggressive, custom
+    strategyPreset: 'custom', // conservative | moderate | aggressive | custom
+    timeframe: '5m' as Timeframe, // общий таймфрейм для индикаторов в custom
     indicators: {
       rsi: { enabled: false, oversold: 30, overbought: 70 },
+      cci: { enabled: false, oversold: -100, overbought: 100 },
+      // MACD / EMA / Volume — пока не поддержаны бэкендом, оставлены в state на будущее
       macd: { enabled: false, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
       ema: { enabled: false, shortPeriod: 9, longPeriod: 21 },
-      volume: { enabled: false, multiplier: 1.5 }
+      volume: { enabled: false, multiplier: 1.5 },
     },
-    
-    // Шаг 4: Выход из сделки
+
+    // Шаг 4: Имя + выход из сделки
+    botName: '',
     takeProfit: '2',
     stopLoss: '',
     useStopLoss: false,
-    trailingStop: false
+    trailingStop: false, // на бэк не отправляется
   });
 
-  const [showIndicatorTooltip, setShowIndicatorTooltip] = useState(null);
+  const [showIndicatorTooltip, setShowIndicatorTooltip] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const strategyPresets = {
+  const strategyPresets: Record<string, {
+    name: string;
+    description: string;
+    icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+    color: string;
+    indicators: typeof formData.indicators;
+    takeProfit: string;
+    stopLoss: string;
+    useStopLoss: boolean;
+  }> = {
     conservative: {
       name: 'Консервативный',
       description: 'Минимальный риск, небольшая прибыль',
@@ -42,13 +61,14 @@ const CreateBotPage = () => {
       color: '#10b981',
       indicators: {
         rsi: { enabled: true, oversold: 25, overbought: 75 },
-        macd: { enabled: true, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
-        ema: { enabled: true, shortPeriod: 9, longPeriod: 21 },
-        volume: { enabled: false, multiplier: 1.5 }
+        cci: { enabled: true, oversold: -120, overbought: 120 },
+        macd: { enabled: false, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
+        ema: { enabled: false, shortPeriod: 9, longPeriod: 21 },
+        volume: { enabled: false, multiplier: 1.5 },
       },
       takeProfit: '1.5',
       stopLoss: '1',
-      useStopLoss: true
+      useStopLoss: true,
     },
     moderate: {
       name: 'Умеренный',
@@ -57,13 +77,14 @@ const CreateBotPage = () => {
       color: '#60a5fa',
       indicators: {
         rsi: { enabled: true, oversold: 30, overbought: 70 },
-        macd: { enabled: true, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
-        ema: { enabled: true, shortPeriod: 9, longPeriod: 21 },
-        volume: { enabled: true, multiplier: 1.5 }
+        cci: { enabled: true, oversold: -100, overbought: 100 },
+        macd: { enabled: false, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
+        ema: { enabled: false, shortPeriod: 9, longPeriod: 21 },
+        volume: { enabled: false, multiplier: 1.5 },
       },
       takeProfit: '2.5',
       stopLoss: '1.5',
-      useStopLoss: true
+      useStopLoss: true,
     },
     aggressive: {
       name: 'Агрессивный',
@@ -72,41 +93,36 @@ const CreateBotPage = () => {
       color: '#f59e0b',
       indicators: {
         rsi: { enabled: true, oversold: 35, overbought: 65 },
-        macd: { enabled: true, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
+        cci: { enabled: true, oversold: -50, overbought: 50 },
+        macd: { enabled: false, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
         ema: { enabled: false, shortPeriod: 9, longPeriod: 21 },
-        volume: { enabled: true, multiplier: 2.0 }
+        volume: { enabled: false, multiplier: 2.0 },
       },
       takeProfit: '5',
       stopLoss: '2',
-      useStopLoss: true
-    }
+      useStopLoss: true,
+    },
   };
 
   const indicatorInfo = {
     rsi: {
       name: 'RSI (Индекс относительной силы)',
-      description: 'Показывает перекупленность или перепроданность актива. Значения ниже 30 - сигнал к покупке, выше 70 - к продаже.'
+      description:
+        'Показывает перекупленность или перепроданность актива. Значения ниже 30 — сигнал к покупке, выше 70 — к продаже.',
     },
-    macd: {
-      name: 'MACD (Схождение/расхождение)',
-      description: 'Трендовый индикатор, показывает изменение импульса. Пересечение линий - сигнал к сделке.'
+    cci: {
+      name: 'CCI (Индекс товарного канала)',
+      description:
+        'Значения ниже -100 — перепроданность (сигнал на лонг), выше +100 — перекупленность (сигнал на шорт).',
     },
-    ema: {
-      name: 'EMA (Экспоненциальная скользящая средняя)',
-      description: 'Определяет направление тренда. Пересечение быстрой и медленной EMA - сигнал к входу.'
-    },
-    volume: {
-      name: 'Объём торгов',
-      description: 'Подтверждает силу движения цены. Высокий объём усиливает сигнал других индикаторов.'
-    }
   };
 
   const popularPairs = [
-    'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 
-    'XRP/USDT', 'ADA/USDT', 'DOGE/USDT', 'AVAX/USDT'
+    'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT',
+    'XRP/USDT', 'ADA/USDT', 'DOGE/USDT', 'AVAX/USDT',
   ];
 
-  const handlePresetSelect = (preset) => {
+  const handlePresetSelect = (preset: string) => {
     const presetData = strategyPresets[preset];
     setFormData({
       ...formData,
@@ -114,31 +130,137 @@ const CreateBotPage = () => {
       indicators: presetData.indicators,
       takeProfit: presetData.takeProfit,
       stopLoss: presetData.stopLoss,
-      useStopLoss: presetData.useStopLoss
+      useStopLoss: presetData.useStopLoss,
     });
   };
 
   const handleNext = () => {
-    if (currentStep < 4) {
-      setCurrentStep(currentStep + 1);
-    }
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
+
+  // ── Сабмит ─────────────────────────────────────────────
+
+  // "BTC/USDT" → "BTC/USDT:USDT". Если уже с двоеточием — оставляем как есть.
+  const toFuturesPair = (raw: string): string => {
+    const trimmed = raw.trim().toUpperCase();
+    if (trimmed.includes(':')) return trimmed;
+    return `${trimmed}:USDT`;
+  };
+
+  // Собираем фильтры из включённых индикаторов в custom-режиме.
+  // Логика та же, что в backend/strategy_presets.py:
+  //   long  → "less" с oversold-уровнем
+  //   short → "greater" с overbought-уровнем
+  const buildCustomFilters = (direction: 'long' | 'short'): FilterRule[] => {
+    const tf: Timeframe = formData.timeframe;
+    const filters: FilterRule[] = [];
+
+    if (formData.indicators.rsi.enabled) {
+      filters.push({
+        indicator: 'rsi' as Indicator,
+        timeframe: tf,
+        condition: direction === 'long' ? 'less' : 'greater',
+        value: Number(
+          direction === 'long'
+            ? formData.indicators.rsi.oversold
+            : formData.indicators.rsi.overbought
+        ),
+      });
+    }
+
+    if (formData.indicators.cci.enabled) {
+      filters.push({
+        indicator: 'cci' as Indicator,
+        timeframe: tf,
+        condition: direction === 'long' ? 'less' : 'greater',
+        value: Number(
+          direction === 'long'
+            ? formData.indicators.cci.oversold
+            : formData.indicators.cci.overbought
+        ),
+      });
+    }
+
+    return filters;
+  };
+
+  const validateBeforeSubmit = (): string | null => {
+    if (!formData.botName.trim()) return 'Укажите имя бота';
+    if (!formData.tradingPair.trim()) return 'Выберите торговую пару';
+    if (!formData.takeProfit || Number(formData.takeProfit) <= 0)
+      return 'Укажите Take Profit больше 0';
+    if (formData.useStopLoss && (!formData.stopLoss || Number(formData.stopLoss) <= 0))
+      return 'Укажите Stop Loss больше 0';
+    if (formData.strategyPreset === 'custom') {
+      const anyEnabled =
+        formData.indicators.rsi.enabled || formData.indicators.cci.enabled;
+      if (!anyEnabled) return 'Включите хотя бы один индикатор (RSI или CCI)';
+    }
+    return null;
+  };
+
+  const handleSubmit = async () => {
+    const validationError = validateBeforeSubmit();
+    if (validationError) {
+      setSubmitError(validationError);
+      return;
+    }
+    setSubmitError(null);
+
+    const direction = formData.algorithm as 'long' | 'short';
+
+    const payload: BotCreatePayload = {
+      name: formData.botName.trim(),
+      pair: toFuturesPair(formData.tradingPair),
+      leverage: Number(formData.leverage),
+      direction,
+      strategy_preset: formData.strategyPreset as BotCreatePayload['strategy_preset'],
+      take_profit_percent: Number(formData.takeProfit),
+      stop_loss_enabled: formData.useStopLoss,
+      stop_loss_percent: formData.useStopLoss ? Number(formData.stopLoss) : null,
+      dry_run: true,
+    };
+
+    // Для custom режима подкладываем фильтры. Для пресетов — не нужно,
+    // бэкенд раскроет сам по словарю presets.
+    if (formData.strategyPreset === 'custom') {
+      const filters = buildCustomFilters(direction);
+      if (direction === 'long') {
+        payload.entry_filters_long = filters;
+      } else {
+        payload.entry_filters_short = filters;
+      }
+    }
+
+    setSubmitting(true);
+    try {
+      await apiFetch('/bots', { method: 'POST', body: payload });
+      router.push('/home');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSubmitError(err.message);
+      } else {
+        setSubmitError('Не удалось создать бота');
+      }
+      setSubmitting(false);
     }
   };
 
-  const handleSubmit = () => {
-    console.log('Создание бота с настройками:', formData);
-    // Здесь будет логика создания бота
-  };
+  // ── Рендеры шагов ──────────────────────────────────────
 
   const renderStepIndicator = () => (
     <div className="step-indicator">
-      {[1, 2, 3, 4].map(step => (
-        <div key={step} className={`step-item ${currentStep >= step ? 'active' : ''} ${currentStep === step ? 'current' : ''}`}>
+      {[1, 2, 3, 4].map((step) => (
+        <div
+          key={step}
+          className={`step-item ${currentStep >= step ? 'active' : ''} ${
+            currentStep === step ? 'current' : ''
+          }`}
+        >
           <div className="step-circle">
             {currentStep > step ? <Check size={16} /> : step}
           </div>
@@ -146,7 +268,7 @@ const CreateBotPage = () => {
             {step === 1 && 'API ключ'}
             {step === 2 && 'Пара и плечо'}
             {step === 3 && 'Стратегия'}
-            {step === 4 && 'TP/SL'}
+            {step === 4 && 'Имя и TP/SL'}
           </div>
         </div>
       ))}
@@ -158,14 +280,14 @@ const CreateBotPage = () => {
       <div className="step-header">
         <Key size={32} className="step-icon" />
         <h2>Подключение к бирже</h2>
-        <p>Введите API ключи для доступа к вашему аккаунту на бирже</p>
+        <p>Введите API ключи для доступа к вашему аккаунту на бирже (необязательно на этапе тестирования)</p>
       </div>
 
       <div className="form-group">
         <label>Биржа</label>
-        <select 
+        <select
           value={formData.exchange}
-          onChange={(e) => setFormData({...formData, exchange: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, exchange: e.target.value })}
           className="form-select"
         >
           <option value="binance">Binance</option>
@@ -177,20 +299,24 @@ const CreateBotPage = () => {
       <div className="form-group">
         <label>
           API Key
-          <span className="tooltip-trigger" onMouseEnter={() => setShowIndicatorTooltip('apiKey')} onMouseLeave={() => setShowIndicatorTooltip(null)}>
+          <span
+            className="tooltip-trigger"
+            onMouseEnter={() => setShowIndicatorTooltip('apiKey')}
+            onMouseLeave={() => setShowIndicatorTooltip(null)}
+          >
             <Info size={14} />
           </span>
         </label>
         <input
           type="text"
           value={formData.apiKey}
-          onChange={(e) => setFormData({...formData, apiKey: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
           placeholder="Введите API ключ"
           className="form-input"
         />
         {showIndicatorTooltip === 'apiKey' && (
           <div className="tooltip">
-            Создайте API ключ в настройках биржи с правами на спотовую торговлю
+            Создайте API ключ в настройках биржи с правами на торговлю
           </div>
         )}
       </div>
@@ -198,14 +324,18 @@ const CreateBotPage = () => {
       <div className="form-group">
         <label>
           API Secret
-          <span className="tooltip-trigger" onMouseEnter={() => setShowIndicatorTooltip('apiSecret')} onMouseLeave={() => setShowIndicatorTooltip(null)}>
+          <span
+            className="tooltip-trigger"
+            onMouseEnter={() => setShowIndicatorTooltip('apiSecret')}
+            onMouseLeave={() => setShowIndicatorTooltip(null)}
+          >
             <Info size={14} />
           </span>
         </label>
         <input
           type="password"
           value={formData.apiSecret}
-          onChange={(e) => setFormData({...formData, apiSecret: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, apiSecret: e.target.value })}
           placeholder="Введите API Secret"
           className="form-input"
         />
@@ -219,7 +349,8 @@ const CreateBotPage = () => {
       <div className="info-banner">
         <AlertCircle size={18} />
         <div>
-          <strong>Безопасность:</strong> Ваши ключи хранятся в зашифрованном виде и используются только для торговли
+          <strong>На этапе тестирования</strong> бот работает в режиме dry-run и API ключи не используются.
+          Поля можно оставить пустыми.
         </div>
       </div>
     </div>
@@ -238,15 +369,17 @@ const CreateBotPage = () => {
         <input
           type="text"
           value={formData.tradingPair}
-          onChange={(e) => setFormData({...formData, tradingPair: e.target.value.toUpperCase()})}
+          onChange={(e) =>
+            setFormData({ ...formData, tradingPair: e.target.value.toUpperCase() })
+          }
           placeholder="Например: BTC/USDT"
           className="form-input"
         />
         <div className="popular-pairs">
-          {popularPairs.map(pair => (
+          {popularPairs.map((pair) => (
             <button
               key={pair}
-              onClick={() => setFormData({...formData, tradingPair: pair})}
+              onClick={() => setFormData({ ...formData, tradingPair: pair })}
               className={`pair-btn ${formData.tradingPair === pair ? 'active' : ''}`}
             >
               {pair}
@@ -258,7 +391,11 @@ const CreateBotPage = () => {
       <div className="form-group">
         <label>
           Плечо (кредитное плечо)
-          <span className="tooltip-trigger" onMouseEnter={() => setShowIndicatorTooltip('leverage')} onMouseLeave={() => setShowIndicatorTooltip(null)}>
+          <span
+            className="tooltip-trigger"
+            onMouseEnter={() => setShowIndicatorTooltip('leverage')}
+            onMouseLeave={() => setShowIndicatorTooltip(null)}
+          >
             <Info size={14} />
           </span>
         </label>
@@ -268,7 +405,7 @@ const CreateBotPage = () => {
             min="1"
             max="20"
             value={formData.leverage}
-            onChange={(e) => setFormData({...formData, leverage: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, leverage: e.target.value })}
             className="leverage-slider"
           />
           <div className="leverage-value">x{formData.leverage}</div>
@@ -291,7 +428,7 @@ const CreateBotPage = () => {
         <div className="algorithm-selector">
           <button
             className={`algorithm-btn ${formData.algorithm === 'long' ? 'active long' : ''}`}
-            onClick={() => setFormData({...formData, algorithm: 'long'})}
+            onClick={() => setFormData({ ...formData, algorithm: 'long' })}
           >
             <TrendingUp size={20} />
             <div>
@@ -301,7 +438,7 @@ const CreateBotPage = () => {
           </button>
           <button
             className={`algorithm-btn ${formData.algorithm === 'short' ? 'active short' : ''}`}
-            onClick={() => setFormData({...formData, algorithm: 'short'})}
+            onClick={() => setFormData({ ...formData, algorithm: 'short' })}
           >
             <TrendingDown size={20} />
             <div>
@@ -345,7 +482,7 @@ const CreateBotPage = () => {
         })}
         <button
           className={`preset-card ${formData.strategyPreset === 'custom' ? 'active' : ''}`}
-          onClick={() => setFormData({...formData, strategyPreset: 'custom'})}
+          onClick={() => setFormData({ ...formData, strategyPreset: 'custom' })}
         >
           <Settings size={24} style={{ color: '#8b5cf6' }} />
           <strong>Свои настройки</strong>
@@ -361,7 +498,25 @@ const CreateBotPage = () => {
       {formData.strategyPreset === 'custom' && (
         <div className="indicators-config">
           <h3>Настройка индикаторов</h3>
-          
+
+          <div className="form-group">
+            <label>Таймфрейм индикаторов</label>
+            <select
+              value={formData.timeframe}
+              onChange={(e) =>
+                setFormData({ ...formData, timeframe: e.target.value as Timeframe })
+              }
+              className="form-select"
+            >
+              <option value="1m">1 минута</option>
+              <option value="5m">5 минут</option>
+              <option value="15m">15 минут</option>
+              <option value="30m">30 минут</option>
+              <option value="1h">1 час</option>
+              <option value="4h">4 часа</option>
+            </select>
+          </div>
+
           {/* RSI */}
           <div className="indicator-item">
             <div className="indicator-header">
@@ -369,13 +524,15 @@ const CreateBotPage = () => {
                 <input
                   type="checkbox"
                   checked={formData.indicators.rsi.enabled}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    indicators: {
-                      ...formData.indicators,
-                      rsi: { ...formData.indicators.rsi, enabled: e.target.checked }
-                    }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      indicators: {
+                        ...formData.indicators,
+                        rsi: { ...formData.indicators.rsi, enabled: e.target.checked },
+                      },
+                    })
+                  }
                 />
                 <span className="toggle-switch"></span>
                 <div>
@@ -391,13 +548,15 @@ const CreateBotPage = () => {
                   <input
                     type="number"
                     value={formData.indicators.rsi.oversold}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        rsi: { ...formData.indicators.rsi, oversold: e.target.value }
-                      }
-                    })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        indicators: {
+                          ...formData.indicators,
+                          rsi: { ...formData.indicators.rsi, oversold: Number(e.target.value) },
+                        },
+                      })
+                    }
                     className="setting-input"
                   />
                 </div>
@@ -406,13 +565,15 @@ const CreateBotPage = () => {
                   <input
                     type="number"
                     value={formData.indicators.rsi.overbought}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        rsi: { ...formData.indicators.rsi, overbought: e.target.value }
-                      }
-                    })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        indicators: {
+                          ...formData.indicators,
+                          rsi: { ...formData.indicators.rsi, overbought: Number(e.target.value) },
+                        },
+                      })
+                    }
                     className="setting-input"
                   />
                 </div>
@@ -420,72 +581,63 @@ const CreateBotPage = () => {
             )}
           </div>
 
-          {/* MACD */}
+          {/* CCI */}
           <div className="indicator-item">
             <div className="indicator-header">
               <label className="indicator-toggle">
                 <input
                   type="checkbox"
-                  checked={formData.indicators.macd.enabled}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    indicators: {
-                      ...formData.indicators,
-                      macd: { ...formData.indicators.macd, enabled: e.target.checked }
-                    }
-                  })}
+                  checked={formData.indicators.cci.enabled}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      indicators: {
+                        ...formData.indicators,
+                        cci: { ...formData.indicators.cci, enabled: e.target.checked },
+                      },
+                    })
+                  }
                 />
                 <span className="toggle-switch"></span>
                 <div>
-                  <strong>MACD</strong>
-                  <p>{indicatorInfo.macd.description}</p>
+                  <strong>CCI</strong>
+                  <p>{indicatorInfo.cci.description}</p>
                 </div>
               </label>
             </div>
-            {formData.indicators.macd.enabled && (
+            {formData.indicators.cci.enabled && (
               <div className="indicator-settings">
                 <div className="setting-row">
-                  <label>Быстрый период</label>
+                  <label>Перепроданность</label>
                   <input
                     type="number"
-                    value={formData.indicators.macd.fastPeriod}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        macd: { ...formData.indicators.macd, fastPeriod: e.target.value }
-                      }
-                    })}
+                    value={formData.indicators.cci.oversold}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        indicators: {
+                          ...formData.indicators,
+                          cci: { ...formData.indicators.cci, oversold: Number(e.target.value) },
+                        },
+                      })
+                    }
                     className="setting-input"
                   />
                 </div>
                 <div className="setting-row">
-                  <label>Медленный период</label>
+                  <label>Перекупленность</label>
                   <input
                     type="number"
-                    value={formData.indicators.macd.slowPeriod}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        macd: { ...formData.indicators.macd, slowPeriod: e.target.value }
-                      }
-                    })}
-                    className="setting-input"
-                  />
-                </div>
-                <div className="setting-row">
-                  <label>Сигнальный период</label>
-                  <input
-                    type="number"
-                    value={formData.indicators.macd.signalPeriod}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        macd: { ...formData.indicators.macd, signalPeriod: e.target.value }
-                      }
-                    })}
+                    value={formData.indicators.cci.overbought}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        indicators: {
+                          ...formData.indicators,
+                          cci: { ...formData.indicators.cci, overbought: Number(e.target.value) },
+                        },
+                      })
+                    }
                     className="setting-input"
                   />
                 </div>
@@ -493,107 +645,7 @@ const CreateBotPage = () => {
             )}
           </div>
 
-          {/* EMA */}
-          <div className="indicator-item">
-            <div className="indicator-header">
-              <label className="indicator-toggle">
-                <input
-                  type="checkbox"
-                  checked={formData.indicators.ema.enabled}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    indicators: {
-                      ...formData.indicators,
-                      ema: { ...formData.indicators.ema, enabled: e.target.checked }
-                    }
-                  })}
-                />
-                <span className="toggle-switch"></span>
-                <div>
-                  <strong>EMA</strong>
-                  <p>{indicatorInfo.ema.description}</p>
-                </div>
-              </label>
-            </div>
-            {formData.indicators.ema.enabled && (
-              <div className="indicator-settings">
-                <div className="setting-row">
-                  <label>Короткий период</label>
-                  <input
-                    type="number"
-                    value={formData.indicators.ema.shortPeriod}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        ema: { ...formData.indicators.ema, shortPeriod: e.target.value }
-                      }
-                    })}
-                    className="setting-input"
-                  />
-                </div>
-                <div className="setting-row">
-                  <label>Длинный период</label>
-                  <input
-                    type="number"
-                    value={formData.indicators.ema.longPeriod}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        ema: { ...formData.indicators.ema, longPeriod: e.target.value }
-                      }
-                    })}
-                    className="setting-input"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Volume */}
-          <div className="indicator-item">
-            <div className="indicator-header">
-              <label className="indicator-toggle">
-                <input
-                  type="checkbox"
-                  checked={formData.indicators.volume.enabled}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    indicators: {
-                      ...formData.indicators,
-                      volume: { ...formData.indicators.volume, enabled: e.target.checked }
-                    }
-                  })}
-                />
-                <span className="toggle-switch"></span>
-                <div>
-                  <strong>Объём</strong>
-                  <p>{indicatorInfo.volume.description}</p>
-                </div>
-              </label>
-            </div>
-            {formData.indicators.volume.enabled && (
-              <div className="indicator-settings">
-                <div className="setting-row">
-                  <label>Множитель объёма</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.indicators.volume.multiplier}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        volume: { ...formData.indicators.volume, multiplier: e.target.value }
-                      }
-                    })}
-                    className="setting-input"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          {/* MACD / EMA / Volume — пока не поддержаны бэкендом, скрыты до реализации в стратегии */}
         </div>
       )}
     </div>
@@ -603,14 +655,30 @@ const CreateBotPage = () => {
     <div className="step-content">
       <div className="step-header">
         <Target size={32} className="step-icon" />
-        <h2>Выход из сделки</h2>
-        <p>Настройте условия фиксации прибыли и ограничения убытков</p>
+        <h2>Имя и выход из сделки</h2>
+        <p>Дайте боту имя и настройте условия фиксации прибыли и ограничения убытков</p>
+      </div>
+
+      <div className="form-group">
+        <label>Имя бота</label>
+        <input
+          type="text"
+          value={formData.botName}
+          onChange={(e) => setFormData({ ...formData, botName: e.target.value })}
+          placeholder="Например: BTC скальпер"
+          maxLength={100}
+          className="form-input"
+        />
       </div>
 
       <div className="form-group">
         <label>
           Take Profit (%)
-          <span className="tooltip-trigger" onMouseEnter={() => setShowIndicatorTooltip('tp')} onMouseLeave={() => setShowIndicatorTooltip(null)}>
+          <span
+            className="tooltip-trigger"
+            onMouseEnter={() => setShowIndicatorTooltip('tp')}
+            onMouseLeave={() => setShowIndicatorTooltip(null)}
+          >
             <Info size={14} />
           </span>
         </label>
@@ -618,7 +686,7 @@ const CreateBotPage = () => {
           type="number"
           step="0.1"
           value={formData.takeProfit}
-          onChange={(e) => setFormData({...formData, takeProfit: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, takeProfit: e.target.value })}
           placeholder="2.0"
           className="form-input"
         />
@@ -634,10 +702,14 @@ const CreateBotPage = () => {
           <input
             type="checkbox"
             checked={formData.useStopLoss}
-            onChange={(e) => setFormData({...formData, useStopLoss: e.target.checked})}
+            onChange={(e) => setFormData({ ...formData, useStopLoss: e.target.checked })}
           />
           <span>Использовать Stop Loss</span>
-          <span className="tooltip-trigger" onMouseEnter={() => setShowIndicatorTooltip('sl')} onMouseLeave={() => setShowIndicatorTooltip(null)}>
+          <span
+            className="tooltip-trigger"
+            onMouseEnter={() => setShowIndicatorTooltip('sl')}
+            onMouseLeave={() => setShowIndicatorTooltip(null)}
+          >
             <Info size={14} />
           </span>
         </label>
@@ -656,7 +728,7 @@ const CreateBotPage = () => {
               type="number"
               step="0.1"
               value={formData.stopLoss}
-              onChange={(e) => setFormData({...formData, stopLoss: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, stopLoss: e.target.value })}
               placeholder="1.5"
               className="form-input"
             />
@@ -667,10 +739,14 @@ const CreateBotPage = () => {
               <input
                 type="checkbox"
                 checked={formData.trailingStop}
-                onChange={(e) => setFormData({...formData, trailingStop: e.target.checked})}
+                onChange={(e) => setFormData({ ...formData, trailingStop: e.target.checked })}
               />
               <span>Трейлинг стоп</span>
-              <span className="tooltip-trigger" onMouseEnter={() => setShowIndicatorTooltip('trailing')} onMouseLeave={() => setShowIndicatorTooltip(null)}>
+              <span
+                className="tooltip-trigger"
+                onMouseEnter={() => setShowIndicatorTooltip('trailing')}
+                onMouseLeave={() => setShowIndicatorTooltip(null)}
+              >
                 <Info size={14} />
               </span>
             </label>
@@ -685,6 +761,10 @@ const CreateBotPage = () => {
 
       <div className="summary-card">
         <h3>Итоговые настройки</h3>
+        <div className="summary-row">
+          <span>Имя бота:</span>
+          <strong>{formData.botName || 'Не указано'}</strong>
+        </div>
         <div className="summary-row">
           <span>Биржа:</span>
           <strong>{formData.exchange.toUpperCase()}</strong>
@@ -703,7 +783,11 @@ const CreateBotPage = () => {
         </div>
         <div className="summary-row">
           <span>Стратегия:</span>
-          <strong>{formData.strategyPreset === 'custom' ? 'Своя' : strategyPresets[formData.strategyPreset]?.name}</strong>
+          <strong>
+            {formData.strategyPreset === 'custom'
+              ? 'Своя'
+              : strategyPresets[formData.strategyPreset]?.name}
+          </strong>
         </div>
         <div className="summary-row">
           <span>Take Profit:</span>
@@ -734,16 +818,27 @@ const CreateBotPage = () => {
 
       <div className="create-bot-container">
         {renderStepIndicator()}
-        
+
         <div className="form-container">
           {currentStep === 1 && renderStep1()}
           {currentStep === 2 && renderStep2()}
           {currentStep === 3 && renderStep3()}
           {currentStep === 4 && renderStep4()}
 
+          {submitError && currentStep === 4 && (
+            <div className="warning-banner" style={{ marginTop: 16 }}>
+              <AlertCircle size={16} />
+              <span>{submitError}</span>
+            </div>
+          )}
+
           <div className="form-actions">
             {currentStep > 1 && (
-              <button className="btn-secondary" onClick={handleBack}>
+              <button
+                className="btn-secondary"
+                onClick={handleBack}
+                disabled={submitting}
+              >
                 Назад
               </button>
             )}
@@ -753,9 +848,13 @@ const CreateBotPage = () => {
                 <ChevronRight size={20} />
               </button>
             ) : (
-              <button className="btn-primary" onClick={handleSubmit}>
+              <button
+                className="btn-primary"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
                 <Bot size={20} />
-                Создать бота
+                {submitting ? 'Создаём бота...' : 'Создать бота'}
               </button>
             )}
           </div>

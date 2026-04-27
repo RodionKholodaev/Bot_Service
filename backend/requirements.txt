@@ -1,10 +1,12 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
-alembic # нужно это впихнуть в проект
-psycopg2-binary #  может лучше sqlite
+alembic
+psycopg2-binary
 python-dotenv
 bcrypt
-python-jose # не знаю что это
+python-jose
 pydantic[email]
 pydantic-settings
+docker
+httpx
