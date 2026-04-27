@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # ==============================================================================
 
 class StrategyConfig:
-    BASE_TIMEFRAME = "1m"
+    BASE_TIMEFRAME = {{BASE_TIMEFRAME}}
     LEVERAGE = {{LEVERAGE}}
     CAN_SHORT = {{CAN_SHORT}}
 
