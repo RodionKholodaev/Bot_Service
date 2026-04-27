@@ -801,3 +801,60 @@
 .dry-badge  { color: #10b981 !important; }
 .live-badge { color: #ef4444 !important; }
 
+
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  flex: 1;
+  min-width: 90px;
+}
+
+.filter-input {
+  flex: 0 0 80px;
+  width: 80px;
+}
+
+.filter-remove-btn {
+  background: transparent;
+  border: 1px solid #ff4d4f;
+  color: #ff4d4f;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+.filter-remove-btn:hover {
+  background: #ff4d4f22;
+}
+
+.filter-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px dashed #444;
+  border-radius: 8px;
+  color: #aaa;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  margin-top: 4px;
+}
+.filter-add-btn:hover {
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+.filter-add-btn span {
+  font-size: 18px;
+  line-height: 1;
+}

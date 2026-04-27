@@ -22,15 +22,7 @@ const CreateBotPage = () => {
 
     // Шаг 3: Индикаторы
     strategyPreset: 'custom', // conservative | moderate | aggressive | custom
-    timeframe: '5m' as Timeframe, // общий таймфрейм для индикаторов в custom
-    indicators: {
-      rsi: { enabled: false, oversold: 30, overbought: 70 },
-      cci: { enabled: false, oversold: -100, overbought: 100 },
-      // MACD / EMA / Volume — пока не поддержаны бэкендом, оставлены в state на будущее
-      macd: { enabled: false, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
-      ema: { enabled: false, shortPeriod: 9, longPeriod: 21 },
-      volume: { enabled: false, multiplier: 1.5 },
-    },
+    filters: [] as FilterRule[],
 
     // Шаг 4: Имя + выход из сделки
     botName: '',
@@ -49,7 +41,7 @@ const CreateBotPage = () => {
     description: string;
     icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
     color: string;
-    indicators: typeof formData.indicators;
+    filters: FilterRule[];
     takeProfit: string;
     stopLoss: string;
     useStopLoss: boolean;
@@ -59,13 +51,10 @@ const CreateBotPage = () => {
       description: 'Минимальный риск, небольшая прибыль',
       icon: Shield,
       color: '#10b981',
-      indicators: {
-        rsi: { enabled: true, oversold: 25, overbought: 75 },
-        cci: { enabled: true, oversold: -120, overbought: 120 },
-        macd: { enabled: false, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
-        ema: { enabled: false, shortPeriod: 9, longPeriod: 21 },
-        volume: { enabled: false, multiplier: 1.5 },
-      },
+      filters: [
+        { indicator: 'rsi', timeframe: '15m', condition: 'less', value: 25 },
+        { indicator: 'cci', timeframe: '15m', condition: 'less', value: -120 },
+      ],
       takeProfit: '1.5',
       stopLoss: '1',
       useStopLoss: true,
@@ -75,13 +64,10 @@ const CreateBotPage = () => {
       description: 'Баланс риска и прибыли',
       icon: TrendingUp,
       color: '#60a5fa',
-      indicators: {
-        rsi: { enabled: true, oversold: 30, overbought: 70 },
-        cci: { enabled: true, oversold: -100, overbought: 100 },
-        macd: { enabled: false, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
-        ema: { enabled: false, shortPeriod: 9, longPeriod: 21 },
-        volume: { enabled: false, multiplier: 1.5 },
-      },
+      filters: [
+        { indicator: 'rsi', timeframe: '15m', condition: 'less', value: 30 },
+        { indicator: 'cci', timeframe: '15m', condition: 'less', value: -100 },
+      ],
       takeProfit: '2.5',
       stopLoss: '1.5',
       useStopLoss: true,
@@ -91,13 +77,10 @@ const CreateBotPage = () => {
       description: 'Высокий риск, максимальная прибыль',
       icon: Target,
       color: '#f59e0b',
-      indicators: {
-        rsi: { enabled: true, oversold: 35, overbought: 65 },
-        cci: { enabled: true, oversold: -50, overbought: 50 },
-        macd: { enabled: false, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
-        ema: { enabled: false, shortPeriod: 9, longPeriod: 21 },
-        volume: { enabled: false, multiplier: 2.0 },
-      },
+      filters: [
+        { indicator: 'rsi', timeframe: '5m', condition: 'less', value: 35 },
+        { indicator: 'cci', timeframe: '5m', condition: 'less', value: -50 },
+      ],
       takeProfit: '5',
       stopLoss: '2',
       useStopLoss: true,
@@ -127,7 +110,7 @@ const CreateBotPage = () => {
     setFormData({
       ...formData,
       strategyPreset: preset,
-      indicators: presetData.indicators,
+      filters: presetData.filters,
       takeProfit: presetData.takeProfit,
       stopLoss: presetData.stopLoss,
       useStopLoss: presetData.useStopLoss,
@@ -155,38 +138,7 @@ const CreateBotPage = () => {
   // Логика та же, что в backend/strategy_presets.py:
   //   long  → "less" с oversold-уровнем
   //   short → "greater" с overbought-уровнем
-  const buildCustomFilters = (direction: 'long' | 'short'): FilterRule[] => {
-    const tf: Timeframe = formData.timeframe;
-    const filters: FilterRule[] = [];
 
-    if (formData.indicators.rsi.enabled) {
-      filters.push({
-        indicator: 'rsi' as Indicator,
-        timeframe: tf,
-        condition: direction === 'long' ? 'less' : 'greater',
-        value: Number(
-          direction === 'long'
-            ? formData.indicators.rsi.oversold
-            : formData.indicators.rsi.overbought
-        ),
-      });
-    }
-
-    if (formData.indicators.cci.enabled) {
-      filters.push({
-        indicator: 'cci' as Indicator,
-        timeframe: tf,
-        condition: direction === 'long' ? 'less' : 'greater',
-        value: Number(
-          direction === 'long'
-            ? formData.indicators.cci.oversold
-            : formData.indicators.cci.overbought
-        ),
-      });
-    }
-
-    return filters;
-  };
 
   const validateBeforeSubmit = (): string | null => {
     if (!formData.botName.trim()) return 'Укажите имя бота';
@@ -196,9 +148,7 @@ const CreateBotPage = () => {
     if (formData.useStopLoss && (!formData.stopLoss || Number(formData.stopLoss) <= 0))
       return 'Укажите Stop Loss больше 0';
     if (formData.strategyPreset === 'custom') {
-      const anyEnabled =
-        formData.indicators.rsi.enabled || formData.indicators.cci.enabled;
-      if (!anyEnabled) return 'Включите хотя бы один индикатор (RSI или CCI)';
+      if (formData.filters.length === 0) return 'Добавьте хотя бы один индикатор';
     }
     return null;
   };
@@ -228,11 +178,10 @@ const CreateBotPage = () => {
     // Для custom режима подкладываем фильтры. Для пресетов — не нужно,
     // бэкенд раскроет сам по словарю presets.
     if (formData.strategyPreset === 'custom') {
-      const filters = buildCustomFilters(direction);
       if (direction === 'long') {
-        payload.entry_filters_long = filters;
+        payload.entry_filters_long = formData.filters;
       } else {
-        payload.entry_filters_short = filters;
+        payload.entry_filters_short = formData.filters;
       }
     }
 
@@ -497,155 +446,93 @@ const CreateBotPage = () => {
 
       {formData.strategyPreset === 'custom' && (
         <div className="indicators-config">
-          <h3>Настройка индикаторов</h3>
+          <h3>Индикаторы входа</h3>
 
-          <div className="form-group">
-            <label>Таймфрейм индикаторов</label>
-            <select
-              value={formData.timeframe}
-              onChange={(e) =>
-                setFormData({ ...formData, timeframe: e.target.value as Timeframe })
-              }
-              className="form-select"
-            >
-              <option value="1m">1 минута</option>
-              <option value="5m">5 минут</option>
-              <option value="15m">15 минут</option>
-              <option value="30m">30 минут</option>
-              <option value="1h">1 час</option>
-              <option value="4h">4 часа</option>
-            </select>
-          </div>
+          {formData.filters.map((filter, idx) => (
+            <div key={idx} className="filter-row">
+              <select
+                value={filter.indicator}
+                onChange={(e) => {
+                  const updated = [...formData.filters];
+                  updated[idx] = { ...updated[idx], indicator: e.target.value as Indicator };
+                  setFormData({ ...formData, filters: updated });
+                }}
+                className="form-select filter-select"
+              >
+                <option value="rsi">RSI</option>
+                <option value="cci">CCI</option>
+              </select>
 
-          {/* RSI */}
-          <div className="indicator-item">
-            <div className="indicator-header">
-              <label className="indicator-toggle">
-                <input
-                  type="checkbox"
-                  checked={formData.indicators.rsi.enabled}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        rsi: { ...formData.indicators.rsi, enabled: e.target.checked },
-                      },
-                    })
-                  }
-                />
-                <span className="toggle-switch"></span>
-                <div>
-                  <strong>RSI</strong>
-                  <p>{indicatorInfo.rsi.description}</p>
-                </div>
-              </label>
+              <select
+                value={filter.timeframe}
+                onChange={(e) => {
+                  const updated = [...formData.filters];
+                  updated[idx] = { ...updated[idx], timeframe: e.target.value as Timeframe };
+                  setFormData({ ...formData, filters: updated });
+                }}
+                className="form-select filter-select"
+              >
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m">15m</option>
+                <option value="30m">30m</option>
+                <option value="1h">1h</option>
+                <option value="4h">4h</option>
+              </select>
+
+              <select
+                value={filter.condition}
+                onChange={(e) => {
+                  const updated = [...formData.filters];
+                  updated[idx] = { ...updated[idx], condition: e.target.value as FilterRule['condition'] };
+                  setFormData({ ...formData, filters: updated });
+                }}
+                className="form-select filter-select"
+              >
+                <option value="less">{'<'} меньше</option>
+                <option value="greater">{'>'} больше</option>
+              </select>
+
+              <input
+                type="number"
+                value={filter.value}
+                onChange={(e) => {
+                  const updated = [...formData.filters];
+                  updated[idx] = { ...updated[idx], value: Number(e.target.value) };
+                  setFormData({ ...formData, filters: updated });
+                }}
+                className="form-input filter-input"
+                placeholder="30"
+              />
+
+              <button
+                className="filter-remove-btn"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    filters: formData.filters.filter((_, i) => i !== idx),
+                  })
+                }
+              >
+                ✕
+              </button>
             </div>
-            {formData.indicators.rsi.enabled && (
-              <div className="indicator-settings">
-                <div className="setting-row">
-                  <label>Перепроданность</label>
-                  <input
-                    type="number"
-                    value={formData.indicators.rsi.oversold}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        indicators: {
-                          ...formData.indicators,
-                          rsi: { ...formData.indicators.rsi, oversold: Number(e.target.value) },
-                        },
-                      })
-                    }
-                    className="setting-input"
-                  />
-                </div>
-                <div className="setting-row">
-                  <label>Перекупленность</label>
-                  <input
-                    type="number"
-                    value={formData.indicators.rsi.overbought}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        indicators: {
-                          ...formData.indicators,
-                          rsi: { ...formData.indicators.rsi, overbought: Number(e.target.value) },
-                        },
-                      })
-                    }
-                    className="setting-input"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          ))}
 
-          {/* CCI */}
-          <div className="indicator-item">
-            <div className="indicator-header">
-              <label className="indicator-toggle">
-                <input
-                  type="checkbox"
-                  checked={formData.indicators.cci.enabled}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      indicators: {
-                        ...formData.indicators,
-                        cci: { ...formData.indicators.cci, enabled: e.target.checked },
-                      },
-                    })
-                  }
-                />
-                <span className="toggle-switch"></span>
-                <div>
-                  <strong>CCI</strong>
-                  <p>{indicatorInfo.cci.description}</p>
-                </div>
-              </label>
-            </div>
-            {formData.indicators.cci.enabled && (
-              <div className="indicator-settings">
-                <div className="setting-row">
-                  <label>Перепроданность</label>
-                  <input
-                    type="number"
-                    value={formData.indicators.cci.oversold}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        indicators: {
-                          ...formData.indicators,
-                          cci: { ...formData.indicators.cci, oversold: Number(e.target.value) },
-                        },
-                      })
-                    }
-                    className="setting-input"
-                  />
-                </div>
-                <div className="setting-row">
-                  <label>Перекупленность</label>
-                  <input
-                    type="number"
-                    value={formData.indicators.cci.overbought}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        indicators: {
-                          ...formData.indicators,
-                          cci: { ...formData.indicators.cci, overbought: Number(e.target.value) },
-                        },
-                      })
-                    }
-                    className="setting-input"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* MACD / EMA / Volume — пока не поддержаны бэкендом, скрыты до реализации в стратегии */}
+          <button
+            className="filter-add-btn"
+            onClick={() =>
+              setFormData({
+                ...formData,
+                filters: [
+                  ...formData.filters,
+                  { indicator: 'rsi' as Indicator, timeframe: '5m' as Timeframe, condition: 'less', value: 30 },
+                ],
+              })
+            }
+          >
+            <span>＋</span> Добавить индикатор
+          </button>
         </div>
       )}
     </div>
