@@ -13,7 +13,10 @@ def generate_config(
     ws_token: str,
     api_username: str,
     api_password: str,
-    dry_run: bool = True,
+    api_key_id: str | None,
+    stake_amount: float,
+    tradable_balance_ratio: float,
+    dry_run: bool = True
 ) -> dict:
     """
     Возвращает готовый dict с конфигом для одного бота.
@@ -25,6 +28,8 @@ def generate_config(
     with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
         config = json.load(f)
 
+    config["stake_amount"] = stake_amount
+    config["tradable_balance_ratio"] = tradable_balance_ratio
     config["exchange"]["pair_whitelist"] = [pair]
     config["dry_run"] = dry_run
 

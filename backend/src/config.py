@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-
+    FERNET_KEY: str
+    
     # ── Запуск ботов ──────────────────────────────────────
     # Папка, где будут лежать данные каждого бота (config.json, стратегия, логи, sqlite).
     # Дефолт — ./bots_data/ в корне проекта (рядом с cryptobot.db).

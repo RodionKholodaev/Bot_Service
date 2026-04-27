@@ -37,6 +37,10 @@ class BotCreate(BaseModel):
 
     dry_run: bool = True
 
+    api_key_id: str | None
+    stake_amount: float
+    tradable_balance_ratio: float
+
 
 # ── Что отдаём фронту ─────────────────────────────────────
 class BotPublic(BaseModel):

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import settings
 from src.database import Base, engine
-from src.routers import auth, bots
+from src.routers import auth, bots, api_keys
 from src.services import docker_manager
 
 logging.basicConfig(
@@ -46,6 +46,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(bots.router)
+app.include_router(api_keys.router)
 
 
 @app.get("/health")

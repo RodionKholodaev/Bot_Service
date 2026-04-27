@@ -73,9 +73,11 @@ const TradingBotDashboard = () => {
           <button className="btn-icon" onClick={() => setShowTopUpModal(true)}>
             <Plus size={20} />
           </button>
-          <button className="btn-icon">
-            <Settings size={20} />
-          </button>
+          <Link href="/settings">
+            <button className="btn-icon">
+              <Settings size={20} />
+            </button>
+          </Link>
         </div>
       </header>
 
