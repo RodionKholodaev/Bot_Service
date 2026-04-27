@@ -75,3 +75,39 @@
 2026-04-27 01:42:54,384 - freqtrade.worker - INFO - Bot heartbeat. PID=1, version='2026.3', state='RUNNING'
 2026-04-27 01:43:59,384 - freqtrade.worker - INFO - Bot heartbeat. PID=1, version='2026.3', state='RUNNING'
 2026-04-27 01:44:59,510 - freqtrade.worker - INFO - Bot heartbeat. PID=1, version='2026.3', state='RUNNING'
+2026-04-27 01:46:01,005 - freqtrade.worker - INFO - Bot heartbeat. PID=1, version='2026.3', state='RUNNING'
+2026-04-27 01:46:56,367 - freqtrade.exchange.exchange_ws - ERROR - Exception in continuously_async_watch_ohlcv for XRP/USDT:USDT, 5m
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/exchange_ws.py", line 176, in _continuously_async_watch_ohlcv
+    data = await self._ccxt_object.watch_ohlcv(pair, timeframe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/pro/bybit.py", line 657, in watch_ohlcv
+    result = await self.watch_ohlcv_for_symbols([[symbol, timeframe]], since, limit, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/pro/bybit.py", line 689, in watch_ohlcv_for_symbols
+    symbol, timeframe, stored = await self.watch_topics(url, messageHashes, rawHashes, params)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/pro/bybit.py", line 2156, in watch_topics
+    return await self.watch_multiple(url, messageHashes, message, messageHashes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ccxt.base.errors.NetworkError: Connection closed by remote server, closing code 1006
+2026-04-27 01:46:56,406 - freqtrade.exchange.exchange_ws - ERROR - Exception in continuously_async_watch_ohlcv for XRP/USDT:USDT, 1m
+Traceback (most recent call last):
+  File "/freqtrade/freqtrade/exchange/exchange_ws.py", line 176, in _continuously_async_watch_ohlcv
+    data = await self._ccxt_object.watch_ohlcv(pair, timeframe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/pro/bybit.py", line 657, in watch_ohlcv
+    result = await self.watch_ohlcv_for_symbols([[symbol, timeframe]], since, limit, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/pro/bybit.py", line 689, in watch_ohlcv_for_symbols
+    symbol, timeframe, stored = await self.watch_topics(url, messageHashes, rawHashes, params)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ftuser/.local/lib/python3.13/site-packages/ccxt/pro/bybit.py", line 2156, in watch_topics
+    return await self.watch_multiple(url, messageHashes, message, messageHashes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ccxt.base.errors.NetworkError: Connection closed by remote server, closing code 1006
+2026-04-27 01:46:56,410 - freqtrade.exchange.exchange_ws - INFO - XRP/USDT:USDT, 5m, futures - Task finished - done
+2026-04-27 01:46:56,411 - freqtrade.exchange.exchange_ws - INFO - XRP/USDT:USDT, 1m, futures - Task finished - done
+2026-04-27 01:47:01,031 - freqtrade.worker - INFO - Bot heartbeat. PID=1, version='2026.3', state='RUNNING'
+2026-04-27 01:47:01,047 - freqtrade.exchange.exchange - INFO - Couldn't reuse watch for XRP/USDT:USDT, 1m, falling back to REST api. False, 1777254420000, 0, 2026-04-27T01:47:00, 1970-01-01T00:00:00 
+2026-04-27 01:48:06,038 - freqtrade.worker - INFO - Bot heartbeat. PID=1, version='2026.3', state='RUNNING'
