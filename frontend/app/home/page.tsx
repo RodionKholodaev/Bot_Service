@@ -35,7 +35,22 @@ const getAuthHeader = (): Record<string, string> => {
 };
 
 const TradingBotDashboard = () => {
-  const [serviceBalance, setServiceBalance] = useState(850); // ₽
+  const [serviceBalance, setServiceBalance] = useState<number>(0);
+
+  const fetchBalance = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/users/me/balance`, {
+        headers: { ...getAuthHeader() },
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: { service_balance: number } = await res.json();
+      setServiceBalance(data.service_balance);
+    } catch (e) {
+      console.error('Не удалось загрузить баланс:', e);
+    }
+  }, []);
+
   const [showTopUpModal, setShowTopUpModal] = useState(false);
 
   // ── Боты с бэка ─────────────────────────────────────────
@@ -66,6 +81,7 @@ const TradingBotDashboard = () => {
 
   useEffect(() => {
     fetchBots();
+    fetchBalance();
     // авто-обновление раз в 15 секунд, чтобы видеть смену статусов
     const interval = setInterval(fetchBots, 15000);
     return () => clearInterval(interval);
@@ -165,7 +181,7 @@ const TradingBotDashboard = () => {
           </div>
           <nav className="main-nav">
             <a href="#" className="nav-item active">Главная</a>
-            <a href="#" className="nav-item">Статистика</a>
+            <Link href="/stats" className="nav-item"><span className="nav-item">Статистика</span></Link>
             <a href="#" className="nav-item">Обучение</a>
           </nav>
         </div>
@@ -394,14 +410,16 @@ const TradingBotDashboard = () => {
             </div>
             <ChevronRight size={20} />
           </button>
-          <button className="action-card">
-            <BarChart3 size={24} />
-            <div>
-              <h3>Детальная статистика</h3>
-              <p>Анализ и графики</p>
-            </div>
-            <ChevronRight size={20} />
-          </button>
+          <Link href="/stats" className="nav-item">
+            <button className="action-card">
+              <BarChart3 size={24} />
+              <div>
+                <h3>Детальная статистика</h3>
+                <p>Анализ и графики</p>
+              </div>
+              <ChevronRight size={20} />
+            </button>
+          </Link>
           <button className="action-card">
             <BookOpen size={24} />
             <div>
