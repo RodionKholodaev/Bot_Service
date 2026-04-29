@@ -138,30 +138,31 @@ def freqtrade_status(
     return data
 
 
-@router.get("/{bot_id}/freqtrade/profit")
-def freqtrade_profit(
-    bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    bot = _get_user_bot(db, bot_id, current_user)
-    data = freqtrade_client.get_profit(bot)
-    if data is None:
-        raise HTTPException(status_code=503, detail="Бот недоступен")
-    return data
+# Эти не нужны больше:
+# @router.get("/{bot_id}/freqtrade/profit")
+# def freqtrade_profit(
+#     bot_id: str,
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_user),
+# ):
+#     bot = _get_user_bot(db, bot_id, current_user)
+#     data = freqtrade_client.get_profit(bot)
+#     if data is None:
+#         raise HTTPException(status_code=503, detail="Бот недоступен")
+#     return data
 
 
-@router.get("/{bot_id}/freqtrade/trades")
-def freqtrade_trades(
-    bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    bot = _get_user_bot(db, bot_id, current_user)
-    data = freqtrade_client.get_trades(bot)
-    if data is None:
-        raise HTTPException(status_code=503, detail="Бот недоступен")
-    return data
+# @router.get("/{bot_id}/freqtrade/trades")
+# def freqtrade_trades(
+#     bot_id: str,
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_user),
+# ):
+#     bot = _get_user_bot(db, bot_id, current_user)
+#     data = freqtrade_client.get_trades(bot)
+#     if data is None:
+#         raise HTTPException(status_code=503, detail="Бот недоступен")
+#     return data
 
 
 # ── Логи ──────────────────────────────────────────────────
