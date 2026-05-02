@@ -16,6 +16,7 @@ from src.schemas.stats import (
     TradeOut, PnlPoint, BotStats, PortfolioStats, HomeStats
 )
 
+from datetime import timedelta
 
 # ──────────────────────────────────────────────
 # Вспомогательные функции
@@ -184,9 +185,9 @@ def get_portfolio_stats(
     )
 
 
-def get_home_stats(db: Session, user: User) -> HomeStats:
-    """Минимум данных для главной страницы."""
 
+
+def get_home_stats(db: Session, user: User) -> HomeStats:
     bots: list[Bot] = (
         db.query(Bot)
         .filter(Bot.user_id == user.id, Bot.is_active == True)
@@ -196,19 +197,37 @@ def get_home_stats(db: Session, user: User) -> HomeStats:
     total_profit = sum(b.total_profit for b in bots)
     bots_running = sum(1 for b in bots if b.status == "running")
 
-    # Последние 10 сделок по всем ботам
-    recent_trades: list[Trade] = (
+    # 👇 Прибыль за последние 7 дней
+    since = datetime.now(timezone.utc) - timedelta(days=7)
+    weekly_trades = (
         db.query(Trade)
-        .filter(Trade.user_id == user.id, Trade.close_time.isnot(None))
-        .order_by(Trade.close_time.desc())
-        .limit(10)
+        .filter(
+            Trade.user_id == user.id,
+            Trade.close_time.isnot(None),
+            Trade.close_time >= since,
+        )
         .all()
     )
+    weekly_profit = round(sum(t.profit_usdt or 0 for t in weekly_trades), 4)
+
+    # 👇 Сумма в управлении = stake_amount всех активных ботов
+    funds_under_management = round(
+        sum(b.stake_amount for b in bots if b.status in ("running", "starting")), 2
+    )
+
+    # recent_trades: list[Trade] = (
+    #     db.query(Trade)
+    #     .filter(Trade.user_id == user.id, Trade.close_time.isnot(None))
+    #     .order_by(Trade.close_time.desc())
+    #     .limit(10)
+    #     .all()
+    # )
 
     return HomeStats(
         service_balance=round(user.service_balance, 2),
         total_profit=round(total_profit, 4),
         bots_running=bots_running,
         bots_total=len(bots),
-        recent_trades=_trades_to_out(recent_trades),
+        weekly_profit=weekly_profit,        
+        funds_under_management=funds_under_management,  
     )

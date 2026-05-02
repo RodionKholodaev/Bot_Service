@@ -66,4 +66,5 @@ class HomeStats(BaseModel):
     total_profit: float
     bots_running: int
     bots_total: int
-    recent_trades: list[TradeOut]
+    weekly_profit: float        
+    funds_under_management: float  

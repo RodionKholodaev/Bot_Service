@@ -25,6 +25,16 @@ interface BotPublic {
   total_profit?: number;
 }
 
+interface HomeStats {
+  service_balance: number;
+  total_profit: number;
+  bots_running: number;
+  bots_total: number;
+  weekly_profit: number;
+  funds_under_management: number;
+  recent_trades: unknown[];
+}
+
 // Запросы идут через Next.js-прокси на /api/...
 const API_BASE = '/api';
 
@@ -51,6 +61,20 @@ const TradingBotDashboard = () => {
     }
   }, []);
 
+  const fetchHomeStats = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/stats/home`, {
+        headers: { ...getAuthHeader() },
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: HomeStats = await res.json();
+      setHomeStats(data);
+    } catch (e) {
+      console.error('Не удалось загрузить статистику:', e);
+    }
+  }, []);
+
   const [showTopUpModal, setShowTopUpModal] = useState(false);
 
   // ── Боты с бэка ─────────────────────────────────────────
@@ -60,6 +84,8 @@ const TradingBotDashboard = () => {
   // id ботов, по которым сейчас идёт start/stop/delete — чтобы блокировать кнопки
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // статистика
+  const [homeStats, setHomeStats] = useState<HomeStats | null>(null);
 
   const fetchBots = useCallback(async () => {
     try {
@@ -82,6 +108,7 @@ const TradingBotDashboard = () => {
   useEffect(() => {
     fetchBots();
     fetchBalance();
+    fetchHomeStats();
     // авто-обновление раз в 15 секунд, чтобы видеть смену статусов
     const interval = setInterval(fetchBots, 15000);
     return () => clearInterval(interval);
@@ -135,10 +162,9 @@ const TradingBotDashboard = () => {
 
   // ── Производные метрики для верхних карточек ───────────
   const stats = {
-    activeBots: bots.filter(b => b.status === 'running' || b.status === 'starting').length,
-    weeklyProfit: 247.50, // TODO: подтянуть отдельной ручкой когда будет
-    fundsUnderManagement: 5420.00,
-    exchangeBalance: 6150.30,
+    activeBots: homeStats?.bots_running ?? bots.filter(b => b.status === 'running' || b.status === 'starting').length,
+    weeklyProfit: homeStats?.weekly_profit ?? 0,
+    fundsUnderManagement: homeStats?.funds_under_management ?? 0,
   };
 
   const getBalanceStatus = (balance) => {
