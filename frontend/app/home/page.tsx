@@ -410,7 +410,7 @@ const TradingBotDashboard = () => {
             </div>
             <ChevronRight size={20} />
           </button>
-          <Link href="/stats" className="nav-item">
+          <Link href="/stats" style={{ display: 'contents' }}>
             <button className="action-card">
               <BarChart3 size={24} />
               <div>
@@ -597,6 +597,8 @@ const TradingBotDashboard = () => {
           font-size: 14px;
           font-weight: 500;
           transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
         }
 
         .nav-item:hover {
