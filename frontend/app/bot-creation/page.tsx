@@ -226,7 +226,7 @@ const CreateBotPage = () => {
       stop_loss_enabled: formData.useStopLoss,
       stop_loss_percent: formData.useStopLoss ? Number(formData.stopLoss) : null,
       dry_run: formData.dryRun,
-      api_key_id: formData.selectedApiKeyId,
+      api_key_id: formData.selectedApiKeyId ? Number(formData.selectedApiKeyId) : null,
       stake_amount: Number(formData.stakeAmount),
       tradable_balance_ratio: Number(formData.balanceRatio) / 100,
     };
@@ -238,6 +238,7 @@ const CreateBotPage = () => {
         payload.entry_filters_short = formData.filters;
       }
     }
+    console.log('Настройки бота:', JSON.stringify(payload, null, 2));
 
     setSubmitting(true);
     try {

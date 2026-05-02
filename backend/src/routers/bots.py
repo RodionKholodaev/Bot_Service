@@ -35,7 +35,8 @@ def create_bot(
     Создать бота и сразу его запустить.
     На UI после успешного ответа делаем редирект на /home.
     """
-    if body.strategy_preset == "custom":
+    # проверкае есть ли фильтры для входа для указанного направления
+    if body.strategy_preset == "custom": 
         if body.direction in ("long", "both") and not body.entry_filters_long:
             raise HTTPException(
                 status_code=400,

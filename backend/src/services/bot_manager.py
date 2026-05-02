@@ -66,9 +66,11 @@ def create_bot_record(db: Session, user_id: int, body: BotCreate) -> Bot:
     Контейнер ещё не запускает.
     """
     bot_id = str(uuid.uuid4())
+    # делаем имя контейнера
     container_name = f"bot_{bot_id.replace('-', '')[:24]}"
+    # получаем номер порта который пока не используется
     api_port = _allocate_port(db)
-
+    # переводит фильтры в нужный формат
     long_filters, short_filters = resolve_filters(
         preset=body.strategy_preset,
         direction=body.direction,
@@ -77,13 +79,14 @@ def create_bot_record(db: Session, user_id: int, body: BotCreate) -> Bot:
         custom_short=[f.model_dump() for f in body.entry_filters_short]
         if body.entry_filters_short else None,
     )
-
+    # преобразуем стопы в нужный формат
     take_profit = _build_take_profit(body.take_profit_percent)
     stop_loss = _build_stoploss(body.stop_loss_enabled, body.stop_loss_percent)
-
+    
     api_username = "freqtrader"
+    # пароль для api
     api_password = secrets.token_urlsafe(16)
-
+    # сохранение всего в бд
     bot = Bot(
         id=bot_id,
         user_id=user_id,
@@ -112,7 +115,7 @@ def create_bot_record(db: Session, user_id: int, body: BotCreate) -> Bot:
     db.add(bot)
     db.commit()
     db.refresh(bot)
-
+    # создаем файлы в bots_data
     _materialize_files(db,bot, user_id)
 
     return bot
@@ -120,12 +123,13 @@ def create_bot_record(db: Session, user_id: int, body: BotCreate) -> Bot:
 
 def _materialize_files(db: Session, bot: Bot, user_id: int) -> None:
     """Создаёт папку бота, кладёт config.json и файл стратегии."""
+    # создаем папки и файлы
     bot_dir = _bot_dir(bot.id)
     bot_dir.mkdir(parents=True, exist_ok=True)
     (bot_dir / "user_data" / "strategies").mkdir(parents=True, exist_ok=True)
     (bot_dir / "user_data" / "logs").mkdir(parents=True, exist_ok=True)
     (bot_dir / "user_data" / "data").mkdir(parents=True, exist_ok=True)
-
+    # создаем конфиг
     cfg = generate_config(
         pair=bot.pair,
         api_port_inside_container=docker_manager.INTERNAL_API_PORT,
@@ -140,8 +144,10 @@ def _materialize_files(db: Session, bot: Bot, user_id: int) -> None:
         db = db,
         user_id = user_id
     )
+    # сохраняем конфиг
     write_config(cfg, bot_dir / "config.json")
 
+    # создаем файл стратегии
     can_short = bot.direction in ("short", "both")
     strategy_code = generate_strategy_file(
         leverage=bot.leverage,
@@ -152,6 +158,7 @@ def _materialize_files(db: Session, bot: Bot, user_id: int) -> None:
         stoploss=bot.stop_loss,
         trailing_stop=bot.trailing_stop,
     )
+    # сохраняем файл стратегии
     write_strategy_file(
         strategy_code,
         bot_dir / "user_data" / "strategies" / "MultiFilterStrategy.py",
@@ -162,21 +169,26 @@ def _materialize_files(db: Session, bot: Bot, user_id: int) -> None:
 
 def start_bot(db: Session, bot: Bot) -> Bot:
     """Запускает контейнер для уже созданного бота."""
+    # получаем папку с настройками бота
     bot_dir = _bot_dir(bot.id)
     if not (bot_dir / "config.json").exists():
+        # создаем ее если ее нет
         _materialize_files(db,bot, bot.user_id)
-
+    # меняем статус на starting
     bot.status = "starting"
     bot.error_message = None
     db.commit()
 
     try:
+        # проверяем что образ freqtrade есть на сервере
         docker_manager.ensure_image()
+        # запускаем контейнеро бота
         container = docker_manager.run_bot_container(
             container_name=bot.container_name,
             bot_data_dir=bot_dir,
             api_port_external=bot.api_port,
         )
+        # меняем данные о статусе и контейнере в бд
         bot.container_id = container.id
         bot.status = "running"
     except Exception as e:
