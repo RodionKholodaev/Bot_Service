@@ -255,7 +255,7 @@ const TradingBotDashboard = () => {
             </div>
           </div>
 
-          <div className="stat-card">
+          {/* <div className="stat-card">
             <div className="stat-icon">
               <Wallet size={24} />
             </div>
@@ -263,7 +263,7 @@ const TradingBotDashboard = () => {
               <div className="stat-label">Баланс на бирже</div>
               <div className="stat-value">${stats.exchangeBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
             </div>
-          </div>
+          </div> */}
         </section>
 
         {/* Active Bots */}
