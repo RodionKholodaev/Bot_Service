@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import settings
 from src.database import Base, engine
-from src.routers import auth, bots, api_keys, user, stats, support
+from src.routers import auth, bots, api_keys, user, stats#, support
 from src.services import docker_manager
 
 from src.services.polling_worker import run_polling_worker
@@ -58,7 +58,7 @@ app.include_router(bots.router)
 app.include_router(api_keys.router)
 app.include_router(user.router)
 app.include_router(stats.router)
-app.include_router(support.router)
+# app.include_router(support.router)
 
 @app.get("/health")
 def health():

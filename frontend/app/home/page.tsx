@@ -1030,7 +1030,9 @@ const TradingBotDashboard = () => {
         }
 
         .empty-state {
-          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;        /* центрирует всё по горизонтали */
           padding: 80px 40px;
           background: rgba(26, 31, 53, 0.6);
           border: 2px dashed rgba(255, 255, 255, 0.1);
