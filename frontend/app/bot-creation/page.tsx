@@ -193,8 +193,8 @@ const CreateBotPage = () => {
     const presetData = strategyPresets[preset];
     setFormData({
       ...formData,
-      strategyPreset: preset,
-      filters: presetData.filters,
+      strategyPreset: 'custom',        
+      filters: presetData.filters,     
       takeProfit: presetData.takeProfit,
       stopLoss: presetData.stopLoss,
       useStopLoss: presetData.useStopLoss,
@@ -631,120 +631,108 @@ const CreateBotPage = () => {
               <Icon size={24} style={{ color: preset.color }} />
               <strong>{preset.name}</strong>
               <span>{preset.description}</span>
-              {formData.strategyPreset === key && (
-                <div className="preset-check">
-                  <Check size={16} />
-                </div>
-              )}
             </button>
           );
         })}
         <button
-          className={`preset-card ${formData.strategyPreset === 'custom' ? 'active' : ''}`}
+          className="preset-card"
           onClick={() => setFormData({ ...formData, strategyPreset: 'custom' })}
         >
           <Settings size={24} style={{ color: '#8b5cf6' }} />
           <strong>Свои настройки</strong>
           <span>Настроить вручную</span>
-          {formData.strategyPreset === 'custom' && (
-            <div className="preset-check">
-              <Check size={16} />
-            </div>
-          )}
         </button>
       </div>
 
-      {formData.strategyPreset === 'custom' && (
-        <div className="indicators-config">
-          <h3>Индикаторы входа</h3>
+      <div className="indicators-config">
+        <h3>Индикаторы входа</h3>
 
-          {formData.filters.map((filter, idx) => (
-            <div key={idx} className="filter-row">
-              <CustomSelect
-                value={filter.indicator}
-                onChange={(val) => {
-                  const updated = [...formData.filters];
-                  updated[idx] = { ...updated[idx], indicator: val as Indicator };
-                  setFormData({ ...formData, filters: updated });
-                }}
-                options={[
-                  { value: 'rsi', label: 'RSI' },
-                  { value: 'cci', label: 'CCI' },
-                ]}
-              />
+        {formData.filters.map((filter, idx) => (
+          <div key={idx} className="filter-row">
+            <CustomSelect
+              value={filter.indicator}
+              onChange={(val) => {
+                const updated = [...formData.filters];
+                updated[idx] = { ...updated[idx], indicator: val as Indicator };
+                setFormData({ ...formData, filters: updated });
+              }}
+              options={[
+                { value: 'rsi', label: 'RSI' },
+                { value: 'cci', label: 'CCI' },
+              ]}
+            />
 
-              <CustomSelect
-                value={filter.timeframe}
-                onChange={(val) => {
-                  const updated = [...formData.filters];
-                  updated[idx] = { ...updated[idx], timeframe: val as Timeframe };
-                  setFormData({ ...formData, filters: updated });
-                }}
-                options={[
-                  { value: '1m', label: '1m' },
-                  { value: '5m', label: '5m' },
-                  { value: '15m', label: '15m' },
-                  { value: '30m', label: '30m' },
-                  { value: '1h', label: '1h' },
-                  { value: '4h', label: '4h' },
-                ]}
-              />
+            <CustomSelect
+              value={filter.timeframe}
+              onChange={(val) => {
+                const updated = [...formData.filters];
+                updated[idx] = { ...updated[idx], timeframe: val as Timeframe };
+                setFormData({ ...formData, filters: updated });
+              }}
+              options={[
+                { value: '1m', label: '1m' },
+                { value: '5m', label: '5m' },
+                { value: '15m', label: '15m' },
+                { value: '30m', label: '30m' },
+                { value: '1h', label: '1h' },
+                { value: '4h', label: '4h' },
+              ]}
+            />
 
-              <CustomSelect
-                value={filter.condition}
-                onChange={(val) => {
-                  const updated = [...formData.filters];
-                  updated[idx] = { ...updated[idx], condition: val as FilterRule['condition'] };
-                  setFormData({ ...formData, filters: updated });
-                }}
-                options={[
-                  { value: 'less', label: '< меньше' },
-                  { value: 'greater', label: '> больше' },
-                ]}
-              />
+            <CustomSelect
+              value={filter.condition}
+              onChange={(val) => {
+                const updated = [...formData.filters];
+                updated[idx] = { ...updated[idx], condition: val as FilterRule['condition'] };
+                setFormData({ ...formData, filters: updated });
+              }}
+              options={[
+                { value: 'less', label: '< меньше' },
+                { value: 'greater', label: '> больше' },
+              ]}
+            />
 
-              <input
-                type="number"
-                value={filter.value}
-                onChange={(e) => {
-                  const updated = [...formData.filters];
-                  updated[idx] = { ...updated[idx], value: Number(e.target.value) };
-                  setFormData({ ...formData, filters: updated });
-                }}
-                className="form-input filter-input"
-                placeholder="30"
-              />
+            <input
+              type="number"
+              value={filter.value}
+              onChange={(e) => {
+                const updated = [...formData.filters];
+                updated[idx] = { ...updated[idx], value: Number(e.target.value) };
+                setFormData({ ...formData, filters: updated });
+              }}
+              className="form-input filter-input"
+              placeholder="30"
+            />
 
-              <button
-                className="filter-remove-btn"
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    filters: formData.filters.filter((_, i) => i !== idx),
-                  })
-                }
-              >
-                ✕
-              </button>
-            </div>
-          ))}
+            <button
+              className="filter-remove-btn"
+              onClick={() =>
+                setFormData({
+                  ...formData,
+                  filters: formData.filters.filter((_, i) => i !== idx),
+                })
+              }
+            >
+              ✕
+            </button>
+          </div>
+        ))}
 
-          <button
-            className="filter-add-btn"
-            onClick={() =>
-              setFormData({
-                ...formData,
-                filters: [
-                  ...formData.filters,
-                  { indicator: 'rsi' as Indicator, timeframe: '5m' as Timeframe, condition: 'less', value: 30 },
-                ],
-              })
-            }
-          >
-            <span>＋</span> Добавить индикатор
-          </button>
-        </div>
-      )}
+        <button
+          className="filter-add-btn"
+          onClick={() =>
+            setFormData({
+              ...formData,
+              filters: [
+                ...formData.filters,
+                { indicator: 'rsi' as Indicator, timeframe: '5m' as Timeframe, condition: 'less', value: 30 },
+              ],
+            })
+          }
+        >
+          <span>＋</span> Добавить индикатор
+        </button>
+      </div>
     </div>
   );
 
