@@ -13,6 +13,51 @@ interface ApiKey {
   exchange: string;
 }
 
+// кастомный select для выбора индикаторов (чтобы нормально выглядело))
+const CustomSelect = ({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+}) => {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const label = options.find(o => o.value === value)?.label ?? value;
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="custom-select filter-select" onClick={() => setOpen(o => !o)}>
+      <span>{label}</span>
+      <ChevronRight size={14} style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: '0.2s' }} />
+      {open && (
+        <div className="custom-select-dropdown">
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              className={`custom-select-option ${opt.value === value ? 'active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onChange(opt.value); setOpen(false); }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CreateBotPage = () => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
@@ -615,48 +660,48 @@ const CreateBotPage = () => {
 
           {formData.filters.map((filter, idx) => (
             <div key={idx} className="filter-row">
-              <select
+              <CustomSelect
                 value={filter.indicator}
-                onChange={(e) => {
+                onChange={(val) => {
                   const updated = [...formData.filters];
-                  updated[idx] = { ...updated[idx], indicator: e.target.value as Indicator };
+                  updated[idx] = { ...updated[idx], indicator: val as Indicator };
                   setFormData({ ...formData, filters: updated });
                 }}
-                className="form-select filter-select"
-              >
-                <option value="rsi">RSI</option>
-                <option value="cci">CCI</option>
-              </select>
+                options={[
+                  { value: 'rsi', label: 'RSI' },
+                  { value: 'cci', label: 'CCI' },
+                ]}
+              />
 
-              <select
+              <CustomSelect
                 value={filter.timeframe}
-                onChange={(e) => {
+                onChange={(val) => {
                   const updated = [...formData.filters];
-                  updated[idx] = { ...updated[idx], timeframe: e.target.value as Timeframe };
+                  updated[idx] = { ...updated[idx], timeframe: val as Timeframe };
                   setFormData({ ...formData, filters: updated });
                 }}
-                className="form-select filter-select"
-              >
-                <option value="1m">1m</option>
-                <option value="5m">5m</option>
-                <option value="15m">15m</option>
-                <option value="30m">30m</option>
-                <option value="1h">1h</option>
-                <option value="4h">4h</option>
-              </select>
+                options={[
+                  { value: '1m', label: '1m' },
+                  { value: '5m', label: '5m' },
+                  { value: '15m', label: '15m' },
+                  { value: '30m', label: '30m' },
+                  { value: '1h', label: '1h' },
+                  { value: '4h', label: '4h' },
+                ]}
+              />
 
-              <select
+              <CustomSelect
                 value={filter.condition}
-                onChange={(e) => {
+                onChange={(val) => {
                   const updated = [...formData.filters];
-                  updated[idx] = { ...updated[idx], condition: e.target.value as FilterRule['condition'] };
+                  updated[idx] = { ...updated[idx], condition: val as FilterRule['condition'] };
                   setFormData({ ...formData, filters: updated });
                 }}
-                className="form-select filter-select"
-              >
-                <option value="less">{'<'} меньше</option>
-                <option value="greater">{'>'} больше</option>
-              </select>
+                options={[
+                  { value: 'less', label: '< меньше' },
+                  { value: 'greater', label: '> больше' },
+                ]}
+              />
 
               <input
                 type="number"
