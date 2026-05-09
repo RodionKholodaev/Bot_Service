@@ -37,4 +37,9 @@ class Settings(BaseSettings):
     BOT_API_HOST: str = "127.0.0.1"
 
 
+    YOOKASSA_SHOP_ID: str
+    YOOKASSA_SECRET_KEY: str
+    FRONTEND_URL: str
+
+
 settings = Settings()  # type: ignore

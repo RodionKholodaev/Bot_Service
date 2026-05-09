@@ -77,6 +77,10 @@ const TradingBotDashboard = () => {
 
   const [showTopUpModal, setShowTopUpModal] = useState(false);
 
+  // --------оплата-----
+  const [topUpAmount, setTopUpAmount] = useState<string>('');
+  const [topUpLoading, setTopUpLoading] = useState(false);
+
   // ── Боты с бэка ─────────────────────────────────────────
   const [bots, setBots] = useState<BotPublic[]>([]);
   const [botsLoading, setBotsLoading] = useState(true);
@@ -86,6 +90,31 @@ const TradingBotDashboard = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   // статистика
   const [homeStats, setHomeStats] = useState<HomeStats | null>(null);
+
+
+  // Функция создания платежа:
+  const handleTopUp = async () => {
+    const amount = parseFloat(topUpAmount);
+    if (!amount || amount < 10) return alert('Минимальная сумма — 10 ₽');
+    
+    setTopUpLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/payments/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ amount }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: { confirmation_url: string } = await res.json();
+      // Редиректим пользователя на страницу оплаты ЮКассы
+      window.location.href = data.confirmation_url;
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка при создании платежа');
+    } finally {
+      setTopUpLoading(false);
+    }
+  };
 
   const fetchBots = useCallback(async () => {
     try {
@@ -104,6 +133,15 @@ const TradingBotDashboard = () => {
       setBotsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      fetchBalance();
+      window.history.replaceState({}, '', window.location.pathname); // убираем ?payment=success из URL
+    }
+  }, []); 
+
 
   useEffect(() => {
     fetchBots();
@@ -296,9 +334,9 @@ const TradingBotDashboard = () => {
         <section className="bots-section">
           <div className="section-header">
             <h2>Мои боты</h2>
-            <button className="btn-text" onClick={fetchBots} disabled={botsLoading}>
+            {/* <button className="btn-text" onClick={fetchBots} disabled={botsLoading}>
               Обновить <ChevronRight size={16} />
-            </button>
+            </button> */}
           </div>
 
           {botsLoading && bots.length === 0 ? (
@@ -428,14 +466,14 @@ const TradingBotDashboard = () => {
 
         {/* Quick Actions */}
         <section className="quick-actions">
-          <button className="action-card">
+          {/* <button className="action-card">
             <MessageCircle size={24} />
             <div>
               <h3>Поддержка</h3>
               <p>Задать вопрос</p>
             </div>
             <ChevronRight size={20} />
-          </button>
+          </button> */}
           <Link href="/stats" style={{ display: 'contents' }}>
             <button className="action-card">
               <BarChart3 size={24} />
@@ -490,22 +528,38 @@ const TradingBotDashboard = () => {
             <p className="modal-description">Выберите сумму пополнения или введите свою</p>
             
             <div className="topup-amounts">
-              <button className="amount-btn">500 ₽</button>
-              <button className="amount-btn recommended">1000 ₽</button>
-              <button className="amount-btn">2000 ₽</button>
-              <button className="amount-btn">5000 ₽</button>
+              {[500, 1000, 2000, 5000].map(val => (
+                <button
+                  key={val}
+                  className={`amount-btn ${topUpAmount === String(val) ? 'selected' : ''} ${val === 1000 ? 'recommended' : ''}`}
+                  onClick={() => setTopUpAmount(String(val))}
+                >
+                  {val.toLocaleString('ru-RU')} ₽
+                </button>
+              ))}
             </div>
 
             <div className="custom-amount">
               <label>Или введите сумму</label>
-              <input type="number" placeholder="1000" />
+              <input
+                type="number"
+                placeholder="1000"
+                value={topUpAmount}
+                onChange={e => setTopUpAmount(e.target.value)}
+                min={10}
+              />
             </div>
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setShowTopUpModal(false)}>
                 Отмена
               </button>
-              <button className="btn-primary">
+              <button
+                className="btn-primary"
+                onClick={handleTopUp}
+                disabled={topUpLoading || !topUpAmount}
+              >
+                {topUpLoading ? <Loader2 size={16} className="spin" /> : null}
                 Пополнить
               </button>
             </div>
@@ -1447,6 +1501,12 @@ const TradingBotDashboard = () => {
 
           .dashboard-main {
             padding: 20px;
+          }
+
+          .amount-btn.selected {
+            background: rgba(96, 165, 250, 0.25);
+            border-color: rgba(96, 165, 250, 0.6);
+            color: #60a5fa;
           }
         }
       `}</style>
