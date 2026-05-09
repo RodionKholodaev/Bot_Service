@@ -246,7 +246,7 @@ const TradingBotDashboard = () => {
           <nav className="main-nav">
             <a href="#" className="nav-item active">Главная</a>
             <Link href="/stats" className="nav-item"><span className="nav-item">Статистика</span></Link>
-            <a href="#" className="nav-item">Обучение</a>
+            {/* <a href="#" className="nav-item">Обучение</a> */}
           </nav>
         </div>
         <div className="header-right">
@@ -280,10 +280,10 @@ const TradingBotDashboard = () => {
                 Создать бота
               </button>
             </Link>
-            <button className="btn-secondary">
+            {/* <button className="btn-secondary">
               <BookOpen size={20} />
               Как это работает?
-            </button>
+            </button> */}
           </div>
         </section>
 
@@ -484,14 +484,14 @@ const TradingBotDashboard = () => {
               <ChevronRight size={20} />
             </button>
           </Link>
-          <button className="action-card">
+          {/* <button className="action-card">
             <BookOpen size={24} />
             <div>
               <h3>Обучение</h3>
               <p>Гайды для новичков</p>
             </div>
             <ChevronRight size={20} />
-          </button>
+          </button> */}
         </section>
       </main>
 
