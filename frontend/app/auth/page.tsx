@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Bot, Eye, EyeOff, ArrowLeft, AlertCircle, Loader } from 'lucide-react';
 import Link from 'next/link';
@@ -7,7 +7,7 @@ import './auth.css';
 
 type Mode = 'login' | 'register';
 
-const AuthPage = () => {
+const AuthContent = () => {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode]         = useState<Mode>((searchParams.get('mode') as Mode) || 'login');
@@ -246,6 +246,14 @@ const AuthPage = () => {
         </p>
       </div>
     </div>
+  );
+};
+
+const AuthPage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthContent />
+    </Suspense>
   );
 };
 

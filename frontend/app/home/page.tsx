@@ -205,7 +205,7 @@ const TradingBotDashboard = () => {
     fundsUnderManagement: homeStats?.funds_under_management ?? 0,
   };
 
-  const getBalanceStatus = (balance) => {
+  const getBalanceStatus = (balance: number) => {
     if (balance < 100) return { color: 'red', daysLeft: 1, status: 'critical' };
     if (balance < 1000) return { color: 'orange', daysLeft: 5, status: 'low' };
     return { color: 'green', daysLeft: 14, status: 'good' };

@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import type { TooltipItem } from 'chart.js';
 import { Bot, LayoutGrid, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -210,8 +211,10 @@ const StatsPage: React.FC = () => {
         titleColor: "#9ca3af",
         bodyColor: "#e4e7f0",
         callbacks: {
-          label: (ctx: { parsed: { y: number } }) =>
-            `$${ctx.parsed.y >= 0 ? "+" : ""}${ctx.parsed.y.toFixed(2)} USDT`,
+          label: (ctx: TooltipItem<'line'>) => {
+            const y = ctx.parsed.y ?? 0;
+            return `$${y >= 0 ? "+" : ""}${y.toFixed(2)} USDT`;
+          }
         },
       },
     },

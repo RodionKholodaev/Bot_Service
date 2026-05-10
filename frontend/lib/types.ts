@@ -23,7 +23,7 @@ export interface BotCreatePayload {
   stop_loss_enabled: boolean;
   stop_loss_percent?: number | null;
   dry_run: boolean;
-  api_key_id: string;
+  api_key_id: number | null
   stake_amount: number;
   tradable_balance_ratio: number;
 }
