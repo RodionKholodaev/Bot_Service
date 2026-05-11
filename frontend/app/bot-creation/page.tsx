@@ -95,7 +95,8 @@ const CreateBotPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Загружаем API-ключи при маунте
+  // Загружаем API-ключи при маунте — без автовыбора,
+  // чтобы не засорять selectedApiKeyId в dry-run режиме.
   useEffect(() => {
     const loadApiKeys = async () => {
       setApiKeysLoading(true);
@@ -103,14 +104,8 @@ const CreateBotPage = () => {
       try {
         const data = await apiFetch<ApiKey[]>('/api/api-keys');
         setApiKeys(data);
-        // Автовыбор первого ключа если список не пустой
-        if (data.length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            selectedApiKeyId: data[0].id,
-            exchange: data[0].exchange,
-          }));
-        }
+        // Автовыбор только если уже стоит боевой режим
+        // (по умолчанию dryRun=true, поэтому здесь ключ НЕ выбираем)
       } catch (err) {
         setApiKeysError('Не удалось загрузить API-ключи. Добавьте их в настройках');
       } finally {
@@ -193,8 +188,8 @@ const CreateBotPage = () => {
     const presetData = strategyPresets[preset];
     setFormData({
       ...formData,
-      strategyPreset: 'custom',        
-      filters: presetData.filters,     
+      strategyPreset: 'custom',
+      filters: presetData.filters,
       takeProfit: presetData.takeProfit,
       stopLoss: presetData.stopLoss,
       useStopLoss: presetData.useStopLoss,
@@ -209,6 +204,27 @@ const CreateBotPage = () => {
       selectedApiKeyId: keyId,
       exchange: found ? found.exchange : prev.exchange,
     }));
+  };
+
+  // Переключение режима торговли:
+  // dry-run → очищаем ключ; боевой → подставляем первый доступный ключ
+  const handleDryRunToggle = (isDryRun: boolean) => {
+    if (isDryRun) {
+      setFormData(prev => ({
+        ...prev,
+        dryRun: true,
+        selectedApiKeyId: '',
+        exchange: 'binance',
+      }));
+    } else {
+      const firstKey = apiKeys[0];
+      setFormData(prev => ({
+        ...prev,
+        dryRun: false,
+        selectedApiKeyId: firstKey?.id ?? '',
+        exchange: firstKey?.exchange ?? prev.exchange,
+      }));
+    }
   };
 
   const handleNext = () => {
@@ -271,7 +287,10 @@ const CreateBotPage = () => {
       stop_loss_enabled: formData.useStopLoss,
       stop_loss_percent: formData.useStopLoss ? Number(formData.stopLoss) : null,
       dry_run: formData.dryRun,
-      api_key_id: formData.selectedApiKeyId ? Number(formData.selectedApiKeyId) : null,
+      // FIX: api_key_id отправляется только в боевом режиме
+      api_key_id: (!formData.dryRun && formData.selectedApiKeyId)
+        ? Number(formData.selectedApiKeyId)
+        : null,
       stake_amount: Number(formData.stakeAmount),
       tradable_balance_ratio: Number(formData.balanceRatio) / 100,
     };
@@ -345,7 +364,7 @@ const CreateBotPage = () => {
             <button
               type="button"
               className={`mode-btn ${formData.dryRun ? 'mode-btn--active mode-btn--dry' : ''}`}
-              onClick={() => setFormData({ ...formData, dryRun: true })}
+              onClick={() => handleDryRunToggle(true)}
             >
               🧪 Dry Run
               <span className="mode-desc">Тестовый режим — без реальных денег</span>
@@ -353,7 +372,7 @@ const CreateBotPage = () => {
             <button
               type="button"
               className={`mode-btn ${!formData.dryRun ? 'mode-btn--active mode-btn--live' : ''}`}
-              onClick={() => setFormData({ ...formData, dryRun: false })}
+              onClick={() => handleDryRunToggle(false)}
             >
               🔴 Боевой
               <span className="mode-desc">Реальная торговля</span>
@@ -367,7 +386,7 @@ const CreateBotPage = () => {
           )}
         </div>
 
-        {/* API-ключ */}
+        {/* API-ключ — показывается только в боевом режиме */}
         {!formData.dryRun && (
           <div className="form-group">
             <label>
@@ -429,6 +448,7 @@ const CreateBotPage = () => {
             )}
           </div>
         )}
+
         {/* Депозит бота */}
         <div className="form-group">
           <label>
@@ -504,10 +524,6 @@ const CreateBotPage = () => {
                 {perTradeUsdt.toFixed(2)} USDT ({formData.balanceRatio}%)
               </strong>
             </div>
-            {/* <div className="summary-row">
-              <span>Максимальных сделок одновременно:</span>
-              <strong>{ratioNum > 0 ? Math.floor(100 / ratioNum) : '—'}</strong>
-            </div> */}
           </div>
         )}
 
@@ -737,7 +753,11 @@ const CreateBotPage = () => {
   );
 
   const renderStep4 = () => {
-    const selectedKey = apiKeys.find(k => k.id === formData.selectedApiKeyId);
+    // FIX: selectedKey ищем только если не dry-run
+    const selectedKey = !formData.dryRun
+      ? apiKeys.find(k => k.id === formData.selectedApiKeyId)
+      : undefined;
+
     return (
       <div className="step-content">
         <div className="step-header">
@@ -853,8 +873,18 @@ const CreateBotPage = () => {
             <strong>{formData.botName || 'Не указано'}</strong>
           </div>
           <div className="summary-row">
+            <span>Режим:</span>
+            <strong>{formData.dryRun ? '🧪 Dry Run' : '🔴 Боевой'}</strong>
+          </div>
+          <div className="summary-row">
             <span>API-ключ:</span>
-            <strong>{selectedKey ? `${selectedKey.name} (${selectedKey.exchange.toUpperCase()})` : '—'}</strong>
+            <strong>
+              {formData.dryRun
+                ? '— (Dry Run)'
+                : selectedKey
+                  ? `${selectedKey.name} (${selectedKey.exchange.toUpperCase()})`
+                  : '—'}
+            </strong>
           </div>
           <div className="summary-row">
             <span>Депозит бота:</span>
