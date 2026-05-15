@@ -1,16 +1,16 @@
 # routers/payments.py
 import ipaddress
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.schemas.payments import PaymentCreate, PaymentCreateResponse
 from yookassa import Configuration, Payment as YKPayment
 
 from src.database import get_db
 from src.models.user import User
-from src.models.payment import Payment
 from src.core.dependencies import get_current_user
 from src.config import settings
+from src.repositories.payments_repository import PaymentsRepository
+from src.repositories.user_repository import UserRepository
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -31,10 +31,10 @@ def _configure_yookassa():
 
 
 @router.post("/create", response_model=PaymentCreateResponse)
-def create_payment(
+async def create_payment(
     body: PaymentCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     _configure_yookassa()
 
@@ -53,32 +53,29 @@ def create_payment(
             "user_id": str(current_user.id),
         },
     })
-
-    db_payment = Payment(
+    db_payment = await PaymentsRepository(db).create_payment(
         id=yk_payment.id,
         user_id=current_user.id,
         amount=body.amount,
-        status="pending",
+        status="pending",  
     )
-    db.add(db_payment)
-    db.commit()
 
     return PaymentCreateResponse(
-        payment_id=yk_payment.id,
-        confirmation_url=yk_payment.confirmation.confirmation_url,
+        payment_id=yk_payment.id, #type:ignore
+        confirmation_url=yk_payment.confirmation.confirmation_url,#type:ignore
     )
 
 
 @router.post("/webhook", status_code=status.HTTP_200_OK)
-def payment_webhook(
+async def payment_webhook(
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    client_ip = ipaddress.ip_address(request.client.host)
+    client_ip = ipaddress.ip_address(request.client.host) #type: ignore
     if not any(client_ip in network for network in YOOKASSA_IPS):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
-    body = request.json()  # синхронный вариант не работает — см. примечание ниже
+    body = await request.json()  # синхронный вариант не работает — см. примечание ниже
     event: str = body.get("event", "")
     obj: dict = body.get("object", {})
 
@@ -89,9 +86,7 @@ def payment_webhook(
     amount: float = float(obj["amount"]["value"])
     user_id: int = int(obj["metadata"]["user_id"])
 
-    db_payment = db.execute(
-        select(Payment).where(Payment.id == payment_id)
-    ).scalar_one_or_none()
+    db_payment = await PaymentsRepository(db).get_payment_by_id(payment_id)
 
     if db_payment is None:
         return {"status": "unknown_payment"}
@@ -101,14 +96,12 @@ def payment_webhook(
 
     db_payment.status = "succeeded"
 
-    user = db.execute(
-        select(User).where(User.id == user_id)
-    ).scalar_one_or_none()
+    user = await UserRepository(db).get_user_by_id(user_id)
 
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
     user.service_balance += amount
-    db.commit()
+    await db.commit()
 
     return {"status": "ok"}

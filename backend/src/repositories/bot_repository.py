@@ -12,7 +12,7 @@ class BotRepository:
         running_bots = bots.scalars().all()
         return running_bots
     
-    async def get_user(self, bot_user_id):
+    async def get_user(self, bot_user_id): # это недоразумение нужно убрать
         user = await self.db.execute(select(User).where(User.id == bot_user_id))
         return user.scalar_one_or_none()
     
@@ -24,3 +24,7 @@ class BotRepository:
         result = await self.db.execute(select(Bot.api_port))
         return result.scalars().all()
     
+    async def get_user_active_bots(self, user_id):
+        result = await self.db.execute(select(Bot).where(Bot.user_id==user_id, Bot.is_active==True))
+        bots = result.scalars().all()
+        return bots

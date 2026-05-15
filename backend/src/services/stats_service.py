@@ -6,8 +6,7 @@
 
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy.orm import Session
-from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.bot import Bot
 from src.models.trade import Trade
@@ -15,6 +14,8 @@ from src.models.user import User
 from src.schemas.stats import (
     TradeOut, PnlPoint, BotStats, PortfolioStats, HomeStats
 )
+from src.repositories.bot_repository import BotRepository
+from src.repositories.trade_repository import TradeRepository
 
 from datetime import timedelta
 
@@ -77,8 +78,8 @@ def _trades_to_out(trades: list[Trade]) -> list[TradeOut]:
 # Публичные функции
 # ──────────────────────────────────────────────
 
-def get_bot_stats(
-    db: Session,
+async def get_bot_stats(
+    db: AsyncSession,
     bot: Bot,
     period_days: Optional[int] = None,
     recent_limit: int = 20,
@@ -86,16 +87,19 @@ def get_bot_stats(
     """Статистика по одному боту."""
 
     # Базовый запрос — только закрытые сделки этого бота
-    query = (
-        db.query(Trade)
-        .filter(Trade.bot_id == bot.id, Trade.close_time.isnot(None))
-    )
+    query = await TradeRepository(db).get_bot_close_trades(bot.user_id, bot.id)
+
     if period_days:
         from datetime import timedelta
-        since = datetime.now(timezone.utc) - timedelta(days=period_days)
-        query = query.filter(Trade.close_time >= since)
 
-    closed_trades: list[Trade] = query.order_by(Trade.close_time.asc()).all()
+        since = datetime.now(timezone.utc) - timedelta(days=period_days)
+        query = query.where(Trade.close_time >= since)
+
+    query = query.order_by(Trade.close_time.asc())
+
+    result = await db.execute(query)
+
+    closed_trades: list[Trade] = list(result.scalars().all())
 
     wins = [t for t in closed_trades if (t.profit_usdt or 0) > 0]
     losses = [t for t in closed_trades if (t.profit_usdt or 0) <= 0]
@@ -131,31 +135,29 @@ def get_bot_stats(
     )
 
 
-def get_portfolio_stats(
-    db: Session,
+async def get_portfolio_stats(
+    db: AsyncSession,
     user: User,
     period_days: Optional[int] = None,
     recent_limit: int = 30,
 ) -> PortfolioStats:
     """Агрегированная статистика по всем ботам пользователя."""
+    #репозитории
+    botrepository = BotRepository(db)
+    traderepository = TradeRepository(db)
 
-    bots: list[Bot] = (
-        db.query(Bot)
-        .filter(Bot.user_id == user.id, Bot.is_active == True)
-        .all()
-    )
+    bots = await botrepository.get_user_active_bots(user.id)
 
     # Все закрытые сделки пользователя за период
-    query = (
-        db.query(Trade)
-        .filter(Trade.user_id == user.id, Trade.close_time.isnot(None))
-    )
+    query = await traderepository.get_all_close_trades(user.id)
+
     if period_days:
         from datetime import timedelta
         since = datetime.now(timezone.utc) - timedelta(days=period_days)
         query = query.filter(Trade.close_time >= since)
 
-    all_trades: list[Trade] = query.order_by(Trade.close_time.asc()).all()
+    result = await db.execute(query)
+    all_trades = list(result.scalars().all())
 
     wins = sum(1 for t in all_trades if (t.profit_usdt or 0) > 0)
     total = len(all_trades)
@@ -168,7 +170,7 @@ def get_portfolio_stats(
     total_profit = sum(b.total_profit for b in bots)
 
     # Краткая сводка по каждому боту для сайдбара
-    bots_stats = [get_bot_stats(db, b, period_days) for b in bots]
+    bots_stats = [await get_bot_stats(db, b, period_days) for b in bots]
 
     return PortfolioStats(
         total_profit=round(total_profit, 4),
@@ -187,27 +189,16 @@ def get_portfolio_stats(
 
 
 
-def get_home_stats(db: Session, user: User) -> HomeStats:
-    bots: list[Bot] = (
-        db.query(Bot)
-        .filter(Bot.user_id == user.id, Bot.is_active == True)
-        .all()
-    )
+async def get_home_stats(db: AsyncSession, user: User) -> HomeStats:
+    bots: list[Bot] = list(await BotRepository(db).get_user_active_bots(user.id))
 
     total_profit = sum(b.total_profit for b in bots)
     bots_running = sum(1 for b in bots if b.status == "running")
 
     # 👇 Прибыль за последние 7 дней
     since = datetime.now(timezone.utc) - timedelta(days=7)
-    weekly_trades = (
-        db.query(Trade)
-        .filter(
-            Trade.user_id == user.id,
-            Trade.close_time.isnot(None),
-            Trade.close_time >= since,
-        )
-        .all()
-    )
+    weekly_trades = await TradeRepository(db).get_weekly_trades(user.id, since)
+
     weekly_profit = round(sum(t.profit_usdt or 0 for t in weekly_trades), 4)
 
     # 👇 Сумма в управлении = stake_amount всех активных ботов
