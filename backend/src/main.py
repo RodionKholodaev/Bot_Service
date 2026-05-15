@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── startup ──
-    Base.metadata.create_all(bind=engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
     settings.BOTS_DATA_DIR.mkdir(parents=True, exist_ok=True)
     logger.info(f"BOTS_DATA_DIR = {settings.BOTS_DATA_DIR.resolve()}")

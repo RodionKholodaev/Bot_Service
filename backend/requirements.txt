@@ -11,3 +11,4 @@ pydantic-settings
 docker
 httpx
 cryptography
+aiosqlite

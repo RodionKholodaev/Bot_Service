@@ -11,12 +11,14 @@ import logging
 from datetime import datetime, timezone
 
 import httpx
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import SessionLocal
+from src.database import AsyncSessionLocal
 from src.models.bot import Bot
 from src.models.trade import Trade
 from src.models.user import User
+from src.repositories.bot_repository import BotRepository
+from src.repositories.trade_repository import TradeRepository
 
 logger = logging.getLogger(__name__)
 
@@ -66,12 +68,15 @@ def _parse_dt(value: str | None) -> datetime | None:
         return None
 
 
-def _sync_bot_trades(db: Session, bot: Bot, raw_trades: list[dict]) -> None:
+async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) -> None:
     """
     Синхронизирует список сделок от freqtrade в нашу таблицу.
     Обновляет Bot.total_profit и начисляет комиссию при закрытии.
     """
-    user: User = db.query(User).filter(User.id == bot.user_id).first()
+    botrepository = BotRepository(db)
+    traderepository = TradeRepository(db)
+    
+    user: User | None= await botrepository.get_user(bot.user_id)
     if not user:
         return
 
@@ -79,11 +84,7 @@ def _sync_bot_trades(db: Session, bot: Bot, raw_trades: list[dict]) -> None:
         ft_id: int = ft["trade_id"]
         is_open: bool = ft.get("is_open", True)
 
-        existing: Trade | None = (
-            db.query(Trade)
-            .filter(Trade.bot_id == bot.id, Trade.freqtrade_trade_id == ft_id)
-            .first()
-        )
+        existing: Trade | None = await traderepository.get_trade(bot.id, ft_id)
 
         if existing is None:
             # Новая сделка — создаём запись
@@ -103,10 +104,10 @@ def _sync_bot_trades(db: Session, bot: Bot, raw_trades: list[dict]) -> None:
                 close_time=_parse_dt(ft.get("close_date")) if not is_open else None,
             )
             db.add(trade)
-            db.flush()  # получаем trade.id для дальнейшей логики
+            await db.flush()  # получаем trade.id для дальнейшей логики
 
             if not is_open:
-                _handle_close(db, bot, user, trade)
+                _handle_close(bot, user, trade)
 
         else:
             # Сделка уже была — проверяем, не закрылась ли она
@@ -116,12 +117,12 @@ def _sync_bot_trades(db: Session, bot: Bot, raw_trades: list[dict]) -> None:
                 existing.profit_pct = (ft.get("profit_ratio", 0.0) or 0.0) * 100
                 existing.exit_reason = ft.get("exit_reason")
                 existing.close_time = _parse_dt(ft.get("close_date"))
-                _handle_close(db, bot, user, existing)
+                _handle_close(bot, user, existing)
 
-    db.commit()
+    await db.commit()
 
 
-def _handle_close(db: Session, bot: Bot, user: User, trade: Trade) -> None:
+def _handle_close(bot: Bot, user: User, trade: Trade) -> None:
     """
     Вызывается один раз при закрытии сделки:
     - обновляет Bot.total_profit
@@ -163,24 +164,22 @@ async def run_polling_worker() -> None:
     async with httpx.AsyncClient() as client:
         while True:
             try:
-                db: Session = SessionLocal()
-                try:
-                    running_bots: list[Bot] = (
-                        db.query(Bot)
-                        .filter(Bot.status == "running", Bot.is_active == True)
-                        .all()
-                    )
 
-                    for bot in running_bots:
-                        raw = await _fetch_trades(bot, client)
-                        if raw:
-                            _sync_bot_trades(db, bot, raw)
+                async with AsyncSessionLocal() as db:
+                    try:
+                    
+                        running_bots = await BotRepository(db).get_all_active_bots()
 
-                except Exception as exc:
-                    logger.exception("Polling worker error: %s", exc)
-                    db.rollback()
-                finally:
-                    db.close()
+                        for bot in running_bots:
+                            raw = await _fetch_trades(bot, client)
+                            if raw:
+                                _sync_bot_trades(db, bot, raw)
+
+                    except Exception as exc:
+                        logger.exception("Polling worker error: %s", exc)
+                        await db.rollback()
+                    finally:
+                        await db.close()
 
             except Exception as exc:
                 logger.exception("Polling worker outer error: %s", exc)
