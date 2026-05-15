@@ -28,3 +28,8 @@ class BotRepository:
         result = await self.db.execute(select(Bot).where(Bot.user_id==user_id, Bot.is_active==True))
         bots = result.scalars().all()
         return bots
+    
+    async def get_user_bots(self, user_id):
+        result = await self.db.execute(select(Bot).where(Bot.user_id==user_id))
+        return result.scalars().all()
+    

@@ -55,7 +55,7 @@ async def create_bot(
         )
 
     try:
-        bot = bot_manager.create_bot_record(db=db, user_id=current_user.id, body=body)
+        bot = await bot_manager.create_bot_record(db=db, user_id=current_user.id, body=body)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Не удалось создать бота: {e}")
 
@@ -69,16 +69,11 @@ async def create_bot(
 # ── Список / детали ───────────────────────────────────────
 
 @router.get("", response_model=list[BotPublic])
-def list_bots(
-    db: Session = Depends(get_db),
+async def list_bots(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    bots = (
-        db.query(Bot)
-        .filter(Bot.user_id == current_user.id, Bot.is_active == True)
-        .order_by(Bot.created_at.desc())
-        .all()
-    )
+    bots = await BotRepository(db).get_user_bots(current_user.id)
     return bots
 
 
