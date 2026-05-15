@@ -38,3 +38,8 @@ class ApiKeysRepository:
         if key:
             await self.db.delete(key)
             await self.db.commit()
+        
+    async def get_api_key_by_id(self, key_id):
+        result = await self.db.execute(select(ExchangeApiKey).where(ExchangeApiKey.id == key_id))
+        return result.scalar_one_or_none()
+    

@@ -2,12 +2,12 @@
 
 import json
 from pathlib import Path
-from sqlalchemy.orm import Session
-from src.services.api_key_service import get_api_key_by_id
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.repositories.api_keys_repository import ApiKeysRepository
 TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "templates" / "config.template.json"
 
 
-def generate_config(
+async def generate_config(
     pair: str,
     api_port_inside_container: int,
     jwt_secret: str,
@@ -17,7 +17,7 @@ def generate_config(
     api_key_id: int | None,
     stake_amount: float,
     tradable_balance_ratio: float,
-    db: Session,
+    db: AsyncSession,
     user_id: int,
     dry_run: bool = True,
 ) -> dict:
@@ -29,7 +29,7 @@ def generate_config(
     Внутри пусть всегда будет 8080 (как в шаблоне) — это просто удобство.
     """
     if api_key_id is not None: 
-        api_keys = get_api_key_by_id(api_key_id, user_id, db)
+        api_keys = await ApiKeysRepository(db).get_api_key_by_id(api_key_id)
         key = api_keys.api_key
         secret = api_keys.api_secret
     else:

@@ -117,12 +117,12 @@ async def create_bot_record(db: AsyncSession, user_id: int, body: BotCreate) -> 
     await db.commit()
     await db.refresh(bot)
     # создаем файлы в bots_data
-    _materialize_files(bot, user_id)
+    await _materialize_files(db, bot, user_id)
 
     return bot
 
 
-def _materialize_files(bot: Bot, user_id: int) -> None:
+async def _materialize_files(db: AsyncSession, bot: Bot, user_id: int) -> None:
     """Создаёт папку бота, кладёт config.json и файл стратегии."""
     # создаем папки и файлы
     bot_dir = _bot_dir(bot.id)
@@ -131,7 +131,7 @@ def _materialize_files(bot: Bot, user_id: int) -> None:
     (bot_dir / "user_data" / "logs").mkdir(parents=True, exist_ok=True)
     (bot_dir / "user_data" / "data").mkdir(parents=True, exist_ok=True)
     # создаем конфиг
-    cfg = generate_config(
+    cfg = await generate_config(
         pair=bot.pair,
         api_port_inside_container=docker_manager.INTERNAL_API_PORT,
         jwt_secret=secrets.token_hex(32),
@@ -174,7 +174,7 @@ async def start_bot(db: AsyncSession, bot: Bot) -> Bot:
     bot_dir = _bot_dir(bot.id)
     if not (bot_dir / "config.json").exists():
         # создаем ее если ее нет
-        _materialize_files(bot, bot.user_id)
+        await _materialize_files(db, bot, bot.user_id)
     # меняем статус на starting
     bot.status = "starting"
     bot.error_message = None
