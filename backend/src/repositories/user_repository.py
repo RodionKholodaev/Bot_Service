@@ -7,9 +7,8 @@ class UserRepository:
         self.db = db
     
     async def email_exists(self, email):
-        if await self.db.execute(select(User).where(User.email==email)):
-            return True
-        else: return False
+        result = await self.db.execute(select(User).where(User.email==email))
+        return result.scalar_one_or_none() is not None
     
     async def get_user(self, email):
         user = await self.db.execute(select(User).where(User.email ==email))
