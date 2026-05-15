@@ -11,12 +11,13 @@ import shutil
 import uuid
 from pathlib import Path
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
 from src.models.bot import Bot
 from src.schemas.bot import BotCreate
 from src.services import docker_manager
+from src.repositories.bot_repository import BotRepository
 from src.services.freqtrade_config import generate_config, write_config
 from src.services.freqtrade_strategy import generate_strategy_file, write_strategy_file
 from src.services.strategy_presets import resolve_filters
@@ -30,13 +31,13 @@ def _bot_dir(bot_id: str) -> Path:
     return settings.BOTS_DATA_DIR / bot_id
 
 
-def _allocate_port(db: Session) -> int:
+async def _allocate_port(db: AsyncSession) -> int:
     """
     Выдаёт первый свободный порт из диапазона BOT_API_PORT_RANGE_START..END.
     Простая реализация: смотрим занятые порты в БД (среди живых ботов).
     Этого достаточно для MVP.
     """
-    used = {row[0] for row in db.query(Bot.api_port).all()}
+    used = await BotRepository(db).get_all_busy_ports()
     for port in range(settings.BOT_API_PORT_RANGE_START, settings.BOT_API_PORT_RANGE_END + 1):
         if port not in used:
             return port
@@ -60,7 +61,7 @@ def _build_stoploss(enabled: bool, percent: float | None) -> float:
 
 # ── Создание бота ────────────────────────────────────────
 
-def create_bot_record(db: Session, user_id: int, body: BotCreate) -> Bot:
+async def create_bot_record(db: AsyncSession, user_id: int, body: BotCreate) -> Bot:
     """
     Создаёт запись о боте в БД + генерирует на диск config.json и стратегию.
     Контейнер ещё не запускает.
@@ -113,15 +114,15 @@ def create_bot_record(db: Session, user_id: int, body: BotCreate) -> Bot:
     )
 
     db.add(bot)
-    db.commit()
-    db.refresh(bot)
+    await db.commit()
+    await db.refresh(bot)
     # создаем файлы в bots_data
-    _materialize_files(db,bot, user_id)
+    _materialize_files(bot, user_id)
 
     return bot
 
 
-def _materialize_files(db: Session, bot: Bot, user_id: int) -> None:
+def _materialize_files(bot: Bot, user_id: int) -> None:
     """Создаёт папку бота, кладёт config.json и файл стратегии."""
     # создаем папки и файлы
     bot_dir = _bot_dir(bot.id)
@@ -167,17 +168,17 @@ def _materialize_files(db: Session, bot: Bot, user_id: int) -> None:
 
 # ── Запуск / остановка / удаление ─────────────────────────
 
-def start_bot(db: Session, bot: Bot) -> Bot:
+async def start_bot(db: AsyncSession, bot: Bot) -> Bot:
     """Запускает контейнер для уже созданного бота."""
     # получаем папку с настройками бота
     bot_dir = _bot_dir(bot.id)
     if not (bot_dir / "config.json").exists():
         # создаем ее если ее нет
-        _materialize_files(db,bot, bot.user_id)
+        _materialize_files(bot, bot.user_id)
     # меняем статус на starting
     bot.status = "starting"
     bot.error_message = None
-    db.commit()
+    await db.commit()
 
     try:
         # проверяем что образ freqtrade есть на сервере
@@ -196,22 +197,22 @@ def start_bot(db: Session, bot: Bot) -> Bot:
         bot.status = "error"
         bot.error_message = str(e)[:500]
     finally:
-        db.commit()
-        db.refresh(bot)
+        await db.commit()
+        await db.refresh(bot)
 
     return bot
 
 
-def stop_bot(db: Session, bot: Bot) -> Bot:
+async def stop_bot(db: AsyncSession, bot: Bot) -> Bot:
     if bot.container_id:
         docker_manager.stop_container(bot.container_id)
     bot.status = "stopped"
-    db.commit()
-    db.refresh(bot)
+    await db.commit()
+    await db.refresh(bot)
     return bot
 
 
-def delete_bot(db: Session, bot: Bot) -> None:
+async def delete_bot(db: AsyncSession, bot: Bot) -> None:
     if bot.container_id:
         docker_manager.remove_container(bot.container_id)
 
@@ -222,5 +223,5 @@ def delete_bot(db: Session, bot: Bot) -> None:
         except Exception:
             logger.exception(f"Не удалось удалить папку бота {bot_dir}")
 
-    db.delete(bot)
-    db.commit()
+    await db.delete(bot)
+    await db.commit()

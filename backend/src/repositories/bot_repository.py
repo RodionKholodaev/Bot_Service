@@ -16,3 +16,11 @@ class BotRepository:
         user = await self.db.execute(select(User).where(User.id == bot_user_id))
         return user.scalar_one_or_none()
     
+    async def get_bot_by_id(self, bot_id):
+        result = await self.db.execute(select(Bot).where(Bot.id == bot_id))
+        return result.scalar_one_or_none()
+    
+    async def get_all_busy_ports(self):
+        result = await self.db.execute(select(Bot.api_port))
+        return result.scalars().all()
+    
