@@ -70,7 +70,7 @@ async def create_bot_record(db: AsyncSession, user_id: int, body: BotCreate) -> 
     # делаем имя контейнера
     container_name = f"bot_{bot_id.replace('-', '')[:24]}"
     # получаем номер порта который пока не используется
-    api_port = _allocate_port(db)
+    api_port = await _allocate_port(db)
     # переводит фильтры в нужный формат
     long_filters, short_filters = resolve_filters(
         preset=body.strategy_preset,
