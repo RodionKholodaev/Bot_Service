@@ -7,6 +7,8 @@ Docker-менеджер — тонкая обёртка над Docker SDK.
 """
 
 import logging
+import os
+import platform
 from pathlib import Path
 
 import docker
@@ -22,6 +24,44 @@ logger = logging.getLogger(__name__)
 # Снаружи мы пробрасываем этот порт на уникальный bot.api_port.
 INTERNAL_API_PORT = 8080
 
+def set_bot_permissions(bot_data_dir: Path) -> None:
+    """
+    Делает владельцем папки бота пользователя UID=1000 (ftuser в контейнере).
+
+    Аналог:
+        chown -R 1000:1000 <bot_data_dir>
+    """
+
+    # На Windows ничего не делаем
+    if platform.system() == "Windows":
+        return
+
+    uid = 1000
+    gid = 1000
+
+    chown = getattr(os, "chown", None)
+
+    if chown is None:
+        logger.warning("os.chown недоступен на этой системе")
+        return
+
+    try:
+        # Корневая папка
+        chown(bot_data_dir, uid, gid)
+
+        # Всё содержимое
+        for path in bot_data_dir.rglob("*"):
+            chown(path, uid, gid)
+
+        logger.info(
+            f"Права для {bot_data_dir} выставлены на UID={uid}, GID={gid}"
+        )
+
+    except PermissionError as e:
+        logger.exception(
+            f"Не удалось изменить права на {bot_data_dir}: {e}"
+        )
+        raise
 
 def get_client() -> docker.DockerClient:
     """Получает Docker-клиент. На Windows работает с Docker Desktop из коробки."""
@@ -82,7 +122,12 @@ def run_bot_container(
     except NotFound:
         pass
 
-    host_dir = str(bot_data_dir.resolve())
+    host_dir_path = bot_data_dir.resolve()
+
+    # Даем права ftuser (uid=1000)
+    set_bot_permissions(host_dir_path)
+
+    host_dir = str(host_dir_path)
 
     container = client.containers.run(
         image=image,
