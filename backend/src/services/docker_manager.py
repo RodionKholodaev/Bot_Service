@@ -100,7 +100,7 @@ def run_bot_container(
             "--strategy", "MultiFilterStrategy",
             "--strategy-path", "/freqtrade/user_data_mount/user_data/strategies",
             "--datadir", "/freqtrade/user_data_mount/user_data/data",
-            "--logfile", "/freqtrade/user_data_mount/user_data/logs/freqtrade.log",
+            # "--logfile", "/freqtrade/user_data_mount/user_data/logs/freqtrade.log",
             "--db-url", "sqlite:////freqtrade/user_data_mount/user_data/tradesv3.sqlite",
         ],
         restart_policy={"Name": "unless-stopped"}, #type: ignore
