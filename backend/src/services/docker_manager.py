@@ -89,7 +89,7 @@ def run_bot_container(
         name=container_name,
         detach=True,
         network=network_name,
-        user="root",
+        # user="root",
         ports={f"{INTERNAL_API_PORT}/tcp": api_port_external},
         volumes={
             host_dir: {"bind": "/freqtrade/user_data_mount", "mode": "rw"},
