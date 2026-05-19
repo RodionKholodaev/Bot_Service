@@ -126,12 +126,30 @@ const CreateBotPage = () => {
     loadApiKeys();
   }, []);
 
+  useEffect(() => {
+    if (formData.strategyPreset !== 'custom') {
+      const presetData = strategyPresets[formData.strategyPreset];
+      if (presetData) {
+        const direction = formData.algorithm as 'long' | 'short';
+        const newFilters = direction === 'long' ? presetData.longFilters : presetData.shortFilters;
+        setFormData(prev => ({
+          ...prev,
+          filters: newFilters,
+          takeProfit: presetData.takeProfit,
+          stopLoss: presetData.stopLoss,
+          useStopLoss: presetData.useStopLoss,
+        }));
+      }
+    }
+  }, [formData.algorithm, formData.strategyPreset]);
+
   const strategyPresets: Record<string, {
     name: string;
     description: string;
     icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
     color: string;
-    filters: FilterRule[];
+    longFilters: FilterRule[];
+    shortFilters: FilterRule[];
     takeProfit: string;
     stopLoss: string;
     useStopLoss: boolean;
@@ -141,9 +159,23 @@ const CreateBotPage = () => {
       description: 'Минимальный риск, небольшая прибыль',
       icon: Shield,
       color: '#10b981',
-      filters: [
-        { indicator: 'rsi', timeframe: '15m', condition: 'less', value: 25 },
-        { indicator: 'cci', timeframe: '15m', condition: 'less', value: -120 },
+      longFilters: [
+        { indicator: 'rsi', timeframe: '1m', condition: 'less', value: 50 },
+        { indicator: 'rsi', timeframe: '5m', condition: 'less', value: 50 },
+        { indicator: 'rsi', timeframe: '30m', condition: 'less', value: 50 },
+        { indicator: 'rsi', timeframe: '1h', condition: 'less', value: 55 },
+        { indicator: 'cci', timeframe: '5m', condition: 'less', value: 70 },
+        { indicator: 'cci', timeframe: '15m', condition: 'less', value: 75 },
+        { indicator: 'cci', timeframe: '1h', condition: 'less', value: 80 },
+      ],
+      shortFilters: [
+        { indicator: 'rsi', timeframe: '1m', condition: 'greater', value: 50 },
+        { indicator: 'rsi', timeframe: '5m', condition: 'greater', value: 50 },
+        { indicator: 'rsi', timeframe: '30m', condition: 'greater', value: 50 },
+        { indicator: 'rsi', timeframe: '1h', condition: 'greater', value: 55 },
+        { indicator: 'cci', timeframe: '5m', condition: 'greater', value: 70 },
+        { indicator: 'cci', timeframe: '15m', condition: 'greater', value: 75 },
+        { indicator: 'cci', timeframe: '1h', condition: 'greater', value: 80 },
       ],
       takeProfit: '1.5',
       stopLoss: '1',
@@ -154,9 +186,15 @@ const CreateBotPage = () => {
       description: 'Баланс риска и прибыли',
       icon: TrendingUp,
       color: '#60a5fa',
-      filters: [
-        { indicator: 'rsi', timeframe: '15m', condition: 'less', value: 30 },
-        { indicator: 'cci', timeframe: '15m', condition: 'less', value: -100 },
+      longFilters: [
+        { indicator: 'rsi', timeframe: '5m', condition: 'less', value: 55 },
+        { indicator: 'rsi', timeframe: '30m', condition: 'less', value: 65 },
+        { indicator: 'cci', timeframe: '1h', condition: 'less', value: 85 },
+      ],
+      shortFilters: [
+        { indicator: 'rsi', timeframe: '5m', condition: 'greater', value: 55 },
+        { indicator: 'rsi', timeframe: '30m', condition: 'greater', value: 65 },
+        { indicator: 'cci', timeframe: '1h', condition: 'greater', value: 85 },
       ],
       takeProfit: '2.5',
       stopLoss: '1.5',
@@ -167,16 +205,23 @@ const CreateBotPage = () => {
       description: 'Высокий риск, максимальная прибыль',
       icon: Target,
       color: '#f59e0b',
-      filters: [
+      longFilters: [
+        { indicator: 'rsi', timeframe: '1m', condition: 'less', value: 35 },
         { indicator: 'rsi', timeframe: '5m', condition: 'less', value: 35 },
-        { indicator: 'cci', timeframe: '5m', condition: 'less', value: -50 },
+        { indicator: 'rsi', timeframe: '30m', condition: 'less', value: 35 },
+        { indicator: 'rsi', timeframe: '4h', condition: 'less', value: 35 },
+      ],
+      shortFilters: [
+        { indicator: 'rsi', timeframe: '1m', condition: 'greater', value: 35 },
+        { indicator: 'rsi', timeframe: '5m', condition: 'greater', value: 35 },
+        { indicator: 'rsi', timeframe: '30m', condition: 'greater', value: 35 },
+        { indicator: 'rsi', timeframe: '4h', condition: 'greater', value: 35 },
       ],
       takeProfit: '5',
       stopLoss: '2',
       useStopLoss: true,
     },
   };
-
   const indicatorInfo = {
     rsi: {
       name: 'RSI (Индекс относительной силы)',
@@ -197,10 +242,12 @@ const CreateBotPage = () => {
 
   const handlePresetSelect = (preset: string) => {
     const presetData = strategyPresets[preset];
+    const direction = formData.algorithm as 'long' | 'short';
+    const filters = direction === 'long' ? presetData.longFilters : presetData.shortFilters;
     setFormData({
       ...formData,
-      strategyPreset: 'custom',
-      filters: presetData.filters,
+      strategyPreset: preset,           
+      filters: filters,
       takeProfit: presetData.takeProfit,
       stopLoss: presetData.stopLoss,
       useStopLoss: presetData.useStopLoss,
