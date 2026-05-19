@@ -1,8 +1,8 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Zap, CreditCard, Settings, Plus, MessageCircle, ChevronLeft, Send, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-
+import { useRouter } from 'next/navigation';
 const API_BASE = '/api';
 
 const getAuthHeader = (): Record<string, string> => {
@@ -21,6 +21,7 @@ const CATEGORIES: { value: Category; label: string; emoji: string }[] = [
 ];
 
 const SupportPage = () => {
+  const router = useRouter();
   const [name,     setName]     = useState('');
   const [email,    setEmail]    = useState('');
   const [category, setCategory] = useState<Category | ''>('');
@@ -30,7 +31,13 @@ const SupportPage = () => {
   const [errorText, setErrorText] = useState('');
 
   const isValid = name.trim() && email.trim() && category && message.trim();
-
+  // проверка того что пользователь имеет JWT
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.replace('/auth');
+    }
+  }, [router]);
   const handleSubmit = async () => {
     if (!isValid || status === 'loading') return;
     setStatus('loading');

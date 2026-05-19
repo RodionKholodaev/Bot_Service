@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import type { TooltipItem } from 'chart.js';
 import { Bot, LayoutGrid, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import {
@@ -112,6 +113,7 @@ const formatDate = (iso: string | null): string => {
 
 // ===== Component =====
 const StatsPage: React.FC = () => {
+  const router = useRouter();
   const [view, setView] = useState<ViewKey>("all");
   const [period, setPeriod] = useState<Period>("1W");
   const [portfolio, setPortfolio] = useState<PortfolioStats | null>(null);
@@ -119,9 +121,21 @@ const StatsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const chartRef = useRef<ChartJS<"line"> | null>(null);
+  const [isAuthed, setIsAuthed] = useState(false);
+ 
+  // проверка того что пользователь имеет JWT
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.replace('/auth');
+    } else {
+      setIsAuthed(true); // ← добавь
+    }
+  }, [router]);
 
   // Загрузка данных при смене вью или периода
   const fetchData = useCallback(async () => {
+    if (!isAuthed) return;
     setLoading(true);
     setError(null);
     try {

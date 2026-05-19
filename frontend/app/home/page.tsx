@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, Bot, Wallet, DollarSign, Plus, Settings, BookOpen, MessageCircle, BarChart3, Pause, Play, AlertCircle, Zap, ChevronRight, CreditCard, Loader2, Trash2, AlertTriangle, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
-
+import { useRouter } from 'next/navigation';
 // ── Типы под BotPublic с бэка ─────────────────────────────
 type BotStatus = 'created' | 'starting' | 'running' | 'stopped' | 'error';
 
@@ -46,9 +46,22 @@ const getAuthHeader = (): Record<string, string> => {
 
 const TradingBotDashboard = () => {
   const [serviceBalance, setServiceBalance] = useState<number>(0);
+  const [isAuthed, setIsAuthed] = useState(false);
+  const router = useRouter();
 
+  // проверка того что пользователь имеет JWT
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.replace('/auth');
+    } else {
+      setIsAuthed(true); 
+    }
+  }, [router]);
+  
   const fetchBalance = useCallback(async () => {
     try {
+      if (!isAuthed) return;
       const res = await fetch(`${API_BASE}/users/me/balance`, {
         headers: { ...getAuthHeader() },
         cache: 'no-store',
@@ -63,6 +76,7 @@ const TradingBotDashboard = () => {
 
   const fetchHomeStats = useCallback(async () => {
     try {
+      if (!isAuthed) return;
       const res = await fetch(`${API_BASE}/stats/home`, {
         headers: { ...getAuthHeader() },
         cache: 'no-store',
@@ -94,6 +108,7 @@ const TradingBotDashboard = () => {
 
   // Функция создания платежа:
   const handleTopUp = async () => {
+    if (!isAuthed) return;
     const amount = parseFloat(topUpAmount);
     if (!amount || amount < 10) return alert('Минимальная сумма — 10 ₽');
     
@@ -118,6 +133,7 @@ const TradingBotDashboard = () => {
 
   const fetchBots = useCallback(async () => {
     try {
+      if (!isAuthed) return;
       setBotsError(null);
       const res = await fetch(`${API_BASE}/bots`, {
         headers: { ...getAuthHeader() },
@@ -135,6 +151,7 @@ const TradingBotDashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (!isAuthed) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       fetchBalance();
@@ -144,6 +161,7 @@ const TradingBotDashboard = () => {
 
 
   useEffect(() => {
+    if (!isAuthed) return;
     fetchBots();
     fetchBalance();
     fetchHomeStats();
@@ -153,6 +171,7 @@ const TradingBotDashboard = () => {
   }, [fetchBots]);
 
   const markPending = (id: string, on: boolean) => {
+    if (!isAuthed) return;
     setPendingIds(prev => {
       const next = new Set(prev);
       on ? next.add(id) : next.delete(id);
@@ -161,6 +180,7 @@ const TradingBotDashboard = () => {
   };
 
   const handleStartStop = async (bot: BotPublic) => {
+    if (!isAuthed) return;
     const action = bot.status === 'running' || bot.status === 'starting' ? 'stop' : 'start';
     markPending(bot.id, true);
     try {
@@ -181,6 +201,7 @@ const TradingBotDashboard = () => {
   };
 
   const handleDelete = async (botId: string) => {
+    if (!isAuthed) return;
     markPending(botId, true);
     try {
       const res = await fetch(`${API_BASE}/bots/${botId}`, {

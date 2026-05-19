@@ -94,10 +94,21 @@ const CreateBotPage = () => {
   const [showIndicatorTooltip, setShowIndicatorTooltip] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isAuthed, setIsAuthed] = useState(false);
+  // проверка того что пользователь имеет JWT
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.replace('/auth');
+    } else {
+      setIsAuthed(true); // ← добавь
+    }
+  }, [router]);
 
   // Загружаем API-ключи при маунте — без автовыбора,
   // чтобы не засорять selectedApiKeyId в dry-run режиме.
   useEffect(() => {
+    if (!isAuthed) return;
     const loadApiKeys = async () => {
       setApiKeysLoading(true);
       setApiKeysError(null);

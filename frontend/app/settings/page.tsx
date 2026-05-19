@@ -53,6 +53,17 @@ export default function ApiKeysPage() {
 
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  // проверка того что пользователь имеет JWT
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.replace('/auth');
+    } else {
+      setIsAuthed(true); 
+    }
+  }, [router]);
 
   const loadKeys = async () => {
     setLoading(true);
@@ -67,7 +78,10 @@ export default function ApiKeysPage() {
     }
   };
 
-  useEffect(() => { loadKeys(); }, []);
+  useEffect(() => { 
+    if (!isAuthed) return;
+    loadKeys();
+  }, []);
 
   const handleAdd = async () => {
     if (!form.name.trim()) { setSaveError('Укажите название'); return; }
