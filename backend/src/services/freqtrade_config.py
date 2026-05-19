@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from src.core.crypto import decrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repositories.api_keys_repository import ApiKeysRepository
 TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "templates" / "config.template.json"
@@ -30,8 +31,8 @@ async def generate_config(
     """
     if api_key_id is not None: 
         api_keys = await ApiKeysRepository(db).get_api_key_by_id(api_key_id)
-        key = api_keys.api_key
-        secret = api_keys.api_secret
+        key = decrypt(api_keys.api_key_encrypted)
+        secret = decrypt(api_keys.api_secret_encrypted)
     else:
         key = ""
         secret = ""
