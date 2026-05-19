@@ -81,7 +81,7 @@ export default function ApiKeysPage() {
   useEffect(() => { 
     if (!isAuthed) return;
     loadKeys();
-  }, []);
+  }, [isAuthed]);
 
   const handleAdd = async () => {
     if (!form.name.trim()) { setSaveError('Укажите название'); return; }

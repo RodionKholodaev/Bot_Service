@@ -135,7 +135,6 @@ const StatsPage: React.FC = () => {
 
   // Загрузка данных при смене вью или периода
   const fetchData = useCallback(async () => {
-    if (!isAuthed) return;
     setLoading(true);
     setError(null);
     try {
@@ -161,8 +160,9 @@ const StatsPage: React.FC = () => {
   }, [view, period]);
 
   useEffect(() => {
+    if (!isAuthed) return;
     fetchData();
-  }, [fetchData]);
+  }, [isAuthed, fetchData]);
 
   // ===== Текущие метрики =====
   const current: PortfolioStats | BotStats | null = view === "all" ? portfolio : botData;

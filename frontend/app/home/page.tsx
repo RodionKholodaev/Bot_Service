@@ -61,7 +61,6 @@ const TradingBotDashboard = () => {
   
   const fetchBalance = useCallback(async () => {
     try {
-      if (!isAuthed) return;
       const res = await fetch(`${API_BASE}/users/me/balance`, {
         headers: { ...getAuthHeader() },
         cache: 'no-store',
@@ -76,7 +75,6 @@ const TradingBotDashboard = () => {
 
   const fetchHomeStats = useCallback(async () => {
     try {
-      if (!isAuthed) return;
       const res = await fetch(`${API_BASE}/stats/home`, {
         headers: { ...getAuthHeader() },
         cache: 'no-store',
@@ -108,7 +106,6 @@ const TradingBotDashboard = () => {
 
   // Функция создания платежа:
   const handleTopUp = async () => {
-    if (!isAuthed) return;
     const amount = parseFloat(topUpAmount);
     if (!amount || amount < 10) return alert('Минимальная сумма — 10 ₽');
     
@@ -133,7 +130,6 @@ const TradingBotDashboard = () => {
 
   const fetchBots = useCallback(async () => {
     try {
-      if (!isAuthed) return;
       setBotsError(null);
       const res = await fetch(`${API_BASE}/bots`, {
         headers: { ...getAuthHeader() },
@@ -151,7 +147,6 @@ const TradingBotDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!isAuthed) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       fetchBalance();
@@ -168,10 +163,9 @@ const TradingBotDashboard = () => {
     // авто-обновление раз в 15 секунд, чтобы видеть смену статусов
     const interval = setInterval(fetchBots, 15000);
     return () => clearInterval(interval);
-  }, [fetchBots]);
+  }, [isAuthed, fetchBots, fetchBalance, fetchHomeStats]);
 
   const markPending = (id: string, on: boolean) => {
-    if (!isAuthed) return;
     setPendingIds(prev => {
       const next = new Set(prev);
       on ? next.add(id) : next.delete(id);
@@ -180,7 +174,6 @@ const TradingBotDashboard = () => {
   };
 
   const handleStartStop = async (bot: BotPublic) => {
-    if (!isAuthed) return;
     const action = bot.status === 'running' || bot.status === 'starting' ? 'stop' : 'start';
     markPending(bot.id, true);
     try {
@@ -201,7 +194,6 @@ const TradingBotDashboard = () => {
   };
 
   const handleDelete = async (botId: string) => {
-    if (!isAuthed) return;
     markPending(botId, true);
     try {
       const res = await fetch(`${API_BASE}/bots/${botId}`, {

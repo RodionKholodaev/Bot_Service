@@ -124,7 +124,7 @@ const CreateBotPage = () => {
       }
     };
     loadApiKeys();
-  }, []);
+  }, [isAuthed]);
 
   useEffect(() => {
     if (formData.strategyPreset !== 'custom') {
