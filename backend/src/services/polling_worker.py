@@ -173,7 +173,7 @@ async def run_polling_worker() -> None:
                         for bot in running_bots:
                             raw = await _fetch_trades(bot, client)
                             if raw:
-                                _sync_bot_trades(db, bot, raw)
+                                await _async_bot_trades(db, bot, raw)
 
                     except Exception as exc:
                         logger.exception("Polling worker error: %s", exc)
