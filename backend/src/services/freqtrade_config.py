@@ -31,6 +31,7 @@ async def generate_config(
     """
     if api_key_id is not None: 
         api_keys = await ApiKeysRepository(db).get_api_key_by_id(api_key_id)
+        if api_keys is None: raise ValueError("Не удалось найти ключ по id")
         key = decrypt(api_keys.api_key_encrypted)
         secret = decrypt(api_keys.api_secret_encrypted)
     else:
