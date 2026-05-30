@@ -12,3 +12,4 @@ docker
 httpx
 cryptography
 aiosqlite
+aiohttp
