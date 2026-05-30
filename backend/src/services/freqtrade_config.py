@@ -15,10 +15,10 @@ async def generate_config(
     ws_token: str,
     api_username: str,
     api_password: str,
-    api_key_id: int | None,
+    exchange_key: str,    
+    exchange_secret: str,  
     stake_amount: float,
     tradable_balance_ratio: float,
-    db: AsyncSession,
     user_id: int,
     dry_run: bool = True,
 ) -> dict:
@@ -29,14 +29,6 @@ async def generate_config(
     Снаружи мы пробросим его на bot.api_port из БД через docker port mapping.
     Внутри пусть всегда будет 8080 (как в шаблоне) — это просто удобство.
     """
-    if api_key_id is not None: 
-        api_keys = await ApiKeysRepository(db).get_api_key_by_id(api_key_id)
-        if api_keys is None: raise ValueError("Не удалось найти ключ по id")
-        key = decrypt(api_keys.api_key_encrypted)
-        secret = decrypt(api_keys.api_secret_encrypted)
-    else:
-        key = ""
-        secret = ""
         
     with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
         config = json.load(f)
@@ -45,8 +37,8 @@ async def generate_config(
     config["tradable_balance_ratio"] = tradable_balance_ratio
     config["exchange"]["pair_whitelist"] = [pair]
     config["dry_run"] = dry_run
-    config["exchange"]["key"] = key
-    config["exchange"]["secret"] = secret
+    config["exchange"]["key"] = exchange_key
+    config["exchange"]["secret"] = exchange_secret
     config["api_server"]["listen_port"] = api_port_inside_container
     config["api_server"]["jwt_secret_key"] = jwt_secret
     config["api_server"]["ws_token"] = ws_token

@@ -1,4 +1,4 @@
-# pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
+# pyright: ignore
 """
 MultiFilterStrategy — универсальная фьючерсная стратегия для Freqtrade.
 

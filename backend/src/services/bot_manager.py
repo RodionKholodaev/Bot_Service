@@ -18,10 +18,11 @@ from src.models.bot import Bot
 from src.schemas.bot import BotCreate
 from src.services import docker_manager
 from src.repositories.bot_repository import BotRepository
+from src.repositories.api_keys_repository import ApiKeysRepository
 from src.services.freqtrade_config import generate_config, write_config
 from src.services.freqtrade_strategy import generate_strategy_file, write_strategy_file
 from src.services.strategy_presets import resolve_filters
-
+from src.core.crypto import decrypt
 logger = logging.getLogger(__name__)
 
 
@@ -113,9 +114,7 @@ async def create_bot_record(db: AsyncSession, user_id: int, body: BotCreate) -> 
         tradable_balance_ratio=body.tradable_balance_ratio,
     )
 
-    db.add(bot)
-    await db.commit()
-    await db.refresh(bot)
+    await BotRepository(db).create(bot)
     # создаем файлы в bots_data
     await _materialize_files(db, bot, user_id)
 
@@ -130,6 +129,14 @@ async def _materialize_files(db: AsyncSession, bot: Bot, user_id: int) -> None:
     (bot_dir / "user_data" / "strategies").mkdir(parents=True, exist_ok=True)
     (bot_dir / "user_data" / "logs").mkdir(parents=True, exist_ok=True)
     (bot_dir / "user_data" / "data").mkdir(parents=True, exist_ok=True)
+    # получаем ключи
+    api_key = None
+    if bot.api_key_id:
+        api_key = await ApiKeysRepository(db).get_api_key_by_id(bot.api_key_id)
+    
+    exchange_key = decrypt(api_key.api_key_encrypted) if api_key else ""
+    exchange_secret = decrypt(api_key.api_secret_encrypted) if api_key else ""
+
     # создаем конфиг
     cfg = await generate_config(
         pair=bot.pair,
@@ -139,10 +146,10 @@ async def _materialize_files(db: AsyncSession, bot: Bot, user_id: int) -> None:
         api_username=bot.api_username,
         api_password=bot.api_password,
         dry_run=bot.dry_run,
-        api_key_id = bot.api_key_id,
+        exchange_key=exchange_key,
+        exchange_secret=exchange_secret,
         stake_amount = bot.stake_amount,
         tradable_balance_ratio=bot.tradable_balance_ratio,
-        db = db,
         user_id = user_id
     )
     # сохраняем конфиг

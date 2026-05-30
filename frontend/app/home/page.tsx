@@ -321,7 +321,7 @@ const TradingBotDashboard = () => {
             </div>
             <div className="stat-content">
               <div className="stat-label">Прибыль за неделю</div>
-              <div className="stat-value profit">+${stats.weeklyProfit}</div>
+              <div className="stat-value profit">${stats.weeklyProfit}</div>
             </div>
           </div>
 

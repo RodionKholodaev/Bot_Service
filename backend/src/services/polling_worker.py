@@ -12,14 +12,13 @@ from datetime import datetime, timezone
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from src.services.commission_service import CommissionService
 from src.database import AsyncSessionLocal
 from src.models.bot import Bot
 from src.models.trade import Trade
 from src.models.user import User
 from src.repositories.bot_repository import BotRepository
 from src.repositories.trade_repository import TradeRepository
-from src.services.exchange_rate_service import ExchangeRateService
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 30  # секунды
@@ -108,7 +107,7 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
             await db.flush()  # получаем trade.id для дальнейшей логики
 
             if not is_open:
-                await _handle_close(bot, user, trade)
+                await CommissionService.process_commission(trade,user,bot)
 
         else:
             # Сделка уже была — проверяем, не закрылась ли она
@@ -118,46 +117,9 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
                 existing.profit_pct = (ft.get("profit_ratio", 0.0) or 0.0) * 100
                 existing.exit_reason = ft.get("exit_reason")
                 existing.close_time = _parse_dt(ft.get("close_date"))
-                await _handle_close(bot, user, existing)
+                await CommissionService.process_commission(existing,user,bot)
 
     await db.commit()
-
-
-async def _handle_close(bot: Bot, user: User, trade: Trade) -> None:
-    """
-    Вызывается один раз при закрытии сделки:
-    - обновляет Bot.total_profit
-    - рассчитывает и списывает комиссию сервиса
-    """
-    profit = trade.profit_usdt or 0.0
-
-    # Обновляем накопленный профит бота
-    bot.total_profit = round(bot.total_profit + profit, 8)
-
-    # Комиссия — только с прибыльных сделок
-    if profit > 0 and not trade.commission_paid:
-        rate_service = ExchangeRateService()
-        current_rate = await rate_service.get_usdt_rub()
-        if current_rate is None: raise ValueError("Не удалось получить курс USDT")
-
-        commission_usdt = round(profit * user.commission_rate, 8) 
-        commission_rub = round(profit * user.commission_rate, 8) * current_rate
-
-        trade.commission_usdt = commission_usdt
-        trade.commission_rub = commission_rub
-        trade.commission_paid = True
-
-        # Списываем с сервисного баланса пользователя
-        user.service_balance = round(user.service_balance - commission_rub, 8)
-
-        # Суммарно списанная комиссия по боту (не гибкий код!!!!)
-        bot.total_commission_paid_usdt = round(bot.total_commission_paid_usdt + commission_usdt, 8)
-        bot.total_commission_paid_rub = round(bot.total_commission_paid_rub + commission_rub, 8)
-
-        logger.info(
-            "Bot %s trade #%s closed: profit=%.4f USDT, commission=%.4f USDT",
-            bot.id, trade.freqtrade_trade_id, profit, commission_usdt,
-        )
 
 
 # ──────────────────────────────────────────────────────────────

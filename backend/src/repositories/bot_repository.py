@@ -7,6 +7,12 @@ class BotRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
     
+    async def create(self, bot: Bot) -> Bot:
+        self.db.add(bot)
+        await self.db.commit()
+        await self.db.refresh(bot)
+        return bot
+    
     async def get_all_active_bots(self):
         bots = await self.db.execute(select(Bot).where(Bot.status == "running", Bot.is_active == True))
         running_bots = bots.scalars().all()

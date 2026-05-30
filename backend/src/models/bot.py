@@ -26,8 +26,7 @@ class Bot(Base):
     strategy_preset: Mapped[str] = mapped_column(String(20), nullable=False)
     # custom / conservative / moderate / aggressive
 
-    # JSON-списки фильтров. Для custom — присланные пользователем,
-    # для пресетов — раскрытые на бэкенде по словарю пресетов.
+    # JSON-списки фильтров
     entry_filters_long: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     entry_filters_short: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
