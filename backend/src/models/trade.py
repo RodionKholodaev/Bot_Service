@@ -29,11 +29,17 @@ class Trade(Base):
 
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     # размер позиции в базовой валюте
+    leverage: Mapped[float] = mapped_column(Float, nullable=False)
+    # плечо у сделки
 
     profit_usdt: Mapped[float | None] = mapped_column(Float, nullable=True)
     profit_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    exchange_rate_rub_usdt: Mapped[float] = mapped_column(Float,nullable=False)
+    # курс рубля к usdt в момент закрытия сделки
+
     commission_usdt: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    commission_rub: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     # сколько сервис взял с этой сделки
 
     commission_paid: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

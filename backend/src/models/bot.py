@@ -51,8 +51,9 @@ class Bot(Base):
     total_profit: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     
     # суммарно списанная комиссия сервиса
-    total_commission_paid: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    
+    total_commission_paid_usdt: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    total_commission_paid_rub: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
 
     # ── Что задаёт бэкенд ─────────────────────────────────
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="created")

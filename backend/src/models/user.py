@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Integer, String, DateTime, Boolean, Float
 from sqlalchemy.orm import Mapped, mapped_column
 from src.database import Base
-
+from src.config import settings
 
 class User(Base):
     __tablename__ = "users"
@@ -15,7 +15,7 @@ class User(Base):
     service_balance: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     
     # доля прибыли, которую берёт сервис (0.20 = 20%)
-    commission_rate: Mapped[float] = mapped_column(Float, nullable=False, default=0.20)
+    commission_rate: Mapped[float] = mapped_column(Float, nullable=False, default=settings.SERVICE_COMMISION)
     
     # False — аккаунт заблокирован
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
