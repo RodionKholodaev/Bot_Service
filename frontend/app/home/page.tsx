@@ -149,8 +149,11 @@ const TradingBotDashboard = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      fetchBalance();
-      window.history.replaceState({}, '', window.location.pathname); // убираем ?payment=success из URL
+      // Ждём 3 секунды перед запросом баланса
+      setTimeout(() => fetchBalance(), 3000);
+      
+      // Убираем параметр ?payment=success из URL
+      window.history.replaceState({}, '', window.location.pathname);
     }
   }, []); 
 

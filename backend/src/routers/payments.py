@@ -11,7 +11,7 @@ from src.core.dependencies import get_current_user
 from src.config import settings
 from src.repositories.payments_repository import PaymentsRepository
 from src.repositories.user_repository import UserRepository
-
+from src.services import get_ip
 router = APIRouter(prefix="/payments", tags=["payments"])
 
 YOOKASSA_IPS = [
@@ -71,7 +71,8 @@ async def payment_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    client_ip = ipaddress.ip_address(request.client.host) #type: ignore
+    client_ip = get_ip(request) #type: ignore
+    
     if not any(client_ip in network for network in YOOKASSA_IPS):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
