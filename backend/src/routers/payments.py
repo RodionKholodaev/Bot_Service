@@ -11,7 +11,7 @@ from src.core.dependencies import get_current_user
 from src.config import settings
 from src.repositories.payments_repository import PaymentsRepository
 from src.repositories.user_repository import UserRepository
-from src.services import get_ip
+from src.services.get_ip import get_ip
 router = APIRouter(prefix="/payments", tags=["payments"])
 
 YOOKASSA_IPS = [
@@ -40,7 +40,7 @@ async def create_payment(
     raw = await request.body()
     print("HEADERS:", dict(request.headers))
     print("RAW BODY:", raw)
-    
+
     _configure_yookassa()
 
     yk_payment = YKPayment.create({
