@@ -9,7 +9,7 @@
 from pathlib import Path
 
 TEMPLATE_PATH = (
-    Path(__file__).resolve().parent.parent / "templates" / "multifilter_strategy.template.py"
+    Path(__file__).resolve().parent.parent / "templates" / "multifilter_strategy.template"
 )
 
 TF_ORDER = ["1m", "5m", "15m", "30m", "1h", "4h"]
