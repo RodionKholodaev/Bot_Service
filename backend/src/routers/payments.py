@@ -32,10 +32,15 @@ def _configure_yookassa():
 
 @router.post("/create", response_model=PaymentCreateResponse)
 async def create_payment(
+    request: Request,
     body: PaymentCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    raw = await request.body()
+    print("HEADERS:", dict(request.headers))
+    print("RAW BODY:", raw)
+    
     _configure_yookassa()
 
     yk_payment = YKPayment.create({
