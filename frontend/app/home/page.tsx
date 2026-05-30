@@ -232,7 +232,7 @@ const TradingBotDashboard = () => {
   return (
     <div className="dashboard-container">
       {/* Critical Balance Alert */}
-      {balanceStatus.status === 'critical' && (
+      {/* {balanceStatus.status === 'critical' && (
         <div className="balance-alert critical">
           <AlertCircle size={20} />
           <span>⚠️ Критический баланс! Боты остановятся через {balanceStatus.daysLeft} день. Пополните баланс сейчас.</span>
@@ -240,9 +240,9 @@ const TradingBotDashboard = () => {
             Пополнить сейчас
           </button>
         </div>
-      )}
+      )} */}
 
-      {balanceStatus.status === 'low' && (
+      {/* {balanceStatus.status === 'low' && (
         <div className="balance-alert warning">
           <AlertCircle size={18} />
           <span>Баланс заканчивается. Хватит примерно на {balanceStatus.daysLeft} дней работы.</span>
@@ -250,7 +250,7 @@ const TradingBotDashboard = () => {
             Пополнить
           </button>
         </div>
-      )}
+      )} */}
 
       {/* Header */}
       <header className="dashboard-header">
