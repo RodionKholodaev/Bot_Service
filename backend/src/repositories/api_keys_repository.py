@@ -15,13 +15,13 @@ class ApiKeysRepository:
         else:
             return result.scalars().all()
         
-    async def add_api_key(self, user_id, payload):
+    async def add_api_key(self, user_id, exchange, label, key_enc, secret_enc):
         key = ExchangeApiKey(
             user_id=user_id,
-            exchange=payload.exchange,
-            label=payload.name,
-            api_key_encrypted=encrypt(payload.api_key),
-            api_secret_encrypted=encrypt(payload.api_secret),
+            exchange=exchange,
+            label=label,
+            api_key_encrypted=key_enc,
+            api_secret_encrypted=secret_enc,
             is_active=True,
         )
         self.db.add(key)
