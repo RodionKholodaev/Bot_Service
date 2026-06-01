@@ -1,4 +1,3 @@
-# pyright: ignore
 """
 MultiFilterStrategy — универсальная фьючерсная стратегия для Freqtrade.
 
