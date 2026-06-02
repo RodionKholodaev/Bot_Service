@@ -51,7 +51,7 @@ class BotRepository:
         return result.scalars().all()
     
     
-    async def change_bot_status(self, status: Literal["created", "starting", "running", "stopped", "error"], bot: Bot):
+    async def change_bot_status(self, status: Literal["created", "starting", "running", "stopped", "error"], bot: Bot) -> Bot:
         bot.status = status
         await self.db.flush()
         await self.db.refresh(bot)

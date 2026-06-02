@@ -13,7 +13,7 @@ from pathlib import Path
 from src.services import docker_manager, freqtrade_client
 import logging
 import shutil
-from src.core.exceptions import NotFoundError
+from src.core.exceptions import NotFoundError, BadRequestError
 logger = logging.getLogger(__name__)
 
 class BotService:
@@ -165,6 +165,7 @@ class BotService:
             ans = await self.bot_repo.change_bot_status("stopped", bot)
             await self.db.commit()
             return ans
+        raise BadRequestError("У бота не найден id")
         
         
 
