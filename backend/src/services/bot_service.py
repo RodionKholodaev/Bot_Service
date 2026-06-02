@@ -1,6 +1,5 @@
 from src.repositories.bot_repository import BotRepository
 from src.models.user import User
-from fastapi import HTTPException
 from src.schemas.bot import BotCreate
 from src.services.strategy_presets import resolve_filters
 import uuid
@@ -14,7 +13,7 @@ from pathlib import Path
 from src.services import docker_manager, freqtrade_client
 import logging
 import shutil
-
+from src.core.exceptions import NotFoundError
 logger = logging.getLogger(__name__)
 
 class BotService:
@@ -44,9 +43,9 @@ class BotService:
     async def _get_user_bot (self, bot_id, user:User):
         bot = await self.bot_repo.get_bot_by_id(bot_id)
         if bot is None:
-            raise HTTPException(status_code=404, detail="Бот не найден")
+            raise NotFoundError("Бот не найден")
         if bot.user_id != user.id:
-            raise HTTPException(status_code=404, detail="Бот не найден")
+            raise NotFoundError("Бот не найден")
         return bot
     
 
@@ -130,7 +129,7 @@ class BotService:
         # получаем папку с настройками бота
         bot_dir = BotService._bot_dir(bot.id)
         if not (bot_dir / "config.json").exists():
-            raise HTTPException(status_code=404, detail= "Не найдены файлы бота")
+            raise NotFoundError("Не найдены файлы бота")
         
         # меняем статус на starting
         await self.bot_repo.change_bot_status("starting", bot)
@@ -179,9 +178,9 @@ class BotService:
         """Достаёт бота с проверкой, что он принадлежит текущему пользователю."""
         bot = await self.bot_repo.get_bot_by_id(bot_id)
         if bot is None:
-            raise HTTPException(status_code=404, detail="Бот не найден")
+            raise NotFoundError("Бот не найден")
         if bot.user_id != user.id:
-            raise HTTPException(status_code=404, detail="Бот не найден")
+            raise NotFoundError("Бот не найден")
         return bot
     
     @staticmethod
@@ -194,5 +193,8 @@ class BotService:
     
     @staticmethod
     async def freqtrade_status(bot: Bot):
-        return freqtrade_client.get_status(bot)
+        data = freqtrade_client.get_status(bot)
+        if data is None:
+            raise NotFoundError("Не удалось получить открытые сделки")
+        return data
     

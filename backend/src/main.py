@@ -7,7 +7,7 @@ from src.config import settings
 from src.database import Base, engine
 from src.routers import auth, bots, api_keys, user, stats, payments#, support
 from src.services import docker_manager
-
+from src.core.exception_handlers import register_exception_handlers
 from src.services.polling_worker import run_polling_worker
 import asyncio
 
@@ -43,6 +43,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="CryptoBot API", version="0.1.0", lifespan=lifespan)
+register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,

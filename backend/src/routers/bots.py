@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.dependencies import get_current_user
@@ -26,10 +26,7 @@ async def create_bot(
     """
     botservice = BotService(db)
 
-    try:
-        bot = await botservice.create_bot(current_user, body)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Не удалось создать бота: {e}")
+    bot = await botservice.create_bot(current_user, body)
 
     bot = await botservice.start_bot(bot)
 
@@ -101,8 +98,7 @@ async def freqtrade_status(
 ):
     bot = await BotService(db).get_user_bot(bot_id, current_user)
     data = BotService.freqtrade_status(bot)
-    if data is None:
-        raise HTTPException(status_code=503, detail="Бот недоступен")
+
     return data
 
 

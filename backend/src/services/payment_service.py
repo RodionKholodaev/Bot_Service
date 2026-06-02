@@ -1,13 +1,13 @@
 from src.repositories.payments_repository import PaymentsRepository
 import ipaddress
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from src.schemas.payments import PaymentCreate, PaymentCreateResponse
 from yookassa import Configuration, Payment as YKPayment
 from src.models.user import User
 from src.config import settings
 from src.repositories.user_repository import UserRepository
 from src.services.get_ip import get_ip
-
+from src.core.exceptions import NotFoundError, ForbiddenError
 
 YOOKASSA_IPS = [
     ipaddress.ip_network("185.71.76.0/27"),
@@ -31,8 +31,6 @@ class PaymentService:
     
     async def create_payment(self, request: Request, body: PaymentCreate, current_user: User):
         raw = await request.body()
-        print("HEADERS:", dict(request.headers))
-        print("RAW BODY:", raw)
 
         _configure_yookassa()
 
@@ -68,9 +66,9 @@ class PaymentService:
         client_ip = get_ip(request) #type: ignore
         
         if not any(client_ip in network for network in YOOKASSA_IPS):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+            raise ForbiddenError()
 
-        body = await request.json()  
+        body = await request.json()
         event: str = body.get("event", "")
         obj: dict = body.get("object", {})
 
@@ -94,7 +92,7 @@ class PaymentService:
         user = await self.user_repo.get_user_by_id(user_id)
 
         if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise NotFoundError("User not found")
 
         await self.user_repo.change_balanse(user, amount)
 

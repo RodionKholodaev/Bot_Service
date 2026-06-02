@@ -1,6 +1,5 @@
 from src.repositories.api_keys_repository import ApiKeysRepository
 from src.schemas.api_keys import ApiKeyListItem
-from fastapi import HTTPException
 from src.core.crypto import encrypt
 class ApiKeyService:
     def __init__(self,db):
