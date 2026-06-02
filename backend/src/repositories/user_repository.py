@@ -23,3 +23,8 @@ class UserRepository:
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
+
+    async def change_balanse(self,user: User, amount: float):
+        user.service_balance += amount
+        await self.db.commit()
+        
