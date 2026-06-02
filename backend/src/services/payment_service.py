@@ -26,6 +26,7 @@ def _configure_yookassa():
 
 class PaymentService:
     def __init__(self, db):
+        self.db = db
         self.peyment_repo = PaymentsRepository(db)
         self.user_repo = UserRepository(db)
     
@@ -55,6 +56,7 @@ class PaymentService:
             amount=body.amount,
             status="pending",  
         )
+        await self.db.commit()
 
         return PaymentCreateResponse(
             payment_id=yk_payment.id, #type:ignore
@@ -95,5 +97,6 @@ class PaymentService:
             raise NotFoundError("User not found")
 
         await self.user_repo.change_balanse(user, amount)
+        await self.db.commit()
 
         return {"status": "ok"}

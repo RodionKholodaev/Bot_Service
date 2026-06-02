@@ -21,10 +21,10 @@ class UserRepository:
 
     async def create_user(self, user: User):
         self.db.add(user)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(user)
 
     async def change_balanse(self,user: User, amount: float):
         user.service_balance += amount
-        await self.db.commit()
+        await self.db.flush()
         

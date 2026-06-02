@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class BotService:
     def __init__(self, db):
+        self.db = db
         self.bot_repo = BotRepository(db)
         self.api_keys_repo = ApiKeysRepository(db)
 
@@ -102,6 +103,7 @@ class BotService:
         )
 
         await self.bot_repo.create(bot)
+        await self.db.commit()
 
         # получаем ключи из бд
         api_key = None
@@ -133,6 +135,7 @@ class BotService:
         
         # меняем статус на starting
         await self.bot_repo.change_bot_status("starting", bot)
+        await self.db.commit()
 
         try:
             # проверяем что образ freqtrade есть на сервере
@@ -146,18 +149,23 @@ class BotService:
             # меняем данные о статусе и контейнере в бд
             await self.bot_repo.change_container_id(container.id, bot)
             await self.bot_repo.change_bot_status("running", bot)
+            await self.db.commit()
 
         except Exception as e:
             logger.exception("Не удалось запустить контейнер")
             await self.bot_repo.change_bot_status("error", bot)
             await self.bot_repo.add_error_message(str(e)[:500], bot)
+            await self.db.commit()
 
         return bot
     
     async def stop_bot(self, bot: Bot) -> Bot:
         if bot.container_id:
             docker_manager.stop_container(bot.container_id)
-        return await self.bot_repo.change_bot_status("stopped", bot)
+            ans = await self.bot_repo.change_bot_status("stopped", bot)
+            await self.db.commit()
+            return ans
+        
         
 
 
@@ -173,6 +181,7 @@ class BotService:
                 logger.exception(f"Не удалось удалить папку бота {bot_dir}")
 
         await self.bot_repo.delete_bot(bot)
+        await self.db.commit()
 
     async def get_user_bot(self, bot_id: str, user: User) -> Bot:
         """Достаёт бота с проверкой, что он принадлежит текущему пользователю."""

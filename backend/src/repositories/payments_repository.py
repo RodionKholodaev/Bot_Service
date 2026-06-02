@@ -14,7 +14,7 @@ class PaymentsRepository:
             status = status
         )
         self.db.add(payment)
-        await self.db.commit()
+        await self.db.flush()
         return payment
     
     async def get_payment_by_id(self,payment_id):

@@ -25,7 +25,7 @@ class ApiKeysRepository:
             is_active=True,
         )
         self.db.add(key)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(key)
         return key
 
@@ -37,7 +37,7 @@ class ApiKeysRepository:
         key = result.scalar_one_or_none()
         if key:
             await self.db.delete(key)
-            await self.db.commit()
+            await self.db.flush()
         
     async def get_api_key_by_id(self, key_id):
         result = await self.db.execute(select(ExchangeApiKey).where(ExchangeApiKey.id == key_id))

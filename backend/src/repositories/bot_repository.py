@@ -10,7 +10,7 @@ class BotRepository:
     
     async def create(self, bot: Bot) -> Bot:
         self.db.add(bot)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
     
@@ -53,22 +53,22 @@ class BotRepository:
     
     async def change_bot_status(self, status: Literal["created", "starting", "running", "stopped", "error"], bot: Bot):
         bot.status = status
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 
     async def add_error_message(self, error: str, bot: Bot):
         bot.error_message = error
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
     
     async def change_container_id(self, container_id, bot: Bot):
         bot.container_id = container_id
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
         
     async def delete_bot(self,bot: Bot):
         await self.db.delete(bot)
-        await self.db.commit()
+        await self.db.flush()
