@@ -35,7 +35,7 @@ class Trade(Base):
     profit_usdt: Mapped[float | None] = mapped_column(Float, nullable=True)
     profit_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
 
-    exchange_rate_rub_usdt: Mapped[float] = mapped_column(Float,nullable=False)
+    exchange_rate_rub_usdt: Mapped[float] = mapped_column(Float,nullable=True)
     # курс рубля к usdt в момент закрытия сделки
 
     commission_usdt: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
