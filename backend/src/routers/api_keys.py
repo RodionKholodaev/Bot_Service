@@ -15,7 +15,7 @@ async def list_api_keys(
     db: AsyncSession = Depends(get_db),
 ):
     """Список API-ключей текущего пользователя (только активные)."""
-    await ApiKeyService(db).get_list_api_keys(current_user)
+    return await ApiKeyService(db).get_list_api_keys(current_user)
 
 @router.post("", response_model=ApiKeyListItem, status_code=status.HTTP_201_CREATED)
 async def create_api_key(

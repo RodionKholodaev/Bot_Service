@@ -340,7 +340,7 @@ const CreateBotPage = () => {
       pair: toFuturesPair(formData.tradingPair),
       leverage: Number(formData.leverage),
       direction,
-      strategy_preset: formData.strategyPreset as BotCreatePayload['strategy_preset'],
+      strategy_preset: 'custom',
       take_profit_percent: Number(formData.takeProfit),
       stop_loss_enabled: formData.useStopLoss,
       stop_loss_percent: formData.useStopLoss ? Number(formData.stopLoss) : null,
@@ -353,13 +353,13 @@ const CreateBotPage = () => {
       tradable_balance_ratio: Number(formData.balanceRatio) / 100,
     };
 
-    if (formData.strategyPreset === 'custom') {
-      if (direction === 'long') {
-        payload.entry_filters_long = formData.filters;
-      } else {
-        payload.entry_filters_short = formData.filters;
-      }
+    if (direction === 'long') {
+      payload.entry_filters_long = formData.filters;
     }
+    if (direction === 'short') {
+      payload.entry_filters_short = formData.filters;
+    }
+    
     console.log('Настройки бота:', JSON.stringify(payload, null, 2));
 
     setSubmitting(true);

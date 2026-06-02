@@ -83,8 +83,8 @@ class BotPublic(BaseModel):
     direction: str
     strategy_preset: str
 
-    entry_filters_long: list[dict]
-    entry_filters_short: list[dict]
+    entry_filters_long: list[dict] = []
+    entry_filters_short: list[dict] = []
     take_profit: dict
     stop_loss: float
 
