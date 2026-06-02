@@ -3,24 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.dependencies import get_current_user
 from src.database import get_db
-from src.models.bot import Bot
 from src.models.user import User
 from src.schemas.bot import BotCreate, BotPublic
-from src.services import bot_manager, docker_manager, freqtrade_client
 from src.repositories.bot_repository import BotRepository
+from src.services.bot_service import BotService
 router = APIRouter(prefix="/bots", tags=["Bots"])
 
 
-# ── Хелперы ───────────────────────────────────────────────
 
-async def _get_user_bot(db: AsyncSession, bot_id: str, user: User) -> Bot:
-    """Достаёт бота с проверкой, что он принадлежит текущему пользователю."""
-    bot = await BotRepository(db).get_bot_by_id(bot_id)
-    if bot is None:
-        raise HTTPException(status_code=404, detail="Бот не найден")
-    if bot.user_id != user.id:
-        raise HTTPException(status_code=404, detail="Бот не найден")
-    return bot
 
 
 # ── Создание + автозапуск ─────────────────────────────────
@@ -33,35 +23,15 @@ async def create_bot(
 ):
     """
     Создать бота и сразу его запустить.
-    На UI после успешного ответа делаем редирект на /home.
     """
-    # проверкае есть ли фильтры для входа для указанного направления
-    if body.strategy_preset == "custom": 
-        if body.direction in ("long", "both") and not body.entry_filters_long:
-            raise HTTPException(
-                status_code=400,
-                detail="Для custom стратегии и направления long/both нужны entry_filters_long",
-            )
-        if body.direction in ("short", "both") and not body.entry_filters_short:
-            raise HTTPException(
-                status_code=400,
-                detail="Для custom стратегии и направления short/both нужны entry_filters_short",
-            )
-
-    if body.stop_loss_enabled and body.stop_loss_percent is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Если stop_loss_enabled=true, нужен stop_loss_percent",
-        )
+    botservice = BotService(db)
 
     try:
-        bot = await bot_manager.create_bot_record(db=db, user_id=current_user.id, body=body)
+        bot = await botservice.create_bot(current_user, body)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Не удалось создать бота: {e}")
 
-    # Сразу запускаем. Если запуск упал — бот останется в БД со статусом 'error',
-    # фронт это увидит и сможет потом удалить или перезапустить.
-    bot = await bot_manager.start_bot(db=db, bot=bot)
+    bot = await botservice.start_bot(bot)
 
     return bot
 
@@ -83,7 +53,7 @@ async def get_bot(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await _get_user_bot(db, bot_id, current_user)
+    return await BotService(db).get_user_bot(bot_id, current_user)
 
 
 # ── Старт / стоп / удаление ───────────────────────────────
@@ -94,8 +64,9 @@ async def start_bot_endpoint(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    bot = await _get_user_bot(db, bot_id, current_user)
-    return await bot_manager.start_bot(db=db, bot=bot)
+    botservice = BotService(db)
+    bot = await botservice.get_user_bot(bot_id, current_user)
+    return await botservice.start_bot(bot)
 
 
 @router.post("/{bot_id}/stop", response_model=BotPublic)
@@ -104,8 +75,9 @@ async def stop_bot_endpoint(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    bot = await _get_user_bot(db, bot_id, current_user)
-    return await bot_manager.stop_bot(db=db, bot=bot)
+    botservice = BotService(db)
+    bot = await botservice.get_user_bot(bot_id, current_user)
+    return await botservice.stop_bot(bot)
 
 
 @router.delete("/{bot_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -114,9 +86,9 @@ async def delete_bot_endpoint(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    bot = await _get_user_bot(db, bot_id, current_user)
-    await bot_manager.delete_bot(db=db, bot=bot)
-    return None
+    botservice = BotService(db)
+    bot = await botservice.get_user_bot(bot_id, current_user)
+    await botservice.delete_bot(bot)
 
 
 # ── Прокси к freqtrade ────────────────────────────────────
@@ -127,8 +99,8 @@ async def freqtrade_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    bot = await _get_user_bot(db, bot_id, current_user)
-    data = freqtrade_client.get_status(bot)
+    bot = await BotService(db).get_user_bot(bot_id, current_user)
+    data = BotService.freqtrade_status(bot)
     if data is None:
         raise HTTPException(status_code=503, detail="Бот недоступен")
     return data
@@ -143,8 +115,6 @@ async def get_logs(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    bot = await _get_user_bot(db, bot_id, current_user)
-    if not bot.container_id:
-        return {"logs": ""}
-    logs = docker_manager.get_container_logs(bot.container_id, tail=tail)
-    return {"logs": logs}
+    bot = await BotService(db).get_user_bot(bot_id, current_user)
+
+    return BotService.get_logs(bot, tail)

@@ -2,7 +2,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select 
 from src.models.bot import Bot
 from src.models.user import User
-
+from src.config import settings
+from typing import Literal
 class BotRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -29,6 +30,16 @@ class BotRepository:
     async def get_all_busy_ports(self):
         result = await self.db.execute(select(Bot.api_port))
         return result.scalars().all()
+
+    async def allocate_port(self) -> int | None:
+        """
+        Выдаёт первый свободный порт из диапазона 
+        """
+        used = await BotRepository(self.db).get_all_busy_ports()
+        for port in range(settings.BOT_API_PORT_RANGE_START, settings.BOT_API_PORT_RANGE_END + 1):
+            if port not in used:
+                return port
+        return None
     
     async def get_user_active_bots(self, user_id):
         result = await self.db.execute(select(Bot).where(Bot.user_id==user_id, Bot.is_active==True))
@@ -39,3 +50,25 @@ class BotRepository:
         result = await self.db.execute(select(Bot).where(Bot.user_id==user_id))
         return result.scalars().all()
     
+    
+    async def change_bot_status(self, status: Literal["created", "starting", "running", "stopped", "error"], bot: Bot):
+        bot.status = status
+        await self.db.commit()
+        await self.db.refresh(bot)
+        return bot
+
+    async def add_error_message(self, error: str, bot: Bot):
+        bot.error_message = error
+        await self.db.commit()
+        await self.db.refresh(bot)
+        return bot
+    
+    async def change_container_id(self, container_id, bot: Bot):
+        bot.container_id = container_id
+        await self.db.commit()
+        await self.db.refresh(bot)
+        return bot
+        
+    async def delete_bot(self,bot: Bot):
+        await self.db.delete(bot)
+        await self.db.commit()
