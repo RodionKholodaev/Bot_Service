@@ -2,10 +2,10 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from logger_config import setup_logging
+from src.logger_config import setup_logging
 from src.config import settings
 from src.database import Base, engine
-from src.routers import auth, bots, api_keys, user, stats, payments#, support
+from src.routers import auth, bots, api_keys, user, stats, payments
 from src.services import docker_manager
 from src.core.exception_handlers import register_exception_handlers
 from src.services.polling_worker import run_polling_worker
