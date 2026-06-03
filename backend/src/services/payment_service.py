@@ -25,10 +25,10 @@ def _configure_yookassa():
     Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
 
 class PaymentService:
-    def __init__(self, db):
+    def __init__(self, db, user_repo, payment_repo):
         self.db = db
-        self.peyment_repo = PaymentsRepository(db)
-        self.user_repo = UserRepository(db)
+        self.payment_repo: PaymentsRepository = payment_repo
+        self.user_repo: UserRepository = user_repo
     
     async def create_payment(self, request: Request, body: PaymentCreate, current_user: User):
         raw = await request.body()
@@ -50,7 +50,7 @@ class PaymentService:
                 "user_id": str(current_user.id),
             },
         })
-        db_payment = await self.peyment_repo.create_payment(
+        db_payment = await self.payment_repo.create_payment(
             id=yk_payment.id,
             user_id=current_user.id,
             amount=body.amount,
@@ -81,7 +81,7 @@ class PaymentService:
         amount: float = float(obj["amount"]["value"])
         user_id: int = int(obj["metadata"]["user_id"])
 
-        db_payment = await self.peyment_repo.get_payment_by_id(payment_id)
+        db_payment = await self.payment_repo.get_payment_by_id(payment_id)
 
         if db_payment is None:
             return {"status": "unknown_payment"}

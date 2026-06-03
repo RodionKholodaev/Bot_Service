@@ -13,3 +13,5 @@ httpx
 cryptography
 aiosqlite
 aiohttp
+pytest
+pytest-asyncio

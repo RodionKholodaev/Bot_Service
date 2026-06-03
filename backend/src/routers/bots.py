@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.dependencies import get_current_user
+from src.core.dependencies import get_current_user, get_bot_repo, get_api_key_repo
 from src.database import get_db
 from src.models.user import User
 from src.schemas.bot import BotCreate, BotPublic
@@ -20,11 +20,13 @@ async def create_bot(
     body: BotCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    bot_repo: BotRepository = Depends(get_bot_repo),
+    api_keys_repo = Depends(get_api_key_repo),
 ):
     """
     Создать бота и сразу его запустить.
     """
-    botservice = BotService(db)
+    botservice = BotService(db,bot_repo, api_keys_repo)
 
     bot = await botservice.create_bot(current_user, body)
 
@@ -49,8 +51,10 @@ async def get_bot(
     bot_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    bot_repo: BotRepository = Depends(get_bot_repo),
+    api_keys_repo = Depends(get_api_key_repo),
 ):
-    return await BotService(db).get_user_bot(bot_id, current_user)
+    return await BotService(db,bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
 
 
 # ── Старт / стоп / удаление ───────────────────────────────
@@ -60,8 +64,10 @@ async def start_bot_endpoint(
     bot_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    bot_repo: BotRepository = Depends(get_bot_repo),
+    api_keys_repo = Depends(get_api_key_repo),
 ):
-    botservice = BotService(db)
+    botservice = BotService(db,bot_repo, api_keys_repo)
     bot = await botservice.get_user_bot(bot_id, current_user)
     return await botservice.start_bot(bot)
 
@@ -71,8 +77,10 @@ async def stop_bot_endpoint(
     bot_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    bot_repo: BotRepository = Depends(get_bot_repo),
+    api_keys_repo = Depends(get_api_key_repo),
 ):
-    botservice = BotService(db)
+    botservice = BotService(db,bot_repo, api_keys_repo)
     bot = await botservice.get_user_bot(bot_id, current_user)
     return await botservice.stop_bot(bot)
 
@@ -82,8 +90,10 @@ async def delete_bot_endpoint(
     bot_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    bot_repo: BotRepository = Depends(get_bot_repo),
+    api_keys_repo = Depends(get_api_key_repo),
 ):
-    botservice = BotService(db)
+    botservice = BotService(db,bot_repo, api_keys_repo)
     bot = await botservice.get_user_bot(bot_id, current_user)
     await botservice.delete_bot(bot)
 
@@ -95,8 +105,10 @@ async def freqtrade_status(
     bot_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    bot_repo: BotRepository = Depends(get_bot_repo),
+    api_keys_repo = Depends(get_api_key_repo),
 ):
-    bot = await BotService(db).get_user_bot(bot_id, current_user)
+    bot = await BotService(db,bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
     data = BotService.freqtrade_status(bot)
 
     return data
@@ -110,7 +122,9 @@ async def get_logs(
     tail: int = 200,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    bot_repo: BotRepository = Depends(get_bot_repo),
+    api_keys_repo = Depends(get_api_key_repo),
 ):
-    bot = await BotService(db).get_user_bot(bot_id, current_user)
+    bot = await BotService(db,bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
 
     return BotService.get_logs(bot, tail)

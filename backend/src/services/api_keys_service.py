@@ -3,9 +3,9 @@ from src.schemas.api_keys import ApiKeyListItem
 from src.core.crypto import encrypt
 
 class ApiKeyService:
-    def __init__(self,db):
+    def __init__(self,db, repo: ApiKeysRepository):
         self.db = db
-        self.repo = ApiKeysRepository(db)
+        self.repo = repo
 
     async def get_list_api_keys(self, current_user):
 
@@ -28,7 +28,7 @@ class ApiKeyService:
         encrypted_secret = encrypt(payload.api_secret)
 
         key = await self.repo.add_api_key(
-            current_user.user_id,
+            current_user.id,
             payload.exchange,
             payload.name,
             encrypted_key,

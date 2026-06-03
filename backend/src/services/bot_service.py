@@ -17,10 +17,10 @@ from src.core.exceptions import NotFoundError, BadRequestError
 logger = logging.getLogger(__name__)
 
 class BotService:
-    def __init__(self, db):
+    def __init__(self, db, bot_repo: BotRepository, api_keys_repo: ApiKeysRepository):
         self.db = db
-        self.bot_repo = BotRepository(db)
-        self.api_keys_repo = ApiKeysRepository(db)
+        self.bot_repo: BotRepository = bot_repo
+        self.api_keys_repo: ApiKeysRepository = api_keys_repo
 
     @staticmethod
     def _build_take_profit(percent: float) -> dict:
