@@ -25,8 +25,7 @@ def _configure_yookassa():
     Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
 
 class PaymentService:
-    def __init__(self, db, user_repo, payment_repo):
-        self.db = db
+    def __init__(self, user_repo, payment_repo):
         self.payment_repo: PaymentsRepository = payment_repo
         self.user_repo: UserRepository = user_repo
     
@@ -56,7 +55,6 @@ class PaymentService:
             amount=body.amount,
             status="pending",  
         )
-        await self.db.commit()
 
         return PaymentCreateResponse(
             payment_id=yk_payment.id, #type:ignore
@@ -97,6 +95,5 @@ class PaymentService:
             raise NotFoundError("User not found")
 
         await self.user_repo.change_balanse(user, amount)
-        await self.db.commit()
 
         return {"status": "ok"}

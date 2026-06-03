@@ -18,7 +18,6 @@ router = APIRouter(prefix="/bots", tags=["Bots"])
 @router.post("", response_model=BotPublic, status_code=status.HTTP_201_CREATED)
 async def create_bot(
     body: BotCreate,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     bot_repo: BotRepository = Depends(get_bot_repo),
     api_keys_repo = Depends(get_api_key_repo),
@@ -26,7 +25,7 @@ async def create_bot(
     """
     Создать бота и сразу его запустить.
     """
-    botservice = BotService(db,bot_repo, api_keys_repo)
+    botservice = BotService(bot_repo, api_keys_repo)
 
     bot = await botservice.create_bot(current_user, body)
 
@@ -49,12 +48,11 @@ async def list_bots(
 @router.get("/{bot_id}", response_model=BotPublic)
 async def get_bot(
     bot_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     bot_repo: BotRepository = Depends(get_bot_repo),
     api_keys_repo = Depends(get_api_key_repo),
 ):
-    return await BotService(db,bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
+    return await BotService(bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
 
 
 # ── Старт / стоп / удаление ───────────────────────────────
@@ -62,12 +60,11 @@ async def get_bot(
 @router.post("/{bot_id}/start", response_model=BotPublic)
 async def start_bot_endpoint(
     bot_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     bot_repo: BotRepository = Depends(get_bot_repo),
     api_keys_repo = Depends(get_api_key_repo),
 ):
-    botservice = BotService(db,bot_repo, api_keys_repo)
+    botservice = BotService(bot_repo, api_keys_repo)
     bot = await botservice.get_user_bot(bot_id, current_user)
     return await botservice.start_bot(bot)
 
@@ -75,12 +72,11 @@ async def start_bot_endpoint(
 @router.post("/{bot_id}/stop", response_model=BotPublic)
 async def stop_bot_endpoint(
     bot_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     bot_repo: BotRepository = Depends(get_bot_repo),
     api_keys_repo = Depends(get_api_key_repo),
 ):
-    botservice = BotService(db,bot_repo, api_keys_repo)
+    botservice = BotService(bot_repo, api_keys_repo)
     bot = await botservice.get_user_bot(bot_id, current_user)
     return await botservice.stop_bot(bot)
 
@@ -88,12 +84,11 @@ async def stop_bot_endpoint(
 @router.delete("/{bot_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_bot_endpoint(
     bot_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     bot_repo: BotRepository = Depends(get_bot_repo),
     api_keys_repo = Depends(get_api_key_repo),
 ):
-    botservice = BotService(db,bot_repo, api_keys_repo)
+    botservice = BotService(bot_repo, api_keys_repo)
     bot = await botservice.get_user_bot(bot_id, current_user)
     await botservice.delete_bot(bot)
 
@@ -103,12 +98,11 @@ async def delete_bot_endpoint(
 @router.get("/{bot_id}/freqtrade/status")
 async def freqtrade_status(
     bot_id: str,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     bot_repo: BotRepository = Depends(get_bot_repo),
     api_keys_repo = Depends(get_api_key_repo),
 ):
-    bot = await BotService(db,bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
+    bot = await BotService(bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
     data = BotService.freqtrade_status(bot)
 
     return data
@@ -120,11 +114,10 @@ async def freqtrade_status(
 async def get_logs(
     bot_id: str,
     tail: int = 200,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     bot_repo: BotRepository = Depends(get_bot_repo),
     api_keys_repo = Depends(get_api_key_repo),
 ):
-    bot = await BotService(db,bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
+    bot = await BotService(bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
 
     return BotService.get_logs(bot, tail)

@@ -15,18 +15,16 @@ async def create_payment(
     request: Request,
     body: PaymentCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
     user_repo = Depends(get_user_repo),
     payment_repo = Depends(get_payments_repo),
 ):
-    return await PaymentService(db, user_repo, payment_repo).create_payment(request,body, current_user)
+    return await PaymentService(user_repo, payment_repo).create_payment(request,body, current_user)
 
 
 @router.post("/webhook", status_code=status.HTTP_200_OK)
 async def payment_webhook(
     request: Request,
-    db: AsyncSession = Depends(get_db),
     user_repo = Depends(get_user_repo),
     payment_repo = Depends(get_payments_repo),
 ):
-    return await PaymentService(db, user_repo, payment_repo).process_payment_webhook(request)
+    return await PaymentService(user_repo, payment_repo).process_payment_webhook(request)

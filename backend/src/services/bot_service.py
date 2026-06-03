@@ -17,8 +17,7 @@ from src.core.exceptions import NotFoundError, BadRequestError
 logger = logging.getLogger(__name__)
 
 class BotService:
-    def __init__(self, db, bot_repo: BotRepository, api_keys_repo: ApiKeysRepository):
-        self.db = db
+    def __init__(self, bot_repo: BotRepository, api_keys_repo: ApiKeysRepository):
         self.bot_repo: BotRepository = bot_repo
         self.api_keys_repo: ApiKeysRepository = api_keys_repo
 
@@ -102,8 +101,7 @@ class BotService:
             tradable_balance_ratio=body.tradable_balance_ratio,
         )
 
-        await self.bot_repo.create(bot)
-        await self.db.commit()
+        await self.bot_repo.create(bot)       
 
         # получаем ключи из бд
         api_key = None
@@ -135,7 +133,7 @@ class BotService:
         
         # меняем статус на starting
         await self.bot_repo.change_bot_status("starting", bot)
-        await self.db.commit()
+  
 
         try:
             # проверяем что образ freqtrade есть на сервере
@@ -149,13 +147,12 @@ class BotService:
             # меняем данные о статусе и контейнере в бд
             await self.bot_repo.change_container_id(container.id, bot)
             await self.bot_repo.change_bot_status("running", bot)
-            await self.db.commit()
+       
 
         except Exception as e:
             logger.exception("Не удалось запустить контейнер")
             await self.bot_repo.change_bot_status("error", bot)
             await self.bot_repo.add_error_message(str(e)[:500], bot)
-            await self.db.commit()
 
         return bot
     
@@ -163,7 +160,7 @@ class BotService:
         if bot.container_id:
             docker_manager.stop_container(bot.container_id)
             ans = await self.bot_repo.change_bot_status("stopped", bot)
-            await self.db.commit()
+
             return ans
         raise BadRequestError("У бота не найден id")
         
@@ -182,7 +179,6 @@ class BotService:
                 logger.exception(f"Не удалось удалить папку бота {bot_dir}")
 
         await self.bot_repo.delete_bot(bot)
-        await self.db.commit()
 
     async def get_user_bot(self, bot_id: str, user: User) -> Bot:
         """Достаёт бота с проверкой, что он принадлежит текущему пользователю."""

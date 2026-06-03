@@ -3,8 +3,7 @@ from src.schemas.api_keys import ApiKeyListItem
 from src.core.crypto import encrypt
 
 class ApiKeyService:
-    def __init__(self,db, repo: ApiKeysRepository):
-        self.db = db
+    def __init__(self, repo: ApiKeysRepository):
         self.repo = repo
 
     async def get_list_api_keys(self, current_user):
@@ -34,7 +33,7 @@ class ApiKeyService:
             encrypted_key,
             encrypted_secret
         )
-        await self.db.commit()
+     
 
         return ApiKeyListItem(
             id=key.id,
@@ -47,5 +46,4 @@ class ApiKeyService:
     async def delete_api_key(self, current_user, key_id):
         
         ans = await self.repo.delete_key(current_user.id, key_id)
-        await self.db.commit()
         return ans

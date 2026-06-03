@@ -27,6 +27,7 @@ async def get_user_repo(db: AsyncSession  = Depends(get_db)):
 async def get_api_key_repo(db: AsyncSession  = Depends(get_db)):
     return ApiKeysRepository(db)
 
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),

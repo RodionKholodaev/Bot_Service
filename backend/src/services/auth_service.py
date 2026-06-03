@@ -5,8 +5,7 @@ from src.schemas.user import TokenResponse
 from src.core.security import create_token
 from src.core.exceptions import ConflictError, UnauthorizedError
 class AuthService:
-    def __init__(self, db, repo: UserRepository):
-        self.db = db
+    def __init__(self, repo: UserRepository):
         self.repo = repo
     
     async def register(self, body):
@@ -20,7 +19,7 @@ class AuthService:
             password_hash=hash_password(body.password),
         )
         await self.repo.create_user(user)
-        await self.db.commit()
+        
 
         return TokenResponse(
             access_token=create_token(user.id),
