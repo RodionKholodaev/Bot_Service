@@ -23,5 +23,5 @@ class FakeUserRepository:
         self.users[user.id] = user
         return user
 
-    async def change_balance(self, user: User, amount: float):
+    async def change_balanсe(self, user: User, amount: float):
         user.service_balance += amount

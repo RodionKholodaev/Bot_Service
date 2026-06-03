@@ -24,7 +24,7 @@ class UserRepository:
         await self.db.flush()
         await self.db.refresh(user)
 
-    async def change_balanse(self,user: User, amount: float):
+    async def change_balance(self,user: User, amount: float):
         user.service_balance += amount
         await self.db.flush()
         

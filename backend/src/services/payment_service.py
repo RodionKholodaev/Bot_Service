@@ -94,6 +94,6 @@ class PaymentService:
         if user is None:
             raise NotFoundError("User not found")
 
-        await self.user_repo.change_balanse(user, amount)
+        await self.user_repo.change_balanсe(user, amount)
 
         return {"status": "ok"}
