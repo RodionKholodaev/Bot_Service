@@ -12,7 +12,7 @@ from src.database import Base
 from sqlalchemy import delete
 from src.models.user import User
 
-DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+DATABASE_URL = "sqlite+aiosqlite:///./test.db" # адрес тестовой бд
 
 
 engine = create_async_engine(
@@ -21,14 +21,14 @@ engine = create_async_engine(
     echo=False,
 )
 
-TestingSessionLocal = async_sessionmaker(
+TestingSessionLocal = async_sessionmaker( # тестовая фабрика сессий
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
 
 
-async def override_get_db():
+async def override_get_db(): # зависимость для получения тестовой сессии
     async with TestingSessionLocal() as session:
         try:
             yield session
@@ -39,30 +39,39 @@ async def override_get_db():
         finally:
             await session.close()
 
+# преопределение зависимостей
+# говорим, когда нужна get_db используй override_get_db
+# работает только на тестах, поскольку этот файл использует только pytest
 app.dependency_overrides[get_db] = override_get_db
 
+# фикстура - функция, которая преобразует данные или окружение для тестов
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
+# говорим, что это фиктура, а не тест
+# scope="session" - загружается один раз перед всеми тестами в сессии
+# autouse=True - автоматически используется, без явного указания в параметрах теста
+@pytest_asyncio.fixture(scope="session", autouse=True) 
 async def prepare_database():
     """
     Создание таблиц один раз перед тестами.
     """
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(Base.metadata.drop_all) # удаляем старые таблицы
+        await conn.run_sync(Base.metadata.create_all) # создаем новые
 
-    yield
+    yield # тут прогоняются все тесты
 
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.drop_all) # после всех тестов удаляем все данные
 
 
 @pytest_asyncio.fixture
-async def db_session():
+async def db_session(): # фикстура из зависимости override_get_db
     async with TestingSessionLocal() as session:
         yield session
 
 
+# создаем виртуальные http клиент для отправки запросов без сетевых вызовов
+# то есть эта штука отпрвляет запрос сразу в app, без использования интернета и других технологий
 @pytest_asyncio.fixture
 async def client():
     transport = ASGITransport(app=app)
@@ -74,7 +83,7 @@ async def client():
         yield ac
 
 
-
+# очищает таблицу User перед каждым тестом
 @pytest_asyncio.fixture(autouse=True)
 async def clear_database():
     async with TestingSessionLocal() as session:
