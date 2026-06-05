@@ -334,6 +334,13 @@ const CreateBotPage = () => {
     setSubmitError(null);
 
     const direction = formData.algorithm as 'long' | 'short';
+  
+    console.log('🔴 DEBUG stopLoss:', {
+      stopLossRaw: formData.stopLoss,
+      stopLossNumber: Number(formData.stopLoss),
+      useStopLoss: formData.useStopLoss,
+      takeProfit: formData.takeProfit
+    });
 
     const payload: BotCreatePayload = {
       name: formData.botName.trim(),
