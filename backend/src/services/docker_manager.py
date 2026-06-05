@@ -134,10 +134,13 @@ def run_bot_container(
         name=container_name,
         detach=True,
         network=network_name,
-        # user="root",
         ports={f"{INTERNAL_API_PORT}/tcp": api_port_external},
         volumes={
             host_dir: {"bind": "/freqtrade/user_data_mount", "mode": "rw"},
+        },
+        environment={  # настройка проксирования через сервер в нидерландах (это будет работать только на сервере 83.220.170.199)
+            "HTTP_PROXY": "socks5://127.0.0.1:1080",
+            "HTTPS_PROXY": "socks5://127.0.0.1:1080",
         },
         command=[
             "trade",
