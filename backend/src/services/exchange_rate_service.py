@@ -20,14 +20,14 @@ class ExchangeRateService:
         self.url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTRUB"
         self.retries = retries
         self.delay = delay
-        self.timeout = httpx.Timeout(timeout)  # Отличается от aiohttp
+        self.timeout = httpx.Timeout(timeout)  
 
     async def get_usdt_rub(self) -> float | None:
         """
         Получает актуальный курс USDT/RUB. 
         Возвращает float (курс) или None, если все попытки провалились.
         """
-        # httpx использует AsyncClient вместо ClientSession
+        
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             for attempt in range(1, self.retries + 1):
                 try:
