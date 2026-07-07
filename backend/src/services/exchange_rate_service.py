@@ -1,4 +1,4 @@
-import aiohttp
+import httpx
 import asyncio
 import logging
 
@@ -20,33 +20,36 @@ class ExchangeRateService:
         self.url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTRUB"
         self.retries = retries
         self.delay = delay
-        self.timeout = aiohttp.ClientTimeout(total=timeout)
+        self.timeout = httpx.Timeout(timeout)  # Отличается от aiohttp
 
     async def get_usdt_rub(self) -> float | None:
         """
         Получает актуальный курс USDT/RUB. 
         Возвращает float (курс) или None, если все попытки провалились.
         """
-        async with aiohttp.ClientSession(timeout=self.timeout) as session:
+        # httpx использует AsyncClient вместо ClientSession
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
             for attempt in range(1, self.retries + 1):
                 try:
-                    async with session.get(self.url) as response:
-                        # Если статус ответа не 200 OK, вызываем исключение
-                        response.raise_for_status()
+                    response = await client.get(self.url)
+                    
+                    # Если статус ответа не 200 OK, вызываем исключение
+                    response.raise_for_status()
+                    
+                    # httpx уже умеет парсить JSON
+                    data = response.json()
+                    
+                    # Парсим цену (API отдает строку, поэтому переводим во float)
+                    price = float(data.get("price", 0.0))
+                    
+                    if price > 0:
+                        return price
+                    else:
+                        logger.warning(f"Попытка {attempt}: Получена нулевая или некорректная цена.")
                         
-                        data = await response.json()
-                        
-                        # Парсим цену (API отдает строку, поэтому переводим во float)
-                        price = float(data.get("price", 0.0))
-                        
-                        if price > 0:
-                            return price
-                        else:
-                            logger.warning(f"Попытка {attempt}: Получена нулевая или некорректная цена.")
-                            
-                except aiohttp.ClientError as e:
-                    # Ловим сетевые ошибки (обрывы связи, DNS и т.д.)
-                    logger.error(f"Попытка {attempt}: Сетевая ошибка API - {e}")
+                except httpx.HTTPError as e:
+                    # Общая ошибка HTTP (включает сетевые, статус-коды и т.д.)
+                    logger.error(f"Попытка {attempt}: Ошибка HTTP - {e}")
                 except ValueError as e:
                     # Ловим ошибки парсинга JSON или конвертации во float
                     logger.error(f"Попытка {attempt}: Ошибка обработки данных - {e}")
@@ -61,4 +64,3 @@ class ExchangeRateService:
         # Если цикл завершился и мы не вернули return price, значит всё сломалось
         logger.critical("Не удалось получить курс USDT/RUB после всех попыток.")
         return None
-
