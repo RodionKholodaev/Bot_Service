@@ -19,6 +19,7 @@ class TokenResponse(BaseModel):
     username: str
 
 
+
 class UserPublic(BaseModel):
     id: int
     username: str

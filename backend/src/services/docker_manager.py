@@ -82,8 +82,6 @@ def ensure_network(name: str = settings.DOCKER_NETWORK_NAME) -> None:
 def ensure_image(image: str = settings.FREQTRADE_IMAGE) -> None:
     """
     Проверяет, что образ freqtrade есть локально. Если нет — пытается стянуть.
-    На MVP ты должен заранее сделать `docker pull freqtradeorg/freqtrade:stable`,
-    но эта функция страхует от случая, если образ ещё не скачан.
     """
     client = get_client()
     try:

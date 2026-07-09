@@ -74,7 +74,7 @@ class MultiFilterStrategy(IStrategy):
     ignore_roi_if_entry_signal = False
 
     order_types = {
-        "entry": "limit",
+        "entry": "market",
         "exit": "limit",
         "stoploss": "market",
         "stoploss_on_exchange": True,
