@@ -11,7 +11,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(
-    body: RegisterRequest, 
+    body: RegisterRequest,
     repo = Depends(get_user_repo),
 ):
     return await AuthService(repo).register(body)
