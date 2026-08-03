@@ -360,3 +360,4 @@ def get_container_logs(container_id: str, tail: int = 200) -> str:
                 "error": str(e)
             }
         )
+        return ""
