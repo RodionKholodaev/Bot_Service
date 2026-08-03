@@ -19,6 +19,7 @@ from src.models.trade import Trade
 from src.models.user import User
 from src.repositories.bot_repository import BotRepository
 from src.repositories.trade_repository import TradeRepository
+
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 30  # секунды
@@ -43,9 +44,17 @@ async def _fetch_trades(bot: Bot, client: httpx.AsyncClient) -> list[dict]:
         )
         resp.raise_for_status()
         data = resp.json()
-        return data.get("trades", [])
+        trades = data.get("trades", [])
+        logger.debug(
+            "Trades fetched from freqtrade",
+            extra={"bot_id": bot.id, "trades_count": len(trades)},
+        )
+        return trades
     except Exception as exc:
-        logger.debug("Bot %s freqtrade unavailable: %s", bot.id, exc)
+        logger.debug(
+            "Freqtrade container unavailable",
+            extra={"bot_id": bot.id, "error": str(exc)},
+        )
         return []
 
 
@@ -64,6 +73,10 @@ def _parse_dt(value: str | None) -> datetime | None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt
     except ValueError:
+        logger.warning(
+            "Failed to parse datetime",
+            extra={"raw_value": value},
+        )
         return None
 
 
@@ -74,9 +87,13 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
     """
     botrepository = BotRepository(db)
     traderepository = TradeRepository(db)
-    
-    user: User | None= await botrepository.get_user(bot.user_id)
+
+    user: User | None = await botrepository.get_user(bot.user_id)
     if not user:
+        logger.warning(
+            "User not found for bot, skipping trade sync",
+            extra={"bot_id": bot.id, "user_id": bot.user_id},
+        )
         return
 
     for ft in raw_trades:
@@ -87,11 +104,15 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
 
         if existing is None:
             # Новая сделка — создаём запись
+            logger.info(
+                "New trade detected, creating record",
+                extra={"bot_id": bot.id, "trade_id": ft_id, "pair": ft.get("pair")},
+            )
             trade = Trade(
                 bot_id=bot.id,
                 user_id=bot.user_id,
                 freqtrade_trade_id=ft_id,
-                leverage = bot.leverage,
+                leverage=bot.leverage,
                 pair=ft.get("pair", ""),
                 direction="long" if not ft.get("is_short", False) else "short",
                 open_rate=ft.get("open_rate", 0.0),
@@ -107,19 +128,39 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
             await db.flush()  # получаем trade.id для дальнейшей логики
 
             if not is_open:
-                await CommissionService.process_commission(trade,user,bot)
+                logger.info(
+                    "New trade already closed, processing commission",
+                    extra={
+                        "bot_id": bot.id,
+                        "trade_id": ft_id,
+                        "profit_usdt": trade.profit_usdt,
+                    },
+                )
+                await CommissionService.process_commission(trade, user, bot)
 
         else:
             # Сделка уже была — проверяем, не закрылась ли она
             if not is_open and existing.close_time is None:
+                logger.info(
+                    "Existing trade closed, updating record",
+                    extra={
+                        "bot_id": bot.id,
+                        "trade_id": ft_id,
+                        "profit_usdt": ft.get("profit_abs"),
+                    },
+                )
                 existing.close_rate = ft.get("close_rate")
                 existing.profit_usdt = ft.get("profit_abs")
                 existing.profit_pct = (ft.get("profit_ratio", 0.0) or 0.0) * 100
                 existing.exit_reason = ft.get("exit_reason")
                 existing.close_time = _parse_dt(ft.get("close_date"))
-                await CommissionService.process_commission(existing,user,bot)
+                await CommissionService.process_commission(existing, user, bot)
 
     await db.commit()
+    logger.info(
+        "Trade sync completed for bot",
+        extra={"bot_id": bot.id, "processed_trades": len(raw_trades)},
+    )
 
 
 # ──────────────────────────────────────────────────────────────
@@ -130,7 +171,10 @@ async def run_polling_worker() -> None:
     """
     Бесконечный цикл. Запускать через asyncio.create_task() в lifespan.
     """
-    logger.info("Polling worker started (interval=%ds)", POLL_INTERVAL)
+    logger.info(
+        "Polling worker started",
+        extra={"interval_seconds": POLL_INTERVAL},
+    )
 
     async with httpx.AsyncClient() as client:
         while True:
@@ -138,8 +182,12 @@ async def run_polling_worker() -> None:
 
                 async with AsyncSessionLocal() as db:
                     try:
-                    
+
                         running_bots = await BotRepository(db).get_all_active_bots()
+                        logger.debug(
+                            "Active bots fetched",
+                            extra={"bots_count": len(running_bots)},
+                        )
 
                         for bot in running_bots:
                             raw = await _fetch_trades(bot, client)
@@ -147,12 +195,18 @@ async def run_polling_worker() -> None:
                                 await _async_bot_trades(db, bot, raw)
 
                     except Exception as exc:
-                        logger.exception("Polling worker error: %s", exc)
+                        logger.exception(
+                            "Polling worker inner error",
+                            extra={"error": str(exc)},
+                        )
                         await db.rollback()
                     finally:
                         await db.close()
 
             except Exception as exc:
-                logger.exception("Polling worker outer error: %s", exc)
+                logger.exception(
+                    "Polling worker outer error",
+                    extra={"error": str(exc)},
+                )
 
             await asyncio.sleep(POLL_INTERVAL)
