@@ -3,6 +3,7 @@
 Никуда не ходит по сети — только читает нашу БД.
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -14,6 +15,8 @@ from src.schemas.stats import (
 )
 from src.repositories.bot_repository import BotRepository
 from src.repositories.trade_repository import TradeRepository
+
+logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────
@@ -40,6 +43,10 @@ class StatsService:
                 ts=t.close_time.strftime("%d.%m %H:%M"),
                 value=round(cumulative, 4),
             ))
+        logger.debug(
+            "P&L chart built",
+            extra={"points_count": len(points), "final_cumulative": round(cumulative, 4)},
+        )
         return points
 
     @staticmethod
@@ -69,7 +76,12 @@ class StatsService:
         # переводим в процент от пика
         if peak == 0:
             return None
-        return round((max_dd / peak) * 100, 2) if max_dd < 0 else 0.0
+        result = round((max_dd / peak) * 100, 2) if max_dd < 0 else 0.0
+        logger.debug(
+            "Max drawdown calculated",
+            extra={"max_drawdown_pct": result, "trades_count": len(trades)},
+        )
+        return result
 
     @staticmethod
     def _trades_to_out(trades: list[Trade]) -> list[TradeOut]:
@@ -84,6 +96,7 @@ class StatsService:
     ) -> None:
         self.bot_repo = bot_repo
         self.trade_repo = trade_repo
+        logger.debug("StatsService initialized")
 
     async def get_bot_stats(
         self,
@@ -92,6 +105,11 @@ class StatsService:
         recent_limit: int = 20,
     ) -> BotStats:
         """Статистика по одному боту."""
+
+        logger.info(
+            "Fetching bot stats",
+            extra={"bot_id": bot.id, "period_days": period_days},
+        )
 
         # Базовый запрос — только закрытые сделки этого бота
         query = await self.trade_repo.get_bot_close_trades(bot.user_id, bot.id)
@@ -120,6 +138,15 @@ class StatsService:
 
         recent = list(reversed(closed_trades[-recent_limit:]))
 
+        logger.info(
+            "Bot stats calculated",
+            extra={
+                "bot_id": bot.id,
+                "trades_total": total,
+                "winrate": round((win_count / total * 100), 1) if total else 0.0,
+            },
+        )
+
         return BotStats(
             bot_id=bot.id,
             name=bot.name,
@@ -147,6 +174,11 @@ class StatsService:
     ) -> PortfolioStats:
         """Агрегированная статистика по всем ботам пользователя."""
 
+        logger.info(
+            "Fetching portfolio stats",
+            extra={"user_id": user.id, "period_days": period_days},
+        )
+
         bots = await self.bot_repo.get_user_active_bots(user.id)
 
         # Все закрытые сделки пользователя за период
@@ -172,6 +204,15 @@ class StatsService:
         # Краткая сводка по каждому боту для сайдбара
         bots_stats = [await self.get_bot_stats(b, period_days) for b in bots]
 
+        logger.info(
+            "Portfolio stats calculated",
+            extra={
+                "user_id": user.id,
+                "trades_total": total,
+                "bots_running": bots_running,
+            },
+        )
+
         return PortfolioStats(
             total_profit=round(total_profit, 4),
             trades_total=total,
@@ -187,6 +228,11 @@ class StatsService:
         )
 
     async def get_home_stats(self, user: User) -> HomeStats:
+        logger.info(
+            "Fetching home stats",
+            extra={"user_id": user.id},
+        )
+
         bots: list[Bot] = list(await self.bot_repo.get_user_active_bots(user.id))
 
         total_profit = sum(b.total_profit for b in bots)
@@ -201,6 +247,16 @@ class StatsService:
         # Сумма в управлении = stake_amount всех активных ботов
         funds_under_management = round(
             sum(b.stake_amount for b in bots if b.status in ("running", "starting")), 2
+        )
+
+        logger.info(
+            "Home stats calculated",
+            extra={
+                "user_id": user.id,
+                "bots_total": len(bots),
+                "bots_running": bots_running,
+                "weekly_profit": weekly_profit,
+            },
         )
 
         return HomeStats(
