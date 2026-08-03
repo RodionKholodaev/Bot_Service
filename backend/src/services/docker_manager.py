@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 # Внутри контейнера freqtrade всегда слушает 8080 (так задано в шаблоне config).
 # Снаружи мы пробрасываем этот порт на уникальный bot.api_port.
 INTERNAL_API_PORT = 8080
-
 def set_bot_permissions(bot_data_dir: Path) -> None:
     """
     Делает владельцем папки бота пользователя UID=1000 (ftuser в контейнере).
@@ -32,34 +31,61 @@ def set_bot_permissions(bot_data_dir: Path) -> None:
         chown -R 1000:1000 <bot_data_dir>
     """
 
-    # На Windows ничего не делаем
-    if platform.system() == "Windows":
-        return
-
     uid = 1000
     gid = 1000
+
+    logger.info(
+        "Updating bot directory ownership",
+        extra={
+            "bot_directory": str(bot_data_dir),
+            "uid": uid,
+            "gid": gid,
+        },
+    )
+
+    if platform.system() == "Windows":
+        logger.debug(
+            "Skipping ownership update on Windows",
+            extra={
+                "bot_directory": str(bot_data_dir),
+            },
+        )
+        return
 
     chown = getattr(os, "chown", None)
 
     if chown is None:
-        logger.warning("os.chown недоступен на этой системе")
+        logger.warning(
+            "Ownership update skipped because os.chown is unavailable",
+            extra={
+                "bot_directory": str(bot_data_dir),
+            },
+        )
         return
 
     try:
-        # Корневая папка
         chown(bot_data_dir, uid, gid)
 
-        # Всё содержимое
         for path in bot_data_dir.rglob("*"):
             chown(path, uid, gid)
 
         logger.info(
-            f"Права для {bot_data_dir} выставлены на UID={uid}, GID={gid}"
+            "Bot directory ownership updated successfully",
+            extra={
+                "bot_directory": str(bot_data_dir),
+                "uid": uid,
+                "gid": gid,
+            },
         )
 
-    except PermissionError as e:
+    except PermissionError:
         logger.exception(
-            f"Не удалось изменить права на {bot_data_dir}: {e}"
+            "Failed to update bot directory ownership",
+            extra={
+                "bot_directory": str(bot_data_dir),
+                "uid": uid,
+                "gid": gid,
+            },
         )
         raise
 
@@ -73,10 +99,20 @@ def ensure_network(name: str = settings.DOCKER_NETWORK_NAME) -> None:
     client = get_client()
     try:
         client.networks.get(name)
-        logger.info(f"Docker network '{name}' уже существует")
+        logger.info(
+            "Docker network already exists",
+            extra={
+                "network_name": name,
+            },
+        )
     except NotFound:
         client.networks.create(name, driver="bridge")
-        logger.info(f"Создана Docker network '{name}'")
+        logger.info(
+            "Docker network created",
+            extra={
+                "network_name": name,
+            },
+        )
 
 
 def ensure_image(image: str = settings.FREQTRADE_IMAGE) -> None:
@@ -87,9 +123,13 @@ def ensure_image(image: str = settings.FREQTRADE_IMAGE) -> None:
     try:
         client.images.get(image)
     except ImageNotFound:
-        logger.info(f"Образ {image} не найден локально, тяну из реестра...")
+        logger.info(
+            "Image wasn't found locally, pulling it from the registry",
+            extra={
+                "image": image
+            }
+        )
         client.images.pull(image)
-
 
 def run_bot_container(
     container_name: str,
@@ -106,51 +146,128 @@ def run_bot_container(
 
     api_port_external — порт на хосте, на который пробрасываем внутренний 8080.
     """
+
+    logger.info(
+        "Starting bot container",
+        extra={
+            "container_name": container_name,
+            "image": image,
+            "network": network_name,
+            "api_port": api_port_external,
+            "bot_directory": str(bot_data_dir),
+        },
+    )
+
     client = get_client()
 
-    # Убираем старый контейнер с тем же именем, если он есть (например, после краша).
     try:
         old = client.containers.get(container_name)
-        logger.warning(f"Найден старый контейнер {container_name}, удаляю")
+
+        logger.warning(
+            "Existing container found. Recreating container",
+            extra={
+                "container_name": container_name,
+            },
+        )
+
         try:
+            logger.debug(
+                "Stopping existing container",
+                extra={
+                    "container_name": container_name,
+                },
+            )
             old.stop(timeout=5)
         except APIError:
-            pass
+            logger.exception(
+                "Failed to stop existing container",
+                extra={
+                    "container_name": container_name,
+                },
+            )
+
+        logger.debug(
+            "Removing existing container",
+            extra={
+                "container_name": container_name,
+            },
+        )
         old.remove(force=True)
+
     except NotFound:
-        pass
+        logger.debug(
+            "Existing container not found",
+            extra={
+                "container_name": container_name,
+            },
+        )
 
     host_dir_path = bot_data_dir.resolve()
 
-    # Даем права ftuser (uid=1000)
     set_bot_permissions(host_dir_path)
 
     host_dir = str(host_dir_path)
 
-    container = client.containers.run(
-        image=image,
-        name=container_name,
-        detach=True,
-        network=network_name,
-        ports={f"{INTERNAL_API_PORT}/tcp": api_port_external},
-        volumes={
-            host_dir: {"bind": "/freqtrade/user_data_mount", "mode": "rw"},
+    try:
+        logger.debug(
+            "Creating Docker container",
+            extra={
+                "container_name": container_name,
+                "image": image,
+            },
+        )
+
+        container = client.containers.run(
+            image=image,
+            name=container_name,
+            detach=True,
+            network=network_name,
+            ports={
+                f"{INTERNAL_API_PORT}/tcp": api_port_external,
+            },
+            volumes={
+                host_dir: {
+                    "bind": "/freqtrade/user_data_mount",
+                    "mode": "rw",
+                },
+            },
+            command=[
+                "trade",
+                "--config", "/freqtrade/user_data_mount/config.json",
+                "--strategy", "MultiFilterStrategy",
+                "--strategy-path", "/freqtrade/user_data_mount/user_data/strategies",
+                "--datadir", "/freqtrade/user_data_mount/user_data/data",
+                "--db-url", "sqlite:////freqtrade/user_data_mount/user_data/tradesv3.sqlite",
+            ],
+            restart_policy={"Name": "unless-stopped"},  # type: ignore
+            mem_limit="512m",
+        )  # type: ignore
+
+    except APIError:
+        logger.exception(
+            "Failed to start bot container",
+            extra={
+                "container_name": container_name,
+                "image": image,
+                "network": network_name,
+                "api_port": api_port_external,
+                "bot_directory": host_dir,
+            },
+        )
+        raise
+
+    logger.info(
+        "Bot container started successfully",
+        extra={
+            "container_name": container_name,
+            "container_id": container.id,
+            "container_short_id": container.short_id,
+            "image": image,
+            "network": network_name,
+            "api_port": api_port_external,
         },
-        command=[
-            "trade",
-            "--config", "/freqtrade/user_data_mount/config.json",
-            "--strategy", "MultiFilterStrategy",
-            "--strategy-path", "/freqtrade/user_data_mount/user_data/strategies",
-            "--datadir", "/freqtrade/user_data_mount/user_data/data",
-            # "--logfile", "/freqtrade/user_data_mount/user_data/logs/freqtrade.log",
-            "--db-url", "sqlite:////freqtrade/user_data_mount/user_data/tradesv3.sqlite",
-        ],
-        restart_policy={"Name": "unless-stopped"}, #type: ignore
-        mem_limit="512m",
-    ) #type: ignore
+    )
 
-
-    logger.info(f"Запущен контейнер {container_name} (id={container.short_id})")
     return container
 
 
@@ -159,23 +276,54 @@ def stop_container(container_id: str) -> None:
     try:
         c = client.containers.get(container_id)
         c.stop(timeout=10)
-        logger.info(f"Остановлен контейнер {container_id}")
+        logger.info(
+            "Container stopped successfully",
+            extra={
+                "container_id": container_id,
+            },
+        )
     except NotFound:
-        logger.warning(f"Контейнер {container_id} не найден при остановке — пропускаю")
+        logger.warning(
+            "Container wasn't found during stop, continue",
+            extra={
+                "container_id": container_id
+            }
+        )
 
 
 def remove_container(container_id: str) -> None:
     client = get_client()
+    logger.info(
+        "Starting to remove container",
+        extra={
+            "container_id": container_id
+        }
+    )
     try:
         c = client.containers.get(container_id)
         try:
             c.stop(timeout=5)
         except APIError:
-            pass
+            logger.error(
+                "Couldn't contact to the container",
+                extra={
+                    "container_id": container_id
+                }
+            )
         c.remove(force=True)
-        logger.info(f"Удалён контейнер {container_id}")
+        logger.info(
+            "Container was successfully removed",
+            extra={
+                "container_id": container_id
+            },
+        )
     except NotFound:
-        logger.warning(f"Контейнер {container_id} уже удалён")
+        logger.warning(
+            "Container has already been removed",
+            extra={
+                "container_id": container_id
+            }
+        )
 
 
 def get_container_status(container_id: str) -> str | None:
@@ -187,8 +335,14 @@ def get_container_status(container_id: str) -> str | None:
     try:
         c = client.containers.get(container_id)
         return c.status
-    except NotFound:
-        return None
+    except NotFound as e:
+        logger.warning(
+            "Couldn't find the container",
+            extra={
+                "container_id": container_id,
+                "error": str(e)
+            }
+        )
 
 
 def get_container_logs(container_id: str, tail: int = 200) -> str:
@@ -197,5 +351,12 @@ def get_container_logs(container_id: str, tail: int = 200) -> str:
     try:
         c = client.containers.get(container_id)
         return c.logs(tail=tail).decode("utf-8", errors="replace")
-    except NotFound:
-        return ""
+    
+    except NotFound as e:
+        logger.warning(
+            "Couldn't find the container",
+            extra={
+                "container_id": container_id,
+                "error": str(e)
+            }
+        )
