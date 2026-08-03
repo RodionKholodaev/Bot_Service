@@ -8,6 +8,10 @@
   - Агрессивная — заходим часто, на ранних сигналах
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 PRESETS: dict[str, dict[str, list[dict]]] = {
     "conservative": {
         "long": [
@@ -58,18 +62,50 @@ def resolve_filters(
     Если direction=="long" — short_filters пустой и наоборот.
     Для preset="custom" — берёт custom_long/custom_short, для остальных — из PRESETS.
     """
+    logger.debug(
+        "Resolving strategy filters",
+        extra={
+            "preset": preset,
+            "direction": direction,
+            "has_custom_long": custom_long is not None,
+            "has_custom_short": custom_short is not None,
+        },
+    )
+
     if preset == "custom":
         long_filters = list(custom_long or [])
         short_filters = list(custom_short or [])
+        logger.debug(
+            "Using custom filters",
+            extra={"long_count": len(long_filters), "short_count": len(short_filters)},
+        )
     else:
         if preset not in PRESETS:
+            logger.error(
+                "Unknown preset requested",
+                extra={"preset": preset, "available": list(PRESETS.keys())},
+            )
             raise ValueError(f"Unknown preset: {preset}")
         long_filters = list(PRESETS[preset]["long"])
         short_filters = list(PRESETS[preset]["short"])
+        logger.debug(
+            "Preset filters loaded",
+            extra={
+                "preset": preset,
+                "long_count": len(long_filters),
+                "short_count": len(short_filters),
+            },
+        )
 
     if direction == "long":
         short_filters = []
+        logger.debug("Direction is long, short filters cleared")
     elif direction == "short":
         long_filters = []
+        logger.debug("Direction is short, long filters cleared")
 
+    logger.debug(
+        "Filters resolved",
+        extra={"final_long_count": len(long_filters), "final_short_count": len(short_filters)},
+    )
     return long_filters, short_filters
