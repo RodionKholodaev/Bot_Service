@@ -1,10 +1,14 @@
 """Генерация config.json для каждого бота из шаблона."""
 
 import json
+import logging
 from pathlib import Path
 from src.core.crypto import decrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repositories.api_keys_repository import ApiKeysRepository
+
+logger = logging.getLogger(__name__)
+
 TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "templates" / "config.template.json"
 
 
@@ -15,8 +19,8 @@ async def generate_config(
     ws_token: str,
     api_username: str,
     api_password: str,
-    exchange_key: str,    
-    exchange_secret: str,  
+    exchange_key: str,
+    exchange_secret: str,
     stake_amount: float,
     tradable_balance_ratio: float,
     user_id: int,
@@ -29,7 +33,16 @@ async def generate_config(
     Снаружи мы пробросим его на bot.api_port из БД через docker port mapping.
     Внутри пусть всегда будет 8080 (как в шаблоне) — это просто удобство.
     """
-        
+    logger.info(
+        "Generating bot config",
+        extra={
+            "pair": pair,
+            "user_id": user_id,
+            "dry_run": dry_run,
+            "api_port": api_port_inside_container,
+        },
+    )
+
     with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
         config = json.load(f)
 
@@ -47,11 +60,23 @@ async def generate_config(
 
     config["telegram"]["enabled"] = False
 
+    logger.info(
+        "Bot config generated successfully",
+        extra={"pair": pair, "user_id": user_id, "dry_run": dry_run},
+    )
     return config
 
 
 def write_config(config: dict, target_path: Path) -> None:
     """Сериализует и пишет config.json на диск."""
+    logger.info(
+        "Writing bot config to disk",
+        extra={"target_path": str(target_path)},
+    )
     target_path.parent.mkdir(parents=True, exist_ok=True)
     with open(target_path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
+    logger.info(
+        "Bot config written successfully",
+        extra={"target_path": str(target_path)},
+    )
