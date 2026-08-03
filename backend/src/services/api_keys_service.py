@@ -2,6 +2,9 @@ from src.repositories.api_keys_repository import ApiKeysRepository
 from src.schemas.api_keys import ApiKeyListItem
 from src.core.crypto import encrypt
 
+import logging
+logger = logging.getLogger(__name__)
+
 class ApiKeyService:
     def __init__(self, repo: ApiKeysRepository):
         self.repo = repo
@@ -33,7 +36,14 @@ class ApiKeyService:
             encrypted_key,
             encrypted_secret
         )
-     
+        logger.info(
+            "API key created",
+            extra={
+                "user_id": current_user.id,
+                "key_id": key.id,
+                "exchange": payload.exchange,
+            },
+        )
 
         return ApiKeyListItem(
             id=key.id,
@@ -46,4 +56,11 @@ class ApiKeyService:
     async def delete_api_key(self, current_user, key_id):
         
         ans = await self.repo.delete_key(current_user.id, key_id)
+        logger.info(
+            "API key deleted",
+            extra={
+                "user_id": current_user.id,
+                "key_id": key_id,
+            },
+        )
         return ans
