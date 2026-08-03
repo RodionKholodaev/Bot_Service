@@ -101,12 +101,28 @@ class BotService:
             tradable_balance_ratio=body.tradable_balance_ratio,
         )
 
-        await self.bot_repo.create(bot)       
+        await self.bot_repo.create(bot)
+        logger.info(
+            "Bot created",
+            extra={
+                "user_id": current_user.id,
+                "bot_id": bot.id,
+                "bot_name": bot.name,
+            },
+        )      
 
         # получаем ключи из бд
         api_key = None
         if bot.api_key_id:
             api_key = await self.api_keys_repo.get_api_key_by_id(bot.api_key_id)
+        else:
+            logger.info(
+                "Bot work with dry-run",
+                extra={
+                    "bot_id": bot.id,
+                    "user_id": bot.user_id,
+                },
+            )
         
         exchange_key = decrypt(api_key.api_key_encrypted) if api_key else ""
         exchange_secret = decrypt(api_key.api_secret_encrypted) if api_key else ""
@@ -121,14 +137,35 @@ class BotService:
             jwt_secret=secrets.token_hex(32),
             ws_token=secrets.token_urlsafe(24),
         )
+        logger.info(
+            "Bot files created",
+            extra={
+                "user_id": current_user.id,
+                "bot_id": bot.id,
+            },
+        )
 
         return bot
     
     async def start_bot(self, bot: Bot):
         """Запускает контейнер для уже созданного бота."""
+        logger.info(
+            "Bot starting",
+            extra={
+                "user_id": bot.user_id,
+                "bot_id": bot.id,
+                "bot_name": bot.name,
+            },
+        )
         # получаем папку с настройками бота
         bot_dir = BotService._bot_dir(bot.id)
         if not (bot_dir / "config.json").exists():
+            logger.error(
+                "No bot files found", extra={
+                    "user_id": bot.user_id,
+                    "bot_id": bot.id,
+                },
+            )
             raise NotFoundError("Не найдены файлы бота")
         
         # меняем статус на starting
@@ -139,46 +176,141 @@ class BotService:
             # проверяем что образ freqtrade есть на сервере
             docker_manager.ensure_image()
             # запускаем контейнеро бота
+
+            logger.info(
+                "Running docker container",
+                extra={
+                    "bot_id": bot.id,
+                    "container_name": bot.container_name,
+                    "api_port": bot.api_port,
+                },
+            )
             container = docker_manager.run_bot_container(
                 container_name=bot.container_name,
                 bot_data_dir=bot_dir,
                 api_port_external=bot.api_port,
             )
+            logger.info(
+                "Container successfully started",
+                extra={
+                    "user_id": bot.user_id,
+                    "bot_id": bot.id,
+                    "container_id": container.id,
+                },
+            )
             # меняем данные о статусе и контейнере в бд
             await self.bot_repo.change_container_id(container.id, bot)
             await self.bot_repo.change_bot_status("running", bot)
-       
+            logger.info(
+                "Bot status changed",
+                extra={
+                    "bot_id": bot.id,
+                    "old_status": bot.status,
+                    "new_status": "starting",
+                },
+            )
 
         except Exception as e:
-            logger.exception("Не удалось запустить контейнер")
+            logger.exception(
+                "Couldn't start the container",
+                extra={
+                    "bot_id": bot.id,
+                    "user_id": bot.user_id,
+                },
+            )
             await self.bot_repo.change_bot_status("error", bot)
             await self.bot_repo.add_error_message(str(e)[:500], bot)
 
         return bot
     
     async def stop_bot(self, bot: Bot) -> Bot:
+        logger.info(
+            "Stopping the bot",
+            extra={
+                "bot_id": bot.id,
+                "user_id": bot.user_id,
+            },
+        )
         if bot.container_id:
             docker_manager.stop_container(bot.container_id)
+            logger.info(
+                "Container successfully stoped",
+                extra={
+                    "user_id": bot.user_id,
+                    "bot_id": bot.id,
+                    "container_id": bot.container_id,
+                },
+            )
             ans = await self.bot_repo.change_bot_status("stopped", bot)
 
             return ans
-        raise BadRequestError("У бота не найден id")
+        logger.error(
+            "Container id not found",
+            extra={
+                "user_id": bot.user_id,
+                "bot_id": bot.id,
+            },
+        )
+        raise BadRequestError("У бота не найден id контейнера")
         
         
 
 
     async def delete_bot(self, bot: Bot) -> None:
+        logger.info(
+            "Deleting the bot",
+            extra={
+                "bot_id": bot.id,
+                "user_id": bot.user_id,
+            },
+        )
         if bot.container_id:
+            logger.info(
+                "Removing container",
+                extra={
+                    "bot_id": bot.id,
+                    "container_id": bot.container_id,
+                }
+            )
             docker_manager.remove_container(bot.container_id)
+        else:
+            logger.warning(
+                "Bot had no container_id",
+                extra={
+                    "user_id": bot.user_id,
+                    "bot_id": bot.id,
+                },
+            )
 
         bot_dir = BotService._bot_dir(bot.id)
         if bot_dir.exists():
             try:
                 shutil.rmtree(bot_dir)
             except Exception:
-                logger.exception(f"Не удалось удалить папку бота {bot_dir}")
+                logger.error(
+                    "Couldn't delete bot dir",
+                    extra={
+                        "user_id": bot.user_id,
+                        "bot_id": bot.id,
+                    },
+                )
+        else:
+            logger.warning(
+                "Bot dir nor found",
+                extra={
+                    "user_id": bot.user_id,
+                    "bot_id": bot.id,
+                },
+            )
 
         await self.bot_repo.delete_bot(bot)
+        logger.info(
+            "Bot deleted",
+            extra={
+                "bot_id": bot.id,
+                "user_id": bot.user_id,
+            }
+        )
 
     async def get_user_bot(self, bot_id: str, user: User) -> Bot:
         """Достаёт бота с проверкой, что он принадлежит текущему пользователю."""
