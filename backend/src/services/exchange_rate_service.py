@@ -2,12 +2,8 @@ import httpx
 import asyncio
 import logging
 
-# Настраиваем базовое логирование для отслеживания проблем
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
 logger = logging.getLogger(__name__)
+
 
 class ExchangeRateService:
     def __init__(self, retries: int = 3, delay: float = 1.5, timeout: int = 5):
@@ -20,47 +16,67 @@ class ExchangeRateService:
         self.url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTRUB"
         self.retries = retries
         self.delay = delay
-        self.timeout = httpx.Timeout(timeout)  
+        self.timeout = httpx.Timeout(timeout)
+        logger.info(
+            "ExchangeRateService initialized",
+            extra={"retries": retries, "delay": delay, "timeout": timeout},
+        )
 
     async def get_usdt_rub(self) -> float | None:
         """
-        Получает актуальный курс USDT/RUB. 
+        Получает актуальный курс USDT/RUB.
         Возвращает float (курс) или None, если все попытки провалились.
         """
-        
+        logger.info("Fetching USDT/RUB rate from Binance")
+
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             for attempt in range(1, self.retries + 1):
                 try:
                     response = await client.get(self.url)
-                    
-                    # Если статус ответа не 200 OK, вызываем исключение
+
                     response.raise_for_status()
-                    
-                    # httpx уже умеет парсить JSON
+
                     data = response.json()
-                    
-                    # Парсим цену (API отдает строку, поэтому переводим во float)
+
                     price = float(data.get("price", 0.0))
-                    
+
                     if price > 0:
+                        logger.info(
+                            "USDT/RUB rate fetched successfully",
+                            extra={"price": price, "attempt": attempt},
+                        )
                         return price
                     else:
-                        logger.warning(f"Попытка {attempt}: Получена нулевая или некорректная цена.")
-                        
+                        logger.warning(
+                            "Received zero or invalid price",
+                            extra={"attempt": attempt, "raw_price": data.get("price")},
+                        )
+
                 except httpx.HTTPError as e:
-                    # Общая ошибка HTTP (включает сетевые, статус-коды и т.д.)
-                    logger.error(f"Попытка {attempt}: Ошибка HTTP - {e}")
+                    logger.error(
+                        "HTTP error while fetching rate",
+                        extra={"attempt": attempt, "error": str(e)},
+                    )
                 except ValueError as e:
-                    # Ловим ошибки парсинга JSON или конвертации во float
-                    logger.error(f"Попытка {attempt}: Ошибка обработки данных - {e}")
+                    logger.error(
+                        "Data parsing error",
+                        extra={"attempt": attempt, "error": str(e)},
+                    )
                 except asyncio.TimeoutError:
-                    # Ловим ситуации, когда сервер слишком долго не отвечает
-                    logger.error(f"Попытка {attempt}: Превышено время ожидания ответа (Timeout).")
-                
-                # Если это не последняя попытка, ждем перед следующим запросом
+                    logger.error(
+                        "Request timeout",
+                        extra={"attempt": attempt, "timeout": self.timeout},
+                    )
+
                 if attempt < self.retries:
+                    logger.info(
+                        "Retrying after delay",
+                        extra={"attempt": attempt, "delay": self.delay},
+                    )
                     await asyncio.sleep(self.delay)
 
-        # Если цикл завершился и мы не вернули return price, значит всё сломалось
-        logger.critical("Не удалось получить курс USDT/RUB после всех попыток.")
+        logger.critical(
+            "Failed to fetch USDT/RUB rate after all retries",
+            extra={"total_attempts": self.retries},
+        )
         return None
