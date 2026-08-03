@@ -38,6 +38,20 @@ class CommissionService:
             bot.total_commission_paid_rub = round(bot.total_commission_paid_rub + commission_rub, 8)
 
             logger.info(
-                "Bot %s trade #%s closed: profit=%.4f USDT, commission=%.4f USDT",
-                bot.id, trade.freqtrade_trade_id, profit, commission_usdt,
+                "Bot closed profitable deal",
+                extra={
+                    "bot_id": bot.id,
+                    "trade_id": trade.freqtrade_trade_id,
+                    "profit": profit,
+                    "commission_usdt": commission_usdt,
+                },
+            )
+        elif profit<0:
+            logger.info(
+                "Bot closed unprofitable deal",
+                extra={
+                    "bot_id": bot.id,
+                    "trade_id": trade.freqtrade_trade_id,
+                    "profit": profit,
+                },
             )
