@@ -204,9 +204,13 @@ async def run_polling_worker() -> None:
                         await db.close()
 
             except Exception as exc:
-                logger.exception(
-                    "Polling worker outer error",
+                # critical, а не exception/error: это внешний цикл воркера — если сюда
+                # долетело исключение, синхронизация сделок встала для ВСЕХ ботов сразу,
+                # и это нужно увидеть сразу, а не при следующей проверке логов.
+                logger.critical(
+                    "Polling worker outer error — trade sync stopped for this cycle",
                     extra={"error": str(exc)},
+                    exc_info=True,
                 )
 
             await asyncio.sleep(POLL_INTERVAL)

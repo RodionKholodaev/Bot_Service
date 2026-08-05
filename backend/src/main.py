@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.logger_config import setup_logging
+from src.core.telegram_alerts import setup_telegram_alerts
 from src.config import settings
 from src.database import Base, engine
 from src.routers import auth, bots, api_keys, user, stats, payments
@@ -12,6 +13,7 @@ from src.services.polling_worker import run_polling_worker
 import asyncio
 
 setup_logging()
+setup_telegram_alerts(settings.TELEGRAM_ALERT_BOT_TOKEN, settings.TELEGRAM_ALERT_CHAT_ID)
 
 logger = logging.getLogger(__name__)
 

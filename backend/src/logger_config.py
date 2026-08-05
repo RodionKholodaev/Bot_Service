@@ -5,7 +5,17 @@ from pathlib import Path
 LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
 
 # Набор стандартных полей LogRecord — всё, чего нет в этом наборе, пришло через extra={...}.
-_STANDARD_LOG_RECORD_ATTRS = set(logging.LogRecord("", 0, "", 0, "", (), None).__dict__) | {"message", "asctime"}
+STANDARD_LOG_RECORD_ATTRS = set(logging.LogRecord("", 0, "", 0, "", (), None).__dict__) | {"message", "asctime"}
+
+
+def extra_fields(record: logging.LogRecord) -> dict:
+    """Достаёт только те поля LogRecord, что пришли через extra={...} (используется
+    и форматтером логов ниже, и telegram_alerts.py — чтобы не дублировать логику)."""
+    return {
+        key: value
+        for key, value in record.__dict__.items()
+        if key not in STANDARD_LOG_RECORD_ATTRS
+    }
 
 
 class ExtraFormatter(logging.Formatter):
@@ -13,11 +23,7 @@ class ExtraFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         base = super().format(record)
-        extra_items = {
-            key: value
-            for key, value in record.__dict__.items()
-            if key not in _STANDARD_LOG_RECORD_ATTRS
-        }
+        extra_items = extra_fields(record)
         if extra_items:
             extra_str = " ".join(f"{key}={value!r}" for key, value in extra_items.items())
             return f"{base} | {extra_str}"

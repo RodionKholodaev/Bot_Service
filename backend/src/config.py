@@ -43,5 +43,11 @@ class Settings(BaseSettings):
     YOOKASSA_SECRET_KEY: str
     FRONTEND_URL: str
 
+    # ── Telegram-алерты для разработчика ───────────────────
+    # Токен бота (от @BotFather) и chat_id, куда слать critical-логи.
+    # Не заданы — алерты просто выключены, приложение работает как раньше.
+    TELEGRAM_ALERT_BOT_TOKEN: str | None = None
+    TELEGRAM_ALERT_CHAT_ID: str | None = None
+
 
 settings = Settings()  # type: ignore
