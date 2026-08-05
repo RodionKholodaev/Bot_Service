@@ -40,14 +40,6 @@ class BotService:
     def _bot_dir(bot_id: str) -> Path:
         return settings.BOTS_DATA_DIR / bot_id
 
-    async def _get_user_bot (self, bot_id, user:User):
-        bot = await self.bot_repo.get_bot_by_id(bot_id)
-        if bot is None:
-            raise NotFoundError("Бот не найден")
-        if bot.user_id != user.id:
-            raise NotFoundError("Бот не найден")
-        return bot
-    
 
     async def create_bot(self, current_user: User, body: BotCreate):
 
