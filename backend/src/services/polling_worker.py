@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 import httpx
 import sentry_sdk
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.services import docker_manager
 from src.services.commission_service import CommissionService
 from src.database import AsyncSessionLocal
 from src.models.bot import Bot
@@ -192,6 +193,37 @@ async def run_polling_worker() -> None:
 
                         for bot in running_bots:
                             try:
+                                container_status = (
+                                    docker_manager.get_container_status(bot.container_id)
+                                    if bot.container_id
+                                    else None
+                                )
+                                if container_status != "running" and bot.status == "running":
+                                    tail_logs = (
+                                        docker_manager.get_container_logs(bot.container_id, tail=50)
+                                        if bot.container_id
+                                        else ""
+                                    )
+                                    sentry_sdk.set_tag("bot_id", bot.id)
+                                    sentry_sdk.set_tag("user_id", str(bot.user_id))
+                                    sentry_sdk.set_context("container_logs", {"tail": tail_logs})
+                                    sentry_sdk.capture_message(
+                                        f"Bot container stopped unexpectedly (was running, now {container_status})",
+                                        level="error",
+                                    )
+                                    logger.error(
+                                        "Bot container stopped unexpectedly",
+                                        extra={
+                                            "bot_id": bot.id,
+                                            "user_id": bot.user_id,
+                                            "container_status": container_status,
+                                        },
+                                    )
+                                    await BotRepository(db).change_bot_status("error", bot)
+                                    await BotRepository(db).add_error_message(
+                                        f"Container stopped unexpectedly (status: {container_status})", bot
+                                    )
+
                                 raw = await _fetch_trades(bot, client)
                                 if raw:
                                     await _async_bot_trades(db, bot, raw)
