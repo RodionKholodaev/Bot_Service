@@ -13,6 +13,7 @@ from pathlib import Path
 from src.services import docker_manager, freqtrade_client
 import logging
 import shutil
+import sentry_sdk
 from src.core.exceptions import NotFoundError, BadRequestError
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,8 @@ class BotService:
         Создаем папку бота, делаем запись в бд
         """
         bot_id = str(uuid.uuid4())
+        sentry_sdk.set_tag("bot_id", bot_id)
+        sentry_sdk.set_tag("user_id", str(current_user.id))
         # делаем имя контейнера
         container_name = f"bot_{bot_id.replace('-', '')[:24]}"
         # получаем номер порта который пока не используется
@@ -203,6 +206,9 @@ class BotService:
             )
 
         except Exception as e:
+            sentry_sdk.set_tag("bot_id", bot.id)
+            sentry_sdk.set_tag("user_id", str(bot.user_id))
+            sentry_sdk.capture_exception(e)
             logger.exception(
                 "Couldn't start the container",
                 extra={
@@ -279,7 +285,10 @@ class BotService:
         if bot_dir.exists():
             try:
                 shutil.rmtree(bot_dir)
-            except Exception:
+            except Exception as e:
+                sentry_sdk.set_tag("bot_id", bot.id)
+                sentry_sdk.set_tag("user_id", str(bot.user_id))
+                sentry_sdk.capture_exception(e)
                 logger.error(
                     "Couldn't delete bot dir",
                     extra={

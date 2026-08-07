@@ -11,6 +11,7 @@ import logging
 from datetime import datetime, timezone
 
 import httpx
+import sentry_sdk
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.services.commission_service import CommissionService
 from src.database import AsyncSessionLocal
@@ -190,9 +191,20 @@ async def run_polling_worker() -> None:
                         )
 
                         for bot in running_bots:
-                            raw = await _fetch_trades(bot, client)
-                            if raw:
-                                await _async_bot_trades(db, bot, raw)
+                            try:
+                                raw = await _fetch_trades(bot, client)
+                                if raw:
+                                    await _async_bot_trades(db, bot, raw)
+                            except Exception as e:
+                                sentry_sdk.set_tag("bot_id", bot.id)
+                                sentry_sdk.set_tag("user_id", str(bot.user_id))
+                                sentry_sdk.capture_exception(e)
+                                logger.exception(
+                                    "Failed to sync trades for bot",
+                                    extra={"bot_id": bot.id, "user_id": bot.user_id},
+                                )
+                                await db.rollback()
+                                continue
 
                     except Exception as exc:
                         logger.exception(
@@ -207,6 +219,7 @@ async def run_polling_worker() -> None:
                 # critical, а не exception/error: это внешний цикл воркера — если сюда
                 # долетело исключение, синхронизация сделок встала для ВСЕХ ботов сразу,
                 # и это нужно увидеть сразу, а не при следующей проверке логов.
+                sentry_sdk.capture_exception(exc)
                 logger.critical(
                     "Polling worker outer error — trade sync stopped for this cycle",
                     extra={"error": str(exc)},
