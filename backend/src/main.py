@@ -12,6 +12,34 @@ from src.core.exception_handlers import register_exception_handlers
 from src.services.polling_worker import run_polling_worker
 import asyncio
 
+# ==============
+# Настройки для GLITCHTIP (система для удобной работы с ошибками)
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
+
+def before_send(event, hint):
+    # вычищаем чувствительные поля перед отправкой, даже несмотря на self-hosted
+    sensitive_keys = {"api_key", "api_secret", "password", "token"}
+    if "extra" in event:
+        for key in list(event["extra"].keys()):
+            if key.lower() in sensitive_keys:
+                event["extra"][key] = "[REDACTED]"
+    if "request" in event and "data" in event["request"]:
+        for key in sensitive_keys:
+            event["request"]["data"].pop(key, None)
+    return event
+
+if settings.GLITCHTIP_DSN:
+    sentry_sdk.init(
+        dsn=settings.GLITCHTIP_DSN,
+        integrations=[FastApiIntegration(), AsyncioIntegration()],
+        traces_sample_rate=0.2,  # часть запросов для performance-трейсинга, можно 0 если не нужно
+        before_send=before_send,
+        environment="production",
+    )
+
+# ================
 setup_logging()
 setup_telegram_alerts(settings.TELEGRAM_ALERT_BOT_TOKEN, settings.TELEGRAM_ALERT_CHAT_ID)
 

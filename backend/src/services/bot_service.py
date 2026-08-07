@@ -233,6 +233,7 @@ class BotService:
                     "container_id": bot.container_id,
                 },
             )
+            
             ans = await self.bot_repo.change_bot_status("stopped", bot)
 
             return ans

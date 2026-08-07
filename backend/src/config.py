@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     FERNET_KEY: str
-    
+    GLITCHTIP_DSN: str
     SERVICE_COMMISION: float
     
     # ── Запуск ботов ──────────────────────────────────────
