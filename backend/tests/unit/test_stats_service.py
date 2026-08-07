@@ -253,7 +253,7 @@ async def test_get_bot_stats_winrate_and_counts():
         make_trade(id=4, profit_usdt=30.0, profit_pct=3.0, close_time=datetime(2026, 1, 4, tzinfo=timezone.utc)),
     ]
     bot = make_bot()
-    service = StatsService(bot_repo=None, trade_repo=FakeTradeRepo(trades))
+    service = StatsService(bot_repo=None, trade_repo=FakeTradeRepo(trades)) #type: ignore
 
     # Act
     stats = await service.get_bot_stats(bot)
@@ -279,7 +279,7 @@ async def test_get_bot_stats_zero_profit_trade_counts_as_loss():
         make_trade(id=1, profit_usdt=0.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
     ]
     bot = make_bot()
-    service = StatsService(bot_repo=None, trade_repo=FakeTradeRepo(trades))
+    service = StatsService(bot_repo=None, trade_repo=FakeTradeRepo(trades)) #type: ignore
 
     stats = await service.get_bot_stats(bot)
 
@@ -292,7 +292,7 @@ async def test_get_bot_stats_zero_profit_trade_counts_as_loss():
 async def test_get_bot_stats_no_trades_returns_zero_stats_without_crashing():
     # Arrange: у бота вообще ещё нет закрытых сделок (только что создан)
     bot = make_bot()
-    service = StatsService(bot_repo=None, trade_repo=FakeTradeRepo([]))
+    service = StatsService(bot_repo=None, trade_repo=FakeTradeRepo([])) #type: ignore
 
     # Act
     stats = await service.get_bot_stats(bot)
