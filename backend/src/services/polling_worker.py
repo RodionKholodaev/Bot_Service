@@ -52,26 +52,55 @@ CONTAINER_LOG_TAIL_CHARS = 1000
 # Запрос к freqtrade REST API
 # ──────────────────────────────────────────────────────────────
 
-def _bot_api_url(bot: Bot, path: str) -> str:
-    """Адрес REST API конкретного бота. Каждый контейнер пробрасывает свой 8080 на bot.api_port."""
-    return f"http://{settings.BOT_API_HOST}:{bot.api_port}{path}"
-
-
-async def _ping_bot(bot: Bot, client: httpx.AsyncClient) -> bool:
+async def _bot_api_get(
+    bot: Bot,
+    client: httpx.AsyncClient,
+    path: str,
+    *,
+    auth: bool = True,
+    params: dict | None = None,
+) -> httpx.Response:
     """
-    Отвечает ли REST API бота. /api/v1/ping у freqtrade публичный — авторизация не нужна,
-    поэтому неверный пароль не будет выглядеть как смерть бота.
+    GET к REST API конкретного бота. Каждый контейнер пробрасывает свой 8080 на bot.api_port.
+
+    Исключение наружу не глушим: насколько провал важен, решает вызывающий — для /ping
+    это ожидаемое событие, для остальных ручек уже нет.
+    """
+    resp = await client.get(
+        f"http://{settings.BOT_API_HOST}:{bot.api_port}{path}",
+        auth=(bot.api_username, bot.api_password) if auth else None,
+        params=params,
+        timeout=BOT_API_TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp
+
+
+def _describe(exc: Exception) -> str:
+    """
+    Текст ошибки для лога. С типом: у httpx-исключений сообщение часто пустое
+    (ReadTimeout('')), и один str(exc) не даёт понять, что вообще произошло.
+    """
+    return f"{type(exc).__name__}: {exc}"
+
+
+async def _ping_bot(bot: Bot, client: httpx.AsyncClient) -> str | None:
+    """
+    Отвечает ли REST API бота: None — ответил, строка — текст ошибки.
+
+    Причину возвращаем, а не логируем на месте. Одиночный промах — норма (рестарт
+    контейнера, медленный старт freqtrade), и писать про него в лог нечего, но после
+    MAX_PING_MISSES она уходит в critical-алерт: иначе разработчик видит только
+    "не отвечает 90 секунд" и не знает, отказ это соединения, таймаут или 502.
+
+    /api/v1/ping у freqtrade публичный — авторизация не нужна, поэтому неверный пароль
+    не будет выглядеть как смерть бота.
     """
     try:
-        resp = await client.get(_bot_api_url(bot, "/api/v1/ping"), timeout=BOT_API_TIMEOUT)
-        resp.raise_for_status()
-        return True
+        await _bot_api_get(bot, client, "/api/v1/ping", auth=False)
+        return None
     except Exception as exc:
-        logger.debug(
-            "Bot API ping failed",
-            extra={"bot_id": bot.id, "error": str(exc)},
-        )
-        return False
+        return _describe(exc)
 
 
 async def _fetch_bot_state(bot: Bot, client: httpx.AsyncClient) -> str | None:
@@ -80,17 +109,16 @@ async def _fetch_bot_state(bot: Bot, client: httpx.AsyncClient) -> str | None:
     None — если ответа нет или поля state в нём не оказалось.
     """
     try:
-        resp = await client.get(
-            _bot_api_url(bot, "/api/v1/show_config"),
-            auth=(bot.api_username, bot.api_password),
-            timeout=BOT_API_TIMEOUT,
-        )
-        resp.raise_for_status()
+        resp = await _bot_api_get(bot, client, "/api/v1/show_config")
         return resp.json().get("state")
     except Exception as exc:
-        logger.debug(
+        # warning, а не debug: сюда попадают уже после успешного ping, то есть API бота
+        # живо и провал — это 401/5xx/битый ответ, а не перезапуск контейнера. При этом
+        # None неотличим от здорового бота: проверка на "stopped" просто не сработает,
+        # и вставший freqtrade будет считаться работающим сколько угодно долго.
+        logger.warning(
             "Failed to fetch bot state",
-            extra={"bot_id": bot.id, "error": str(exc)},
+            extra={"bot_id": bot.id, "error": _describe(exc)},
         )
         return None
 
@@ -101,24 +129,20 @@ async def _fetch_trades(bot: Bot, client: httpx.AsyncClient) -> list[dict]:
     Возвращает пустой список если контейнер недоступен.
     """
     try:
-        resp = await client.get(
-            _bot_api_url(bot, "/api/v1/trades"),
-            auth=(bot.api_username, bot.api_password),
-            params={"limit": 500},
-            timeout=BOT_API_TIMEOUT,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        trades = data.get("trades", [])
+        resp = await _bot_api_get(bot, client, "/api/v1/trades", params={"limit": 500})
+        trades = resp.json().get("trades", [])
         logger.debug(
             "Trades fetched from freqtrade",
             extra={"bot_id": bot.id, "trades_count": len(trades)},
         )
         return trades
     except Exception as exc:
-        logger.debug(
-            "Freqtrade container unavailable",
-            extra={"bot_id": bot.id, "error": str(exc)},
+        # warning по той же причине, что и в _fetch_bot_state: ping только что прошёл.
+        # Пустой список неотличим от "сделок нет" — молча не синхронизируются сделки
+        # и не начисляется комиссия.
+        logger.warning(
+            "Failed to fetch trades from freqtrade",
+            extra={"bot_id": bot.id, "error": _describe(exc)},
         )
         return []
 
@@ -232,10 +256,16 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
 # Реакция на отказ бота
 # ──────────────────────────────────────────────────────────────
 
-async def _mark_bot_failed(db: AsyncSession, bot: Bot, reason: str) -> None:
+async def _mark_bot_failed(
+    db: AsyncSession, bot: Bot, reason: str, detail: str | None = None
+) -> None:
     """
     Единая реакция на любой обнаруженный отказ: алерт разработчику, статус "error"
     в БД и остановка контейнера.
+
+    reason — короткая формулировка, она уезжает в Bot.error_message и оттуда в интерфейс
+    пользователю (String(500)). detail — сырой текст ошибки, только для разработчика:
+    в БД его класть нельзя ни по длине, ни по смыслу.
     """
     container_status = (
         docker_manager.get_container_status(bot.container_id) if bot.container_id else None
@@ -267,6 +297,7 @@ async def _mark_bot_failed(db: AsyncSession, bot: Bot, reason: str) -> None:
                 "bot_id": bot.id,
                 "user_id": bot.user_id,
                 "reason": reason,
+                "detail": detail,
                 "container_status": container_status,
                 "container_logs_tail": tail_logs[-CONTAINER_LOG_TAIL_CHARS:],
             },
@@ -310,16 +341,25 @@ async def _check_and_sync_bot(
     # 1. Жив ли процесс freqtrade. На статус контейнера полагаться нельзя: при отказе
     # на старте процесс зависает в shutdown (незакрытый non-daemon поток websocket'ов
     # ccxt), и docker до бесконечности показывает "running" у мёртвого бота.
-    if not await _ping_bot(bot, client):
+    ping_error = await _ping_bot(bot, client)
+    if ping_error is not None:
         misses = ping_misses.get(bot.id, 0) + 1
         ping_misses[bot.id] = misses
         logger.warning(
             "Bot API is not responding",
-            extra={"bot_id": bot.id, "misses": misses, "max_misses": MAX_PING_MISSES},
+            extra={
+                "bot_id": bot.id,
+                "misses": misses,
+                "max_misses": MAX_PING_MISSES,
+                "error": ping_error,
+            },
         )
         if misses >= MAX_PING_MISSES:
             await _mark_bot_failed(
-                db, bot, f"Bot API is not responding for {misses * POLL_INTERVAL} seconds"
+                db,
+                bot,
+                f"Bot API is not responding for {misses * POLL_INTERVAL} seconds",
+                detail=ping_error,
             )
             del ping_misses[bot.id]
         return

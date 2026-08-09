@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 import pytest
 
@@ -13,7 +15,7 @@ PING = "/api/v1/ping"
 SHOW_CONFIG = "/api/v1/show_config"
 TRADES = "/api/v1/trades"
 
-
+# НЕ ПРОВЕРЯЛ ЭТОТ КОД!!!
 class FakeResponse:
     def __init__(self, payload: dict | None = None, status_code: int = 200):
         self._payload = payload or {}
@@ -90,29 +92,32 @@ def stopped_containers(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_ping_returns_true_when_bot_answers():
+async def test_ping_returns_none_when_bot_answers():
     # Arrange
     bot = make_bot()
     client = FakeApiClient({PING: FakeResponse({"status": "pong"})})
 
     # Act
-    alive = await _ping_bot(bot, client)  # type: ignore
+    ping_error = await _ping_bot(bot, client)  # type: ignore
 
     # Assert
-    assert alive is True
+    assert ping_error is None
 
 
 @pytest.mark.asyncio
-async def test_ping_returns_false_when_bot_is_unreachable():
+async def test_ping_returns_error_text_when_bot_is_unreachable():
     # Arrange
     bot = make_bot()
     client = FakeApiClient({})  # ни один путь не отвечает
 
     # Act
-    alive = await _ping_bot(bot, client)  # type: ignore
+    ping_error = await _ping_bot(bot, client)  # type: ignore
 
     # Assert
-    assert alive is False
+    # Тип обязателен: у httpx-исключений сообщение часто пустое, и без него
+    # в алерте не видно, что произошло.
+    assert ping_error is not None
+    assert "ConnectError" in ping_error
 
 
 # ── правило MAX_PING_MISSES ───────────────────────────────────
@@ -152,6 +157,7 @@ async def test_bot_is_failed_and_stopped_after_max_misses(stopped_containers):
 
     # Assert
     assert bot.status == "error"
+    assert bot.error_message is not None
     assert "not responding" in bot.error_message
     # контейнер останавливаем как реакцию: он держит порт и память, а при отказе
     # на старте процесс freqtrade зависает в shutdown и сам не умрёт
@@ -159,6 +165,31 @@ async def test_bot_is_failed_and_stopped_after_max_misses(stopped_containers):
     assert db.commits == 1
     # счётчик снят — бот больше не в работе, повторный алерт не уйдёт
     assert bot.id not in ping_misses
+
+
+@pytest.mark.asyncio
+async def test_failure_alert_carries_last_ping_error(stopped_containers, caplog):
+    # Arrange
+    # Сама причина промахов живёт только в памяти воркера. Если не донести её до
+    # алерта, разработчик получит "не отвечает 90 секунд" и не узнает, что это было:
+    # отказ соединения, таймаут или 502 от freqtrade.
+    bot = make_bot()
+    db = FakeSession()
+    client = FakeApiClient({})
+    ping_misses: dict[str, int] = {}
+
+    # Act
+    with caplog.at_level(logging.CRITICAL, logger="src.services.polling_worker"):
+        for _ in range(MAX_PING_MISSES):
+            await _check_and_sync_bot(db, bot, client, ping_misses)  # type: ignore
+
+    # Assert
+    alerts = [record for record in caplog.records if record.levelno == logging.CRITICAL]
+    assert len(alerts) == 1
+    assert "ConnectError" in alerts[0].detail
+    # а в error_message, который видит пользователь, сырой текст ошибки не попадает
+    assert bot.error_message is not None
+    assert "ConnectError" not in bot.error_message
 
 
 @pytest.mark.asyncio
@@ -209,6 +240,7 @@ async def test_bot_is_failed_when_freqtrade_stopped_trading(stopped_containers):
 
     # Assert
     assert bot.status == "error"
+    assert bot.error_message is not None
     assert "stopped" in bot.error_message
     assert stopped_containers == ["container-1"]
 
