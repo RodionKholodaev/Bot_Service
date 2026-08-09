@@ -26,6 +26,14 @@ logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 30  # секунды
 
+# Сколько строк логов упавшего контейнера забирать из docker.
+CONTAINER_LOG_TAIL_LINES = 50
+
+# Сколько символов этого хвоста класть в extra={...} лог-записи. Полный хвост уходит
+# в контекст Glitchtip, а extra попадает ещё и в текст telegram-алерта — там нужен
+# короткий кусок, который читается с телефона, а не вся простыня.
+CONTAINER_LOG_TAIL_CHARS = 1000
+
 
 # ──────────────────────────────────────────────────────────────
 # Запрос к freqtrade REST API
@@ -171,70 +179,97 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
 
 async def run_polling_worker() -> None:
     """
+    Синхронизирует сделки бота с бд сервиса.
     Бесконечный цикл. Запускать через asyncio.create_task() в lifespan.
     """
     logger.info(
         "Polling worker started",
         extra={"interval_seconds": POLL_INTERVAL},
     )
-
+    # создаем клиента для общения по http
     async with httpx.AsyncClient() as client:
         while True:
             try:
-
+                # получили сессию для работы с бд
                 async with AsyncSessionLocal() as db:
                     try:
-
+                        # получили активных ботов
                         running_bots = await BotRepository(db).get_all_active_bots()
                         logger.debug(
                             "Active bots fetched",
                             extra={"bots_count": len(running_bots)},
                         )
-
+                        # пробегаемся по ботам
                         for bot in running_bots:
                             try:
+                                # получили статус бота
                                 container_status = (
                                     docker_manager.get_container_status(bot.container_id)
                                     if bot.container_id
                                     else None
                                 )
+                                # если бот не работает, записываем логи
                                 if container_status != "running" and bot.status == "running":
                                     tail_logs = (
-                                        docker_manager.get_container_logs(bot.container_id, tail=50)
+                                        docker_manager.get_container_logs(
+                                            bot.container_id, tail=CONTAINER_LOG_TAIL_LINES
+                                        )
                                         if bot.container_id
                                         else ""
                                     )
-                                    sentry_sdk.set_tag("bot_id", bot.id)
-                                    sentry_sdk.set_tag("user_id", str(bot.user_id))
-                                    sentry_sdk.set_context("container_logs", {"tail": tail_logs})
-                                    sentry_sdk.capture_message(
-                                        f"Bot container stopped unexpectedly (was running, now {container_status})",
-                                        level="error",
-                                    )
-                                    logger.error(
-                                        "Bot container stopped unexpectedly",
-                                        extra={
-                                            "bot_id": bot.id,
-                                            "user_id": bot.user_id,
-                                            "container_status": container_status,
-                                        },
-                                    )
+
+                                    # new_scope, а не глобальный sentry_sdk.set_tag: воркер —
+                                    # одна долгоживущая таска, и теги/контекст, выставленные
+                                    # напрямую, залипли бы на всех последующих событиях этой
+                                    # таски (логи контейнера одного бота уехали бы к другому).
+                                    
+                                    # откриваем конверт для которые sentry отправит одним алертом
+                                    with sentry_sdk.new_scope() as scope:
+                                        
+                                        scope.set_tag("bot_id", bot.id)
+                                        scope.set_tag("user_id", str(bot.user_id))
+                                        scope.set_context("container_logs", {"tail": tail_logs})
+                                        # critical, а не error: бот мёртв, торговля встала —
+                                        # это не самовосстанавливающийся сбой, разработчик
+                                        # должен узнать сразу. Отдельный capture_message не
+                                        # нужен — LoggingIntegration сама отправит эту запись
+                                        # в Glitchtip, иначе на один сбой было бы два события.
+                                        logger.critical(
+                                            "Bot container stopped unexpectedly",
+                                            extra={
+                                                "bot_id": bot.id,
+                                                "user_id": bot.user_id,
+                                                "container_status": container_status,
+                                                "container_logs_tail": tail_logs[-CONTAINER_LOG_TAIL_CHARS:],
+                                            },
+                                        )
+                                    # меняем статус бота
                                     await BotRepository(db).change_bot_status("error", bot)
+                                    #  добавляем сообщение об ошибке
                                     await BotRepository(db).add_error_message(
                                         f"Container stopped unexpectedly (status: {container_status})", bot
                                     )
-
+                                    # Коммитим здесь же. REST API freqtrade живёт внутри
+                                    # контейнера, поэтому у неработающего контейнера на запрос
+                                    # отвечать некому: _fetch_trades вернёт [] независимо от
+                                    # того, сколько бот успел наторговать, _async_bot_trades
+                                    # ниже не вызовется, и без этого коммита статус "error"
+                                    # откатился бы при закрытии сессии — бот навсегда остался
+                                    # бы "running" в БД, а воркер слал бы алерт каждые 30 секунд.
+                                    await db.commit()
+                                # достаем сделки (и если бот работает, и если не работает)
                                 raw = await _fetch_trades(bot, client)
                                 if raw:
+                                    # сохронизировали сделки
                                     await _async_bot_trades(db, bot, raw)
-                            except Exception as e:
-                                sentry_sdk.set_tag("bot_id", bot.id)
-                                sentry_sdk.set_tag("user_id", str(bot.user_id))
-                                sentry_sdk.capture_exception(e)
-                                logger.exception(
-                                    "Failed to sync trades for bot",
-                                    extra={"bot_id": bot.id, "user_id": bot.user_id},
-                                )
+                            except Exception:
+                                with sentry_sdk.new_scope() as scope:
+                                    scope.set_tag("bot_id", bot.id)
+                                    scope.set_tag("user_id", str(bot.user_id))
+                                    logger.exception(
+                                        "Failed to sync trades for bot",
+                                        extra={"bot_id": bot.id, "user_id": bot.user_id},
+                                    )
                                 await db.rollback()
                                 continue
 
@@ -251,11 +286,10 @@ async def run_polling_worker() -> None:
                 # critical, а не exception/error: это внешний цикл воркера — если сюда
                 # долетело исключение, синхронизация сделок встала для ВСЕХ ботов сразу,
                 # и это нужно увидеть сразу, а не при следующей проверке логов.
-                sentry_sdk.capture_exception(exc)
                 logger.critical(
                     "Polling worker outer error — trade sync stopped for this cycle",
                     extra={"error": str(exc)},
                     exc_info=True,
                 )
-
+            # ждем указаное время
             await asyncio.sleep(POLL_INTERVAL)

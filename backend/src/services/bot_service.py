@@ -206,9 +206,11 @@ class BotService:
             )
 
         except Exception as e:
+            # Теги ставятся на scope запроса (его создаёт FastApiIntegration), поэтому
+            # никуда не протекут. Отдельный capture_exception не нужен: LoggingIntegration
+            # отправит logger.exception ниже в Glitchtip сама.
             sentry_sdk.set_tag("bot_id", bot.id)
             sentry_sdk.set_tag("user_id", str(bot.user_id))
-            sentry_sdk.capture_exception(e)
             logger.exception(
                 "Couldn't start the container",
                 extra={
@@ -285,11 +287,10 @@ class BotService:
         if bot_dir.exists():
             try:
                 shutil.rmtree(bot_dir)
-            except Exception as e:
+            except Exception:
                 sentry_sdk.set_tag("bot_id", bot.id)
                 sentry_sdk.set_tag("user_id", str(bot.user_id))
-                sentry_sdk.capture_exception(e)
-                logger.error(
+                logger.exception(
                     "Couldn't delete bot dir",
                     extra={
                         "user_id": bot.user_id,

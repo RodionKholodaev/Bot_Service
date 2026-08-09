@@ -239,7 +239,7 @@ def run_bot_container(
                 "--datadir", "/freqtrade/user_data_mount/user_data/data",
                 "--db-url", "sqlite:////freqtrade/user_data_mount/user_data/tradesv3.sqlite",
             ],
-            restart_policy={"Name": "unless-stopped"},  # type: ignore
+            restart_policy={"Name": "on-failure", "MaximumRetryCount": 5},
             mem_limit="512m",
         )  # type: ignore
 
