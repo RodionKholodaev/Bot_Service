@@ -1,4 +1,5 @@
 import pytest_asyncio
+import sentry_sdk
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
@@ -7,6 +8,11 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from src.main import app
+
+# src.main при импорте поднимает sentry_sdk с боевым DSN, поэтому любой logger.critical
+# из тестов улетал бы в Glitchtip как настоящий инцидент. Пустой DSN гасит клиент —
+# на код это не влияет, sentry_sdk просто становится no-op.
+sentry_sdk.init(dsn="")
 from src.database import get_db
 from src.database import Base
 from sqlalchemy import delete

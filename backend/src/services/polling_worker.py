@@ -1,7 +1,10 @@
 # src/services/polling_worker.py
 """
-Фоновый воркер: каждые 30 секунд синхронизирует сделки из freqtrade
-в нашу таблицу trades и обновляет Bot.total_profit.
+Фоновый воркер: каждые 30 секунд проверяет, что боты живы и торгуют, синхронизирует
+сделки из freqtrade в нашу таблицу trades и обновляет Bot.total_profit.
+
+Здоровье бота определяется по его REST API, а не по статусу контейнера: freqtrade
+умеет отказывать, не убивая контейнер (см. _check_and_sync_bot).
 
 Запускается один раз при старте приложения через lifespan в main.py.
 """
@@ -13,6 +16,7 @@ from datetime import datetime, timezone
 import httpx
 import sentry_sdk
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.config import settings
 from src.services import docker_manager
 from src.services.commission_service import CommissionService
 from src.database import AsyncSessionLocal
@@ -25,6 +29,15 @@ from src.repositories.trade_repository import TradeRepository
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 30  # секунды
+
+# Таймаут на любой запрос к REST API бота.
+BOT_API_TIMEOUT = 5.0
+
+# Сколько опросов подряд бот должен молчать, прежде чем мы признаем его мёртвым.
+# 3 × 30 с = 90 с. Одного промаха мало: столько же длится окно перезапуска контейнера
+# по restart_policy, а freqtrade после старта ещё десятки секунд грузит рынки и
+# пейрлист — при этом Bot.status становится "running" сразу после запуска контейнера.
+MAX_PING_MISSES = 3
 
 # Сколько строк логов упавшего контейнера забирать из docker.
 CONTAINER_LOG_TAIL_LINES = 50
@@ -39,18 +52,60 @@ CONTAINER_LOG_TAIL_CHARS = 1000
 # Запрос к freqtrade REST API
 # ──────────────────────────────────────────────────────────────
 
+def _bot_api_url(bot: Bot, path: str) -> str:
+    """Адрес REST API конкретного бота. Каждый контейнер пробрасывает свой 8080 на bot.api_port."""
+    return f"http://{settings.BOT_API_HOST}:{bot.api_port}{path}"
+
+
+async def _ping_bot(bot: Bot, client: httpx.AsyncClient) -> bool:
+    """
+    Отвечает ли REST API бота. /api/v1/ping у freqtrade публичный — авторизация не нужна,
+    поэтому неверный пароль не будет выглядеть как смерть бота.
+    """
+    try:
+        resp = await client.get(_bot_api_url(bot, "/api/v1/ping"), timeout=BOT_API_TIMEOUT)
+        resp.raise_for_status()
+        return True
+    except Exception as exc:
+        logger.debug(
+            "Bot API ping failed",
+            extra={"bot_id": bot.id, "error": str(exc)},
+        )
+        return False
+
+
+async def _fetch_bot_state(bot: Bot, client: httpx.AsyncClient) -> str | None:
+    """
+    Состояние торгового цикла freqtrade из /api/v1/show_config: "running" / "paused" / "stopped".
+    None — если ответа нет или поля state в нём не оказалось.
+    """
+    try:
+        resp = await client.get(
+            _bot_api_url(bot, "/api/v1/show_config"),
+            auth=(bot.api_username, bot.api_password),
+            timeout=BOT_API_TIMEOUT,
+        )
+        resp.raise_for_status()
+        return resp.json().get("state")
+    except Exception as exc:
+        logger.debug(
+            "Failed to fetch bot state",
+            extra={"bot_id": bot.id, "error": str(exc)},
+        )
+        return None
+
+
 async def _fetch_trades(bot: Bot, client: httpx.AsyncClient) -> list[dict]:
     """
     Запрашивает /api/v1/trades у freqtrade-контейнера.
     Возвращает пустой список если контейнер недоступен.
     """
-    url = f"http://127.0.0.1:{bot.api_port}/api/v1/trades"
     try:
         resp = await client.get(
-            url,
+            _bot_api_url(bot, "/api/v1/trades"),
             auth=(bot.api_username, bot.api_password),
             params={"limit": 500},
-            timeout=5.0,
+            timeout=BOT_API_TIMEOUT,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -174,6 +229,120 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
 
 
 # ──────────────────────────────────────────────────────────────
+# Реакция на отказ бота
+# ──────────────────────────────────────────────────────────────
+
+async def _mark_bot_failed(db: AsyncSession, bot: Bot, reason: str) -> None:
+    """
+    Единая реакция на любой обнаруженный отказ: алерт разработчику, статус "error"
+    в БД и остановка контейнера.
+    """
+    container_status = (
+        docker_manager.get_container_status(bot.container_id) if bot.container_id else None
+    )
+    # При отказе на старте freqtrade падает до того, как поднимет свой REST API,
+    # поэтому /api/v1/logs недоступен и docker-логи — единственный источник причины.
+    tail_logs = (
+        docker_manager.get_container_logs(bot.container_id, tail=CONTAINER_LOG_TAIL_LINES)
+        if bot.container_id
+        else ""
+    )
+
+    # new_scope, а не глобальный sentry_sdk.set_tag: воркер — одна долгоживущая таска,
+    # и теги/контекст, выставленные напрямую, залипли бы на всех последующих событиях
+    # этой таски (логи контейнера одного бота уехали бы к другому).
+
+    # открываем конверт, который sentry отправит одним алертом
+    with sentry_sdk.new_scope() as scope:
+        scope.set_tag("bot_id", bot.id)
+        scope.set_tag("user_id", str(bot.user_id))
+        scope.set_context("container_logs", {"tail": tail_logs})
+        # critical, а не error: бот мёртв, торговля встала — это не самовосстанавливающийся
+        # сбой, разработчик должен узнать сразу. Отдельный capture_message не нужен —
+        # LoggingIntegration сама отправит эту запись в Glitchtip, иначе на один сбой
+        # было бы два события.
+        logger.critical(
+            "Bot stopped working",
+            extra={
+                "bot_id": bot.id,
+                "user_id": bot.user_id,
+                "reason": reason,
+                "container_status": container_status,
+                "container_logs_tail": tail_logs[-CONTAINER_LOG_TAIL_CHARS:],
+            },
+        )
+
+    await BotRepository(db).change_bot_status("error", bot)
+    await BotRepository(db).add_error_message(reason, bot)
+    # Коммитим до остановки контейнера. Если остановка упадёт, статус "error" всё равно
+    # должен остаться в БД — иначе бот навсегда останется "running", а воркер будет слать
+    # алерт каждые POLL_INTERVAL секунд.
+    await db.commit()
+
+    # Контейнер останавливаем последним и именно как реакцию, а не как способ узнать об
+    # отказе: он держит проброшенный порт (allocate_port считает его занятым) и до 512 МБ
+    # памяти, а при отказе на старте процесс freqtrade зависает в shutdown и сам не умрёт.
+    if bot.container_id:
+        try:
+            docker_manager.stop_container(bot.container_id)
+        except Exception:
+            logger.exception(
+                "Failed to stop container of a failed bot",
+                extra={"bot_id": bot.id, "container_id": bot.container_id},
+            )
+
+
+# ──────────────────────────────────────────────────────────────
+# Проверка и синхронизация одного бота
+# ──────────────────────────────────────────────────────────────
+
+async def _check_and_sync_bot(
+    db: AsyncSession,
+    bot: Bot,
+    client: httpx.AsyncClient,
+    ping_misses: dict[str, int],
+) -> None:
+    """
+    Один цикл работы с одним ботом: проверить, что он жив, синхронизировать сделки,
+    проверить, что он ещё торгует. ping_misses мутируется на месте — это счётчик
+    промахов подряд, общий для всех циклов воркера.
+    """
+    # 1. Жив ли процесс freqtrade. На статус контейнера полагаться нельзя: при отказе
+    # на старте процесс зависает в shutdown (незакрытый non-daemon поток websocket'ов
+    # ccxt), и docker до бесконечности показывает "running" у мёртвого бота.
+    if not await _ping_bot(bot, client):
+        misses = ping_misses.get(bot.id, 0) + 1
+        ping_misses[bot.id] = misses
+        logger.warning(
+            "Bot API is not responding",
+            extra={"bot_id": bot.id, "misses": misses, "max_misses": MAX_PING_MISSES},
+        )
+        if misses >= MAX_PING_MISSES:
+            await _mark_bot_failed(
+                db, bot, f"Bot API is not responding for {misses * POLL_INTERVAL} seconds"
+            )
+            del ping_misses[bot.id]
+        return
+
+    ping_misses.pop(bot.id, None)
+
+    # 2. Сделки синхронизируем до проверки состояния: если ниже окажется, что бот встал,
+    # контейнер будет остановлен и добрать сделки станет неоткуда.
+    raw = await _fetch_trades(bot, client)
+    if raw:
+        # сохронизировали сделки
+        await _async_bot_trades(db, bot, raw)
+
+    # 3. Живой процесс ещё не значит, что бот торгует: поймав OperationalException,
+    # freqtrade переводит себя в "stopped" и продолжает крутиться пустым циклом —
+    # контейнер, порт и ping при этом выглядят полностью здоровыми. "paused" —
+    # штатное состояние, в нём freqtrade продолжает обработку.
+    state = await _fetch_bot_state(bot, client)
+    if state == "stopped":
+        await _mark_bot_failed(db, bot, "Freqtrade stopped trading (state: stopped)")
+
+
+# ──────────────────────────────────────────────────────────────
 # Основной цикл
 # ──────────────────────────────────────────────────────────────
 
@@ -186,6 +355,12 @@ async def run_polling_worker() -> None:
         "Polling worker started",
         extra={"interval_seconds": POLL_INTERVAL},
     )
+
+    # {bot_id: сколько опросов подряд бот не ответил на ping}. Держим в памяти, а не в БД:
+    # миграций в проекте нет, а цена потери счётчика при рестарте бэкенда — повторное
+    # обнаружение отказа через MAX_PING_MISSES циклов.
+    ping_misses: dict[str, int] = {}
+
     # создаем клиента для общения по http
     async with httpx.AsyncClient() as client:
         while True:
@@ -199,69 +374,18 @@ async def run_polling_worker() -> None:
                             "Active bots fetched",
                             extra={"bots_count": len(running_bots)},
                         )
+
+                        # чистим счётчики ботов, которых больше нет в работе (остановлены
+                        # пользователем, удалены или уже переведены в error)
+                        active_bot_ids = {bot.id for bot in running_bots}
+                        for tracked_id in list(ping_misses):
+                            if tracked_id not in active_bot_ids:
+                                del ping_misses[tracked_id]
+
                         # пробегаемся по ботам
                         for bot in running_bots:
                             try:
-                                # получили статус бота
-                                container_status = (
-                                    docker_manager.get_container_status(bot.container_id)
-                                    if bot.container_id
-                                    else None
-                                )
-                                # если бот не работает, записываем логи
-                                if container_status != "running" and bot.status == "running":
-                                    tail_logs = (
-                                        docker_manager.get_container_logs(
-                                            bot.container_id, tail=CONTAINER_LOG_TAIL_LINES
-                                        )
-                                        if bot.container_id
-                                        else ""
-                                    )
-
-                                    # new_scope, а не глобальный sentry_sdk.set_tag: воркер —
-                                    # одна долгоживущая таска, и теги/контекст, выставленные
-                                    # напрямую, залипли бы на всех последующих событиях этой
-                                    # таски (логи контейнера одного бота уехали бы к другому).
-                                    
-                                    # откриваем конверт для которые sentry отправит одним алертом
-                                    with sentry_sdk.new_scope() as scope:
-                                        
-                                        scope.set_tag("bot_id", bot.id)
-                                        scope.set_tag("user_id", str(bot.user_id))
-                                        scope.set_context("container_logs", {"tail": tail_logs})
-                                        # critical, а не error: бот мёртв, торговля встала —
-                                        # это не самовосстанавливающийся сбой, разработчик
-                                        # должен узнать сразу. Отдельный capture_message не
-                                        # нужен — LoggingIntegration сама отправит эту запись
-                                        # в Glitchtip, иначе на один сбой было бы два события.
-                                        logger.critical(
-                                            "Bot container stopped unexpectedly",
-                                            extra={
-                                                "bot_id": bot.id,
-                                                "user_id": bot.user_id,
-                                                "container_status": container_status,
-                                                "container_logs_tail": tail_logs[-CONTAINER_LOG_TAIL_CHARS:],
-                                            },
-                                        )
-                                    # меняем статус бота
-                                    await BotRepository(db).change_bot_status("error", bot)
-                                    #  добавляем сообщение об ошибке
-                                    await BotRepository(db).add_error_message(
-                                        f"Container stopped unexpectedly (status: {container_status})", bot
-                                    )
-                                    # Коммитим здесь же. REST API freqtrade живёт внутри
-                                    # контейнера, поэтому у неработающего контейнера на запрос
-                                    # отвечать некому: _fetch_trades вернёт [] независимо от
-                                    # того, сколько бот успел наторговать, _async_bot_trades
-                                    # ниже не вызовется, и без этого коммита статус "error"
-                                    # откатился бы при закрытии сессии — бот навсегда остался
-                                    # бы "running" в БД, а воркер слал бы алерт каждые 30 секунд.
-                                    await db.commit()
-                                # достаем сделки (и если бот работает, и если не работает)
-                                raw = await _fetch_trades(bot, client)
-                                if raw:
-                                    # сохронизировали сделки
-                                    await _async_bot_trades(db, bot, raw)
+                                await _check_and_sync_bot(db, bot, client, ping_misses)
                             except Exception:
                                 with sentry_sdk.new_scope() as scope:
                                     scope.set_tag("bot_id", bot.id)
