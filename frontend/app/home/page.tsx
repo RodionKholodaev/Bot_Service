@@ -204,7 +204,19 @@ const TradingBotDashboard = () => {
         headers: { ...getAuthHeader() },
       });
       if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+      const deletedBot = bots.find(b => b.id === botId);
       setBots(prev => prev.filter(b => b.id !== botId));
+      setHomeStats(prev => {
+        if (!prev) return prev;
+        const wasActive = deletedBot?.status === 'running' || deletedBot?.status === 'starting';
+        return {
+          ...prev,
+          bots_total: Math.max(0, prev.bots_total - 1),
+          bots_running: wasActive ? Math.max(0, prev.bots_running - 1) : prev.bots_running,
+        };
+      });
+      // подтягиваем актуальные цифры с бэка на случай расхождения
+      fetchHomeStats();
     } catch (e) {
       console.error(e);
       fetchBots();
