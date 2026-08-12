@@ -17,7 +17,7 @@ import asyncio
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration # перехватывает исключения в эндпоинтах
 from sentry_sdk.integrations.asyncio import AsyncioIntegration # ловит исключения в asyncio тасках
-from sentry_sdk.integrations.logging import ignore_logger # позволяет не трогать конкретный логер
+from sentry_sdk.integrations.logging import ignore_logger, ignore_logger_for_sentry_logs  # позволяет не трогать конкретный логер
 
 def before_send(event, hint):
     """ Это то, что вызывается перед каждой отправкой собитыя на сервер """
@@ -29,6 +29,8 @@ def before_send(event, hint):
             if key.lower() in sensitive_keys:
                 event["extra"][key] = "[REDACTED]"
 
+        # это сомнительная строчка. Связаня с алертами в телеграм
+        event["extra"].pop("container_logs_tail", None)
     # если fastapi приложил в теле запроса чувствительные данные -> убираем их
     if "request" in event and "data" in event["request"]:
         for key in sensitive_keys:
@@ -39,14 +41,13 @@ def before_send(event, hint):
 if settings.GLITCHTIP_DSN:
     # убираем лишние логи от алхимии для того чтобы не засорять мониторинг
     ignore_logger("sqlalchemy.engine*")
+    ignore_logger_for_sentry_logs("sqlalchemy.engine*")
 
     sentry_sdk.init(
         dsn=settings.GLITCHTIP_DSN,
         integrations=[FastApiIntegration(), AsyncioIntegration()],
         traces_sample_rate=0.2,  # часть запросов для performance-трейсинга, можно 0 если не нужно
         before_send=before_send,
-        # на VPS задайте в .env: SENTRY_ENVIRONMENT=production
-        # локально переменную не задавайте — будет development по умолчанию
         environment=getattr(settings, "SENTRY_ENVIRONMENT", "development"),
         enable_logs=True,
     )
