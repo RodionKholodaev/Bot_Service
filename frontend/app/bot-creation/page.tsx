@@ -1,10 +1,17 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bot, Key, TrendingUp, TrendingDown, Settings, AlertCircle, Info, ChevronRight, ArrowLeft, Check, Target, Shield, Loader2, DollarSign } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
 import type { BotCreatePayload, FilterRule, Indicator, Timeframe } from '@/lib/types';
+import { AssistantLauncher } from './assistant/AssistantLauncher';
+import { AssistantPanel } from './assistant/AssistantPanel';
+import { fetchAssistantStatus } from './assistant/assistantApi';
+import { applySuggestionsToForm, toSnapshot, type BotFormValues } from './assistant/applySuggestions';
+import { firstStepOf } from './assistant/fieldMeta';
+import type { Suggestion } from './assistant/types';
 import './create-bot.css';
+import './assistant/assistant.css';
 
 // Тип для API-ключа из БД
 interface ApiKey {
@@ -61,7 +68,7 @@ const CustomSelect = ({
 const CreateBotPage = () => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<BotFormValues>({
     // Шаг 1: Биржа, API ключ, депозит
     selectedApiKeyId: '',
     exchange: 'binance',
@@ -75,7 +82,7 @@ const CreateBotPage = () => {
 
     // Шаг 3: Индикаторы
     strategyPreset: 'custom', // conservative | moderate | aggressive | custom
-    filters: [] as FilterRule[],
+    filters: [],
 
     // Шаг 4: Имя + выход из сделки
     botName: '',
@@ -95,6 +102,12 @@ const CreateBotPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isAuthed, setIsAuthed] = useState(false);
+
+  // ИИ-помощник: панель справа. assistantEnabled приходит с бэкенда —
+  // если ключ AITunnel не настроен, ничего не показываем.
+  const [assistantEnabled, setAssistantEnabled] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+
   // проверка того что пользователь имеет JWT
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -125,6 +138,27 @@ const CreateBotPage = () => {
     };
     loadApiKeys();
   }, [isAuthed]);
+
+  useEffect(() => {
+    if (!isAuthed) return;
+    fetchAssistantStatus()
+      .then(status => setAssistantEnabled(status.enabled))
+      .catch(() => setAssistantEnabled(false));
+  }, [isAuthed]);
+
+  // Ассистент читает форму в момент отправки вопроса, а не при рендере
+  const getAssistantSnapshot = useCallback(
+    () => toSnapshot(formData, currentStep, apiKeys.length > 0),
+    [formData, currentStep, apiKeys.length],
+  );
+
+  // Пользователь нажал «Применить» в ответе ассистента
+  const handleApplySuggestions = useCallback((suggestions: Suggestion[]) => {
+    setFormData(prev => applySuggestionsToForm(prev, suggestions, apiKeys[0]));
+    setSubmitError(null);
+    // Переводим на шаг, где изменённое поле видно — иначе непонятно, что произошло
+    setCurrentStep(firstStepOf(suggestions));
+  }, [apiKeys]);
 
   useEffect(() => {
     if (formData.strategyPreset !== 'custom') {
@@ -995,7 +1029,7 @@ const CreateBotPage = () => {
   };
 
   return (
-    <div className="create-bot-page">
+    <div className={`create-bot-page ${assistantEnabled && assistantOpen ? 'assistant-open' : ''}`}>
       <div className="page-header">
         <button className="back-btn" onClick={() => window.history.back()}>
           <ArrowLeft size={20} />
@@ -1055,6 +1089,19 @@ const CreateBotPage = () => {
           </div>
         </div>
       </div>
+
+      {assistantEnabled && (
+        <>
+          <AssistantLauncher open={assistantOpen} onOpen={() => setAssistantOpen(true)} />
+          <AssistantPanel
+            open={assistantOpen}
+            onClose={() => setAssistantOpen(false)}
+            step={currentStep}
+            getSnapshot={getAssistantSnapshot}
+            onApplySuggestions={handleApplySuggestions}
+          />
+        </>
+      )}
     </div>
   );
 };
