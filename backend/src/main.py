@@ -6,7 +6,7 @@ from src.logger_config import setup_logging
 from src.core.telegram_alerts import setup_telegram_alerts
 from src.config import settings
 from src.database import Base, engine
-from src.routers import auth, bots, api_keys, user, stats, payments
+from src.routers import auth, bots, api_keys, user, stats, payments, assistant
 from src.services import docker_manager
 from src.core.exception_handlers import register_exception_handlers
 from src.services.polling_worker import run_polling_worker
@@ -38,7 +38,7 @@ def before_send(event, hint):
 
 if settings.GLITCHTIP_DSN:
     # убираем лишние логи от алхимии для того чтобы не засорять мониторинг
-    ignore_logger("sqlalchemy.engine")
+    ignore_logger("sqlalchemy.engine*")
 
     sentry_sdk.init(
         dsn=settings.GLITCHTIP_DSN,
@@ -48,6 +48,7 @@ if settings.GLITCHTIP_DSN:
         # на VPS задайте в .env: SENTRY_ENVIRONMENT=production
         # локально переменную не задавайте — будет development по умолчанию
         environment=getattr(settings, "SENTRY_ENVIRONMENT", "development"),
+        enable_logs=True,
     )
 
 # ================
@@ -100,6 +101,7 @@ app.include_router(api_keys.router)
 app.include_router(user.router)
 app.include_router(stats.router)
 app.include_router(payments.router)
+app.include_router(assistant.router)
 # app.include_router(support.router)
 
 @app.get("/health")

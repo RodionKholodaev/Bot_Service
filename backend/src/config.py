@@ -50,4 +50,19 @@ class Settings(BaseSettings):
     TELEGRAM_ALERT_CHAT_ID: str | None = None
     SENTRY_ENVIRONMENT: str = "development"
 
+    # ── ИИ-ассистент на странице создания бота (AITunnel) ──
+    # Ключ вида sk-aitunnel-... . Не задан — ассистент просто выключен,
+    # эндпоинт /assistant/chat отвечает 400 и фронт прячет панель.
+    AITUNNEL_API_KEY: str | None = None
+    AITUNNEL_BASE_URL: str = "https://api.aitunnel.ru/v1"
+
+    # Модель для диалога. Обязана уметь tool calling. Список: https://aitunnel.ru/models
+    AI_ASSISTANT_MODEL: str = "gpt-4.1-mini"
+
+    # Модель для веб-поиска: perplexity sonar сама ходит в интернет и возвращает ссылки.
+    AI_SEARCH_MODEL: str = "sonar"
+
+    # Таймаут одного запроса к AITunnel, секунды.
+    AI_ASSISTANT_TIMEOUT: float = 120.0
+
 settings = Settings()  # type: ignore
