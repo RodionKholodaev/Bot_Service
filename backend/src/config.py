@@ -48,6 +48,6 @@ class Settings(BaseSettings):
     # Не заданы — алерты просто выключены, приложение работает как раньше.
     TELEGRAM_ALERT_BOT_TOKEN: str | None = None
     TELEGRAM_ALERT_CHAT_ID: str | None = None
-
+    SENTRY_ENVIRONMENT: str = "development"
 
 settings = Settings()  # type: ignore
