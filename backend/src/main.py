@@ -54,46 +54,7 @@ if settings.GLITCHTIP_DSN:
     )
 
 # ================
-# ==============
-# Настройки для GLITCHTIP (система для удобной работы с ошибками)
-import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastApiIntegration # перехватывает исключения в эндпоинтах
-from sentry_sdk.integrations.asyncio import AsyncioIntegration # ловит исключения в asyncio тасках
-from sentry_sdk.integrations.logging import ignore_logger # позволяет не трогать конкретный логер
 
-def before_send(event, hint):
-    """ Это то, что вызывается перед каждой отправкой собитыя на сервер """
-    # чувствительная данные которые не стоит передавать в мониторинг
-    sensitive_keys = {"api_key", "api_secret", "password", "token"}
-    # очистка этих чувствительных данных
-    if "extra" in event:
-        for key in list(event["extra"].keys()):
-            if key.lower() in sensitive_keys:
-                event["extra"][key] = "[REDACTED]"
-
-    # если fastapi приложил в теле запроса чувствительные данные -> убираем их
-    if "request" in event and "data" in event["request"]:
-        for key in sensitive_keys:
-            event["request"]["data"].pop(key, None)
-
-    return event
-
-if settings.GLITCHTIP_DSN:
-    # убираем лишние логи от алхимии для того чтобы не засорять мониторинг
-    ignore_logger("sqlalchemy.engine*")
-
-    sentry_sdk.init(
-        dsn=settings.GLITCHTIP_DSN,
-        integrations=[FastApiIntegration(), AsyncioIntegration()],
-        traces_sample_rate=0.2,  # часть запросов для performance-трейсинга, можно 0 если не нужно
-        before_send=before_send,
-        # на VPS задайте в .env: SENTRY_ENVIRONMENT=production
-        # локально переменную не задавайте — будет development по умолчанию
-        environment=getattr(settings, "SENTRY_ENVIRONMENT", "development"),
-        enable_logs=True,
-    )
-
-# ================
 setup_logging()
 setup_telegram_alerts(settings.TELEGRAM_ALERT_BOT_TOKEN, settings.TELEGRAM_ALERT_CHAT_ID)
 setup_telegram_alerts(settings.TELEGRAM_ALERT_BOT_TOKEN, settings.TELEGRAM_ALERT_CHAT_ID)
