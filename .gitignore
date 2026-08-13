@@ -52,3 +52,4 @@ architecture_issues
 test.db
 CODE_REVIEW.md
 app.log
+backend/logs/*.log
