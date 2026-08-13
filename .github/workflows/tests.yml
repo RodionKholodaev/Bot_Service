@@ -8,7 +8,7 @@ jobs:
   test:
     # ненастоящие переменные окружения чтобы бекенд не ругался
     env:
-      DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+      DATABASE_URL: sqlite+aiosqlite:///./test.db
       SECRET_KEY: test-secret-key-for-ci
       FERNET_KEY: QlsmzG9_PhDA_HxJUMdkhmm59r4jfBLGHt49wahRPgM=
       GLITCHTIP_DSN: ""
