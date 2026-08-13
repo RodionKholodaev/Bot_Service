@@ -1,0 +1,31 @@
+# название
+name: Tests
+# запускается на git push
+on:
+  push:
+# какие джобы нужно выполнить (каждая ждоба выполняется в совей среде)
+jobs:
+  test:
+  # для этой ждобы поднимаем виртуалку с последним убунту
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+      # запускаем команды из папки backend
+        working-directory: backend
+    # какие шаги выполнит ждоба
+    steps:
+      # клонируем репозиторий на том коммите который был запушен
+      - uses: actions/checkout@v4
+
+      # скачиваем и настравиваем питон (это исапользование чужого кода для этого)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # название для шага (чтобы было понятно)
+      - name: Install dependencies
+      # скачиваем зависимости
+        run: pip install -r requirements.txt
+      
+      - name: Run tests
+        run: pytest
