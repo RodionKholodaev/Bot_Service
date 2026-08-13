@@ -194,7 +194,9 @@ class AssistantService:
             messages.append({"role": "tool", "tool_call_id": call_id, "content": answer})
             return
 
-        logger.warning("Assistant called unknown tool", extra={"tool": name})
+        logger.warning(
+            "Assistant called unknown tool", extra={"tool": name, "user_id": self.user_id}
+        )
         messages.append(
             {"role": "tool", "tool_call_id": call_id, "content": "Такого инструмента нет."}
         )

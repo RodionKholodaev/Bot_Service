@@ -232,7 +232,10 @@ def normalize_suggestions(raw_arguments: str) -> list[dict[str, Any]]:
     try:
         parsed = json.loads(raw_arguments or "{}")
     except json.JSONDecodeError:
-        logger.warning("Assistant sent malformed suggest_settings arguments")
+        logger.warning(
+            "Assistant sent malformed suggest_settings arguments",
+            extra={"raw_arguments": (raw_arguments or "")[:200]},
+        )
         return []
 
     items = parsed.get("suggestions")
