@@ -54,3 +54,4 @@ watchfiles==1.2.0
 websockets==17.0.1
 wrapt==2.3.0
 yookassa==3.11.0
+sentry_sdk
