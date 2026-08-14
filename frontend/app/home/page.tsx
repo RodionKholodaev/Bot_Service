@@ -294,6 +294,7 @@ const TradingBotDashboard = () => {
       </header>
 
       {/* Main Content */}
+      <div className="dashboard-scroll">
       <main className="dashboard-main">
         {/* Hero Section */}
         <section className="home-hero-section">
@@ -522,6 +523,7 @@ const TradingBotDashboard = () => {
           </button> */}
         </section>
       </main>
+      </div>
 
       {/* Delete confirmation modal */}
       {deleteConfirmId && (
@@ -603,7 +605,10 @@ const TradingBotDashboard = () => {
         }
 
         .dashboard-container {
-          min-height: 100vh;
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
           background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
           color: #e4e7f0;
           font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -672,9 +677,7 @@ const TradingBotDashboard = () => {
           background: rgba(26, 31, 53, 0.6);
           backdrop-filter: blur(20px);
           border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          position: sticky;
-          top: 0;
-          z-index: 100;
+          flex-shrink: 0;
         }
 
         .header-left {
@@ -787,6 +790,30 @@ const TradingBotDashboard = () => {
         }
 
         /* Main Content */
+        .dashboard-scroll {
+          flex: 1;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(156, 163, 175, 0.35) rgba(255, 255, 255, 0.05);
+        }
+
+        .dashboard-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        .dashboard-scroll::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        .dashboard-scroll::-webkit-scrollbar-thumb {
+          background: rgba(156, 163, 175, 0.35);
+          border-radius: 4px;
+        }
+
+        .dashboard-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(156, 163, 175, 0.5);
+        }
+
         .dashboard-main {
           padding: 40px;
           max-width: 1400px;
