@@ -106,7 +106,6 @@ app.include_router(user.router)
 app.include_router(stats.router)
 app.include_router(payments.router)
 app.include_router(assistant.router)
-app.include_router(assistant.router)
 # app.include_router(support.router)
 
 @app.get("/health")
