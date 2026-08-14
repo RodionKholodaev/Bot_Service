@@ -28,8 +28,11 @@
 }
 
 @media (min-width: 1180px) {
+  /* Ровно ширина панели, без запаса: правый край области прокрутки должен
+     совпасть с левым краем панели, чтобы полоса прокрутки шла вплотную к ней.
+     Отступ содержимого от панели даёт padding-right у .create-bot-scroll. */
   .create-bot-page.assistant-open {
-    padding-right: calc(var(--ai-width) + 24px);
+    padding-right: var(--ai-width);
   }
 }
 
