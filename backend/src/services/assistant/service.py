@@ -39,8 +39,14 @@ class AssistantService:
         self.user_id = user_id
 
     async def stream(self, request: AssistantChatRequest) -> AsyncIterator[dict[str, Any]]:
+        # история диалога:
+        # пользователь: его реплика
+        # нейросеть: его реплика
+        # и тд
         history = [{"role": m.role, "content": m.content} for m in request.messages]
+        # правила (системный промт) + снимок формы + диалог
         messages = prompt.build_messages(request.form, history)
+        # добавляем инструменты для работы с интернетом если request.web_search == True
         tool_schemas = tools.build_tools(request.web_search)
 
         logger.info(
@@ -54,8 +60,10 @@ class AssistantService:
         )
 
         try:
+            # открытие клиента с нужными настройками
             async with aitunnel.build_client() as client:
                 for round_index in range(MAX_TOOL_ROUNDS):
+                    # перед обращением к модели отправляем статус: думаю, чтобы отобразить в ui
                     yield {"type": "status", "stage": "thinking"}
 
                     sink: dict[str, Any] = {}
@@ -95,14 +103,21 @@ class AssistantService:
     async def _stream_round(
         self,
         client,
+        # уже имеющиеся сообщения
         messages: list[dict[str, Any]],
+        # список инструментов, котоыре нейросеть может запрашивать
         tool_schemas: list[dict[str, Any]],
+        # место куда функция будет складывать то что получила от нейросети
         sink: dict[str, Any],
     ) -> AsyncIterator[dict[str, Any]]:
         """Стримит ответ модели, складывая текст и вызовы инструментов в ``sink``."""
+        # создаем места для ответа нейросети и инструментов, которые нейросеть просит вызвать
         sink["content"] = ""
         sink["tool_calls"] = {}
 
+        # ассинхроные вариант for
+        # отправляем запрос в нейросеть
+        # говорим какие tools она может использовать, передаем сообщения и модель
         async for chunk in aitunnel.stream_chat_completion(
             client,
             model=settings.AI_ASSISTANT_MODEL,

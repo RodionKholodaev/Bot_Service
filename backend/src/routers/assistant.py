@@ -29,25 +29,30 @@ async def chat(
     request: AssistantChatRequest,
     current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
-    """Ответ ассистента одним SSE-потоком.
+    """Ответ ассистента одним SSE-потоком. (Server-Sent Events - протокол для стриминга поверх HTTP)
 
     Каждое событие — строка ``data: {...}``; типы событий описаны в
     ``services/assistant/service.py``. Соединение закрывается после ``done``.
     """
+    # проверка, есть ли на сервере ключ для доступа к нейросети
     if not assistant_enabled():
         raise BadRequestError("ИИ-ассистент не настроен на сервере")
 
     service = AssistantService(user_id=current_user.id)
 
+    # генератор для постепенной отдачи ответа от нейросети
     async def event_stream() -> AsyncIterator[str]:
         async for event in service.stream(request):
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
+    # кусочкаси отдаем ответ на фронт
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
         headers={
+            # запрещаем кеширование и преобразование данных
             "Cache-Control": "no-cache, no-transform",
+            # не закрывать соединение после ответа, ведь данные еще будут идти
             "Connection": "keep-alive",
             # Отключает буферизацию у nginx — иначе стрим приедет одним куском.
             "X-Accel-Buffering": "no",

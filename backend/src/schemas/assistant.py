@@ -48,8 +48,16 @@ class BotFormSnapshot(BaseModel):
 class AssistantChatRequest(BaseModel):
     """Тело POST /assistant/chat."""
 
+    # История общения
     # Последнее сообщение в списке — текущий вопрос пользователя.
+    # [
+    # {role: "user",      content: "какое плечо поставить?"},
+    # {role: "assistant", content: "для BTC/USDT на споте обычно берут x2–x5..."},
+    # {role: "user",      content: "а если агрессивнее?"},
+    # ...
+    # ]
     messages: list[ChatMessage] = Field(..., min_length=1, max_length=40)
+    # То что сейчас стоит в форме создания бота
     form: BotFormSnapshot = Field(default_factory=BotFormSnapshot)
 
     # Разрешить ассистенту ходить в интернет (тумблер в панели).
