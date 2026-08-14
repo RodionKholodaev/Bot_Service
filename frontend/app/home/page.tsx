@@ -273,7 +273,9 @@ const TradingBotDashboard = () => {
           </div>
           <nav className="main-nav">
             <a href="#" className="nav-item active">Главная</a>
-            <Link href="/stats" className="nav-item"><span className="nav-item">Статистика</span></Link>
+            {/* span внутри Link обязателен: styled-jsx не скоупит классы на React-компоненты */}
+            <Link href="/stats"><span className="nav-item">Статистика</span></Link>
+            <Link href="/feedback"><span className="nav-item">Обратная связь</span></Link>
             {/* <a href="#" className="nav-item">Обучение</a> */}
           </nav>
         </div>
