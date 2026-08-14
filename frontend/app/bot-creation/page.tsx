@@ -1,5 +1,6 @@
 "use client"
 import React, { useCallback, useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bot, Key, TrendingUp, TrendingDown, Settings, AlertCircle, Info, ChevronRight, ArrowLeft, Check, Target, Shield, Loader2, DollarSign } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
@@ -514,9 +515,9 @@ const CreateBotPage = () => {
                 <AlertCircle size={18} />
                 <div>
                   <strong>Нет сохранённых ключей.</strong>{' '}
-                  <a href="/settings/api-keys" className="link">
+                  <Link href="/settings" className="link">
                     Добавьте API-ключ в настройках
-                  </a>
+                  </Link>
                 </div>
               </div>
             ) : (
