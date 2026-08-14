@@ -1031,6 +1031,7 @@ const CreateBotPage = () => {
 
   return (
     <div className={`create-bot-page ${assistantEnabled && assistantOpen ? 'assistant-open' : ''}`}>
+      <div className="create-bot-scroll">
       <div className="page-header">
         <button className="back-btn" onClick={() => window.history.back()}>
           <ArrowLeft size={20} />
@@ -1089,6 +1090,7 @@ const CreateBotPage = () => {
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {assistantEnabled && (

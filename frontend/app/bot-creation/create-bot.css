@@ -1,8 +1,37 @@
 .create-bot-page {
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: linear-gradient(135deg, #0f1729 0%, #1a1f35 100%);
   color: #e4e7f0;
+}
+
+/* Прокрутка страницы — та же полоса, что и на home (.dashboard-scroll):
+   скроллится внутренний контейнер, окно не скроллится вообще. */
+.create-bot-scroll {
+  flex: 1;
+  overflow-y: auto;
   padding: 24px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.35) rgba(255, 255, 255, 0.05);
+}
+
+.create-bot-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.create-bot-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.create-bot-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.35);
+  border-radius: 4px;
+}
+
+.create-bot-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
 }
 
 .page-header {
@@ -655,7 +684,7 @@
 }
 
 @media (max-width: 768px) {
-  .create-bot-page {
+  .create-bot-scroll {
     padding: 16px;
   }
 
