@@ -17,6 +17,7 @@ from src.database import get_db
 from src.database import Base
 from sqlalchemy import delete
 from src.models.user import User
+from src.models.feedback import Feedback
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db" # адрес тестовой бд
 
@@ -89,9 +90,12 @@ async def client():
         yield ac
 
 
-# очищает таблицу User перед каждым тестом
+# очищает таблицы перед каждым тестом
+# SQLite переиспользует id после удаления строк, поэтому чистим и дочерние таблицы —
+# иначе отзывы прошлого теста «прилипнут» к новому пользователю с тем же id
 @pytest_asyncio.fixture(autouse=True)
 async def clear_database():
     async with TestingSessionLocal() as session:
+        await session.execute(delete(Feedback))
         await session.execute(delete(User))
         await session.commit()

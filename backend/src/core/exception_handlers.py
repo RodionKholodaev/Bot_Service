@@ -8,6 +8,7 @@ from src.core.exceptions import (
     ConflictError,
     PaymentRequiredError,
     UnauthorizedError,
+    TooManyRequestsError,
 )
 
 
@@ -35,3 +36,7 @@ def register_exception_handlers(app):
     @app.exception_handler(ConflictError)
     async def conflict_handler(request: Request, exc: ConflictError):
         return JSONResponse(status_code=409, content={"detail": exc.detail})
+
+    @app.exception_handler(TooManyRequestsError)
+    async def too_many_requests_handler(request: Request, exc: TooManyRequestsError):
+        return JSONResponse(status_code=429, content={"detail": exc.detail})
