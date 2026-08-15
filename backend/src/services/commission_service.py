@@ -11,24 +11,39 @@ class CommissionService:
         Вызывается один раз при закрытии сделки:
         - обновляет Bot.total_profit
         - рассчитывает и списывает комиссию сервиса
+
+        Идемпотентна: trade.commission_paid означает "сделка уже учтена" и ставится
+        в том числе на убыточных сделках. Раньше флаг ставился только на прибыльных,
+        а bot.total_profit прибавлялся вообще без проверки — при повторном вызове
+        (например, если у закрытой сделки не разобралась дата закрытия и воркер каждый
+        цикл считал её только что закрывшейся) профит бота накручивался бесконечно.
         """
+        if trade.commission_paid:
+            logger.warning(
+                "Trade already processed, skipping",
+                extra={"bot_id": bot.id, "trade_id": trade.freqtrade_trade_id},
+            )
+            return
+
         profit = trade.profit_usdt or 0.0
 
         # Обновляем накопленный профит бота
         bot.total_profit = round(bot.total_profit + profit, 8)
 
         # Комиссия — только с прибыльных сделок
-        if profit > 0 and not trade.commission_paid:
+        if profit > 0:
             rate_service = ExchangeRateService()
             current_rate = await rate_service.get_usdt_rub()
+            # Курс не получен — сделку не учитываем вовсе: исключение откатит транзакцию
+            # целиком (вместе с bot.total_profit выше), и следующий цикл воркера повторит
+            # обработку. Поэтому флаг ставится строго после успешного расчёта.
             if current_rate is None: raise ValueError("Не удалось получить курс USDT")
 
-            commission_usdt = round(profit * user.commission_rate, 8) 
+            commission_usdt = round(profit * user.commission_rate, 8)
             commission_rub = round(profit * user.commission_rate, 8) * current_rate
 
             trade.commission_usdt = commission_usdt
             trade.commission_rub = commission_rub
-            trade.commission_paid = True
 
             # Списываем с сервисного баланса пользователя
             user.service_balance = round(user.service_balance - commission_rub, 8)
@@ -55,3 +70,5 @@ class CommissionService:
                     "profit": profit,
                 },
             )
+
+        trade.commission_paid = True

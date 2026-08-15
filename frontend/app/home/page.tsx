@@ -32,7 +32,6 @@ interface HomeStats {
   bots_total: number;
   weekly_profit: number;
   funds_under_management: number;
-  recent_trades: unknown[];
 }
 
 // Запросы идут через Next.js-прокси на /api/...

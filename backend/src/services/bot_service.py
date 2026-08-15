@@ -258,6 +258,11 @@ class BotService:
 
 
     async def delete_bot(self, bot: Bot) -> None:
+        """
+        Мягкое удаление: контейнер и файлы бота убираем физически, а строку в БД только
+        помечаем is_active=False. Физический DELETE унёс бы по CASCADE все сделки бота,
+        и общая статистика пользователя (P&L, winrate, график) менялась бы задним числом.
+        """
         logger.info(
             "Deleting the bot",
             extra={
@@ -306,7 +311,7 @@ class BotService:
                 },
             )
 
-        await self.bot_repo.delete_bot(bot)
+        await self.bot_repo.archive_bot(bot)
         logger.info(
             "Bot deleted",
             extra={
@@ -321,6 +326,10 @@ class BotService:
         if bot is None:
             raise NotFoundError("Бот не найден")
         if bot.user_id != user.id:
+            raise NotFoundError("Бот не найден")
+        # архивированный бот для пользователя не существует: его нельзя ни запустить,
+        # ни удалить повторно, хотя строка в БД осталась ради истории сделок
+        if not bot.is_active:
             raise NotFoundError("Бот не найден")
         return bot
     

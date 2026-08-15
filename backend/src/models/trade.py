@@ -43,7 +43,9 @@ class Trade(Base):
     # сколько сервис взял с этой сделки
 
     commission_paid: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    # True — уже списано с service_balance пользователя
+    # True — сделка уже учтена: профит добавлен в Bot.total_profit, а комиссия (если
+    # сделка прибыльная) списана с service_balance. Ставится и на убыточных сделках —
+    # это защита от повторного учёта, а не только признак списания.
 
     exit_reason: Mapped[str | None] = mapped_column(String(50), nullable=True)
     # tp / sl / trailing_sl / manual / force_sell

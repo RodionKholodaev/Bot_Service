@@ -21,12 +21,17 @@ class TradeOut(BaseModel):
 
 class PnlPoint(BaseModel):
     """Одна точка для графика P&L по времени."""
-    ts: str          # метка времени (ISO или DD.MM HH:MM)
+    ts: datetime     # время закрытия сделки в UTC, формат выбирает фронт
     value: float     # накопленный profit_usdt к этому моменту
 
 
-class BotStats(BaseModel):
-    """Статистика по одному боту."""
+class BotSummary(BaseModel):
+    """
+    Строка бота в сайдбаре статистики: только то, что реально рисует список.
+
+    Отдельная схема, а не BotStats: сайдбару не нужны ни график, ни последние сделки,
+    а при десятке ботов они раздували ответ портфеля в разы.
+    """
     bot_id: str
     name: str
     pair: str
@@ -34,7 +39,21 @@ class BotStats(BaseModel):
     direction: str
     strategy_preset: str
     status: str
-    total_profit: float      # из Bot.total_profit (USDT)
+    profit: float            # за выбранный период, USDT
+    trades_total: int
+    winrate: float           # 0..100
+
+
+class BotStats(BaseModel):
+    """Статистика по одному боту за выбранный период."""
+    bot_id: str
+    name: str
+    pair: str
+    leverage: int
+    direction: str
+    strategy_preset: str
+    status: str
+    profit: float            # сумма profit_usdt закрытых сделок за период
     trades_total: int
     trades_win: int
     trades_loss: int
@@ -46,25 +65,25 @@ class BotStats(BaseModel):
 
 
 class PortfolioStats(BaseModel):
-    """Агрегат по всем ботам пользователя."""
-    total_profit: float
+    """Агрегат по всем ботам пользователя за выбранный период."""
+    profit: float            # считается по тем же сделкам, что график и winrate
     trades_total: int
     trades_win: int
     trades_loss: int
     winrate: float
     max_drawdown_pct: Optional[float]
     bots_running: int
-    bots_stopped: int
+    bots_stopped: int        # активные боты не в статусе running
     pnl_chart: list[PnlPoint]
     recent_trades: list[TradeOut]
-    bots: list[BotStats]     # краткая сводка по каждому боту (для sidebar)
+    bots: list[BotSummary]
 
 
 class HomeStats(BaseModel):
     """Минимальная статистика для главной страницы."""
     service_balance: float
-    total_profit: float
+    total_profit: float         # за всё время, по всем ботам включая архивные
     bots_running: int
     bots_total: int
-    weekly_profit: float        
-    funds_under_management: float  
+    weekly_profit: float
+    funds_under_management: float
