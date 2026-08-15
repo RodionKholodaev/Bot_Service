@@ -43,6 +43,8 @@ async def chat(
     # генератор для постепенной отдачи ответа от нейросети
     async def event_stream() -> AsyncIterator[str]:
         async for event in service.stream(request):
+            # превращаем данные в json строку для отправки
+            # стандартный формат для SSE
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
     # кусочкаси отдаем ответ на фронт

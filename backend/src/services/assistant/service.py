@@ -62,40 +62,55 @@ class AssistantService:
         try:
             # открытие клиента с нужными настройками
             async with aitunnel.build_client() as client:
+                # модель может не сразу ответить на вопрос, 
+                # у нее есть возможность попросить инструменты для работы
+                # этот паттерно называется ReAct (Reason + Act)
                 for round_index in range(MAX_TOOL_ROUNDS):
                     # перед обращением к модели отправляем статус: думаю, чтобы отобразить в ui
                     yield {"type": "status", "stage": "thinking"}
 
+                    # общий накопитель для одного раунда (туда будет сложен результат работы всего раунда)
                     sink: dict[str, Any] = {}
+
+                    # сам раунд (обращение к нейросети)
                     async for event in self._stream_round(client, messages, tool_schemas, sink):
                         yield event
-
+                    # после раунда решаем что делать дальше
                     calls = self._collect_tool_calls(sink)
+                    # если нейросеть не запросила инструментов, то больше ничего делать не нужно и выходим из цикла
                     if not calls:
                         break
 
-                    # Последний раунд — инструменты больше не выполняем, иначе зациклимся.
+                    # Если это последний раунд и нейросеть все равно просит инструмент, 
+                    # то мы выходим из цикла насильно и пишем предупреждение в логи
                     if round_index == MAX_TOOL_ROUNDS - 1:
                         logger.warning(
                             "Assistant hit tool-round limit",
                             extra={"user_id": self.user_id, "rounds": MAX_TOOL_ROUNDS},
                         )
                         break
-
+                    # добавляем в сообщения ответ от нейросети в этом раунде (в нужном формате)
                     messages.append(self._assistant_turn(sink, calls))
+                    # вызываем нужные инструменты
                     for call in calls:
                         async for event in self._run_tool(client, call, messages):
                             yield event
+
+                    # потом цикл идет дальше и нейросеть удидет результат вызова инструмента
+
+        # ошибка на строоне провадера нейросети
         except AITunnelError:
             logger.exception("Assistant provider call failed", extra={"user_id": self.user_id})
             yield {
                 "type": "error",
                 "message": "Не удалось получить ответ от ИИ. Попробуйте ещё раз.",
             }
+        # любая другая ошибка
         except Exception:
             logger.exception("Assistant request crashed", extra={"user_id": self.user_id})
             yield {"type": "error", "message": "Внутренняя ошибка ассистента."}
 
+        # отправляется в любом случае, чтобы фронтенд не ждал ответа бесконечно
         yield {"type": "done"}
 
     # ── Один раунд общения с моделью ─────────────────────────────────────
@@ -124,6 +139,38 @@ class AssistantService:
             messages=messages,
             tools=tool_schemas,
         ):
+            """
+            Что лежит в chunk:
+            {
+            "id": "chatcmpl-8f2a91bc...",
+            "object": "chat.completion.chunk",
+            "created": 1755262841,
+            "model": "gpt-4o-mini",
+            "choices": [ ... ],
+            "usage": null
+            }
+            choice - одна ветка ответа, обычно она всего одна
+            choices:
+            {
+            "index": 0,
+            "delta": { ... },
+            "finish_reason": null # null - пока модель еще генерирует, когда закончила stop
+            }
+            delta - новая информация, которую сгенерила нейросеть -
+            - может иметь разное содержимое в зависимости от того начинает ли она ответ, 
+            пишет текст или просит вызвать инструмент
+
+            Пример содержимого нескольких chunks:
+            {"delta": {"role": "assistant", "content": ""}}
+            {"delta": {"content": "Реко"}}
+            {"delta": {"content": "мендую"}}
+            {"delta": {"content": " плечо x3."}}
+            {"delta": {"tool_calls": [{"index": 0, "id": "call_9f2K", "type": "function", "function": {"name": "suggest_settings", "arguments": ""}}]}}
+            {"delta": {"tool_calls": [{"index": 0, "function": {"arguments": "{\"suggestions\":[{\"field\":\"le"}}]}}
+            {"delta": {"tool_calls": [{"index": 0, "function": {"arguments": "verage\",\"value\":3,\"reason\":\"нови"}}]}}
+            {"delta": {"tool_calls": [{"index": 0, "function": {"arguments": "чку безопаснее\"}]}"}}]}}
+            {"choices": [{"delta": {}, "finish_reason": "tool_calls"}]}
+            """
             choices = chunk.get("choices") or []
             if not choices:
                 continue
@@ -132,12 +179,20 @@ class AssistantService:
             piece = delta.get("content")
             if piece:
                 sink["content"] += piece
+                # отдаем кусочек теста наружу чтобы сразу его печатать на странице
                 yield {"type": "delta", "text": piece}
 
             # Аргументы инструмента приходят по кускам — склеиваем по index.
             for call in delta.get("tool_calls") or []:
+                # получаем индекс или пишем 0, если его нет
                 index = call.get("index", 0)
+                # создаем слот для инструмента
+                # если индекс уже есть в tool_calls, то просто получаем значение по этому индексу
+                # если индекста нет, то создаем знаичение по умолчанию
+                # slot это не новый объект, а ссылка на часть sink["tool_calls"], 
+                # поэтому меняя его мы меняем sink["tool_calls"]
                 slot = sink["tool_calls"].setdefault(index, {"id": "", "name": "", "arguments": ""})
+                # дописываем в sink["tool_calls"] новую информацию
                 if call.get("id"):
                     slot["id"] = call["id"]
                 function = call.get("function") or {}
@@ -145,10 +200,25 @@ class AssistantService:
                     slot["name"] = function["name"]
                 if function.get("arguments"):
                     slot["arguments"] += function["arguments"]
-
+        # в итоге склеиние chunks будут выглядеть примерно так:
+        """
+        sink = {
+            "content": "Рекомендую плечо x3.",
+            "tool_calls": {
+                0: {
+                    "id": "call_9f2K",
+                    "name": "suggest_settings",
+                    "arguments": '{"suggestions":[{"field":"leverage","value":3,"reason":"новичку безопаснее"}]}'
+                }
+            }
+        }
+        """
     @staticmethod
     def _collect_tool_calls(sink: dict[str, Any]) -> list[dict[str, str]]:
         calls = sink.get("tool_calls") or {}
+        # пробегаемся по sorted(calls.items()) - словарь отсортированный по индексам
+        # пропускаем вызовы без name
+        # получаем вызовы без индексов в правильном порядке
         return [call for _, call in sorted(calls.items()) if call.get("name")]
 
     @staticmethod
@@ -172,9 +242,11 @@ class AssistantService:
     async def _run_tool(
         self, client, call: dict[str, str], messages: list[dict[str, Any]]
     ) -> AsyncIterator[dict[str, Any]]:
+        # разбираем на части
         name = call["name"]
         call_id = call["id"] or f"call_{name}"
-
+        # инструменты:
+        # предложить настройки бота
         if name == "suggest_settings":
             items = tools.normalize_suggestions(call["arguments"])
             if items:
@@ -188,7 +260,7 @@ class AssistantService:
             )
             messages.append({"role": "tool", "tool_call_id": call_id, "content": result})
             return
-
+        # запрос на веб поиск
         if name == "web_search":
             query = self._extract_query(call["arguments"])
             yield {"type": "status", "stage": "searching", "query": query}
@@ -219,6 +291,9 @@ class AssistantService:
     @staticmethod
     def _extract_query(raw_arguments: str) -> str:
         try:
+            # json.loads(raw_arguments or "{}") - парсим строку в словарь
+            # .get("query", "") - достаем из словаря значение по ключу
+            # на всякий приводим к строке и обрезаем
             return str((json.loads(raw_arguments or "{}")).get("query", ""))[:300]
         except json.JSONDecodeError:
             return ""
