@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 from src.core.exceptions import TooManyRequestsError
 from src.repositories.feedback_repository import FeedbackRepository
+from src.services.feedback_notifier import notify_new_feedback
 
 logger = logging.getLogger(__name__)
 
@@ -56,5 +57,8 @@ class FeedbackService:
                 "rating": payload.rating,
             },
         )
+
+        # уведомление разработчику — best effort, свои ошибки гасит само
+        await notify_new_feedback(feedback, current_user)
 
         return feedback

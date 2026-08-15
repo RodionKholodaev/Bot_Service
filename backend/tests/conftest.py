@@ -13,6 +13,14 @@ from src.main import app
 # из тестов улетал бы в Glitchtip как настоящий инцидент. Пустой DSN гасит клиент —
 # на код это не влияет, sentry_sdk просто становится no-op.
 sentry_sdk.init(dsn="")
+from src.config import settings
+
+# Если в .env заданы TELEGRAM_FEEDBACK_*, интеграционные тесты слали бы настоящие
+# сообщения в чат разработчика на каждый созданный отзыв. Гасим канал на время тестов —
+# те тесты, которым нужна включённая отправка, включают её сами через monkeypatch.
+settings.TELEGRAM_FEEDBACK_BOT_TOKEN = None
+settings.TELEGRAM_FEEDBACK_CHAT_ID = None
+
 from src.database import get_db
 from src.database import Base
 from sqlalchemy import delete

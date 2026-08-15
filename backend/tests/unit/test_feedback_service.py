@@ -105,6 +105,56 @@ async def test_limit_counted_per_user_and_for_last_hour():
 
 
 @pytest.mark.asyncio
+async def test_notification_sent_with_saved_feedback(monkeypatch):
+    # Arrange
+    user = User(id=5, email="test@test.com")
+    repo = FakeFeedbackRepo(recent_count=0)
+
+    sent = []
+
+    async def fake_notify(feedback, current_user):
+        sent.append((feedback, current_user))
+
+    monkeypatch.setattr(
+        "src.services.feedback_service.notify_new_feedback", fake_notify
+    )
+
+    # Act
+    await FeedbackService(repo).create_feedback(user, make_payload())
+
+    # Assert
+    # уведомление уходит уже после сохранения — с готовым id из БД
+    assert len(sent) == 1
+    notified_feedback, notified_user = sent[0]
+    assert notified_feedback is repo.created[0]
+    assert notified_user is user
+
+
+@pytest.mark.asyncio
+async def test_no_notification_when_rate_limited(monkeypatch):
+    # Arrange
+    user = User(id=5, email="test@test.com")
+    repo = FakeFeedbackRepo(recent_count=FEEDBACK_LIMIT_PER_HOUR)
+
+    sent = []
+
+    async def fake_notify(feedback, current_user):
+        sent.append((feedback, current_user))
+
+    monkeypatch.setattr(
+        "src.services.feedback_service.notify_new_feedback", fake_notify
+    )
+
+    # Act
+    with pytest.raises(TooManyRequestsError):
+        await FeedbackService(repo).create_feedback(user, make_payload())
+
+    # Assert
+    # спам не должен пробиваться в телеграм
+    assert sent == []
+
+
+@pytest.mark.asyncio
 async def test_optional_fields_passed_to_repository():
     # Arrange
     user = User(id=7, email="test@test.com")
