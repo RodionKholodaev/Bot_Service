@@ -13,9 +13,19 @@ from src.main import app
 # из тестов улетал бы в Glitchtip как настоящий инцидент. Пустой DSN гасит клиент —
 # на код это не влияет, sentry_sdk просто становится no-op.
 sentry_sdk.init(dsn="")
+from src.config import settings
+
+# Если в .env заданы TELEGRAM_FEEDBACK_*, интеграционные тесты слали бы настоящие
+# сообщения в чат разработчика на каждый созданный отзыв. Гасим канал на время тестов —
+# те тесты, которым нужна включённая отправка, включают её сами через monkeypatch.
+settings.TELEGRAM_FEEDBACK_BOT_TOKEN = None
+settings.TELEGRAM_FEEDBACK_CHAT_ID = None
+
 from src.database import get_db
 from src.database import Base
 from sqlalchemy import delete
+from src.models.user import User
+from src.models.feedback import Feedback
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db" # адрес тестовой бд
 
@@ -88,7 +98,9 @@ async def client():
         yield ac
 
 
-# очищает БД перед каждым тестом, чтобы тесты не зависели от порядка запуска
+# очищает таблицы перед каждым тестом
+# SQLite переиспользует id после удаления строк, поэтому чистим и дочерние таблицы —
+# иначе отзывы прошлого теста «прилипнут» к новому пользователю с тем же id
 @pytest_asyncio.fixture(autouse=True)
 async def clear_database():
     # Идём по всем таблицам метаданных, а не по списку моделей руками: новая модель
@@ -96,6 +108,6 @@ async def clear_database():
     # reversed(sorted_tables) — порядок от зависимых к родительским (trades -> bots -> users),
     # иначе удаление users упёрлось бы во внешние ключи.
     async with TestingSessionLocal() as session:
-        for table in reversed(Base.metadata.sorted_tables):
-            await session.execute(delete(table))
+        await session.execute(delete(Feedback))
+        await session.execute(delete(User))
         await session.commit()

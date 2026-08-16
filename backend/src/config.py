@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     TELEGRAM_ALERT_CHAT_ID: str | None = None
     SENTRY_ENVIRONMENT: str = "development"
 
+    # ── Telegram-уведомления о новых отзывах ───────────────
+    # Отдельный канал от алертов выше: там инциденты (critical-логи), тут поток
+    # отзывов со страницы /feedback. Бот можно взять тот же, чат — любой.
+    # Не заданы — уведомления выключены, отзыв просто сохраняется в БД.
+    TELEGRAM_FEEDBACK_BOT_TOKEN: str | None = None
+    TELEGRAM_FEEDBACK_CHAT_ID: str | None = None
+
     # ── ИИ-ассистент на странице создания бота (AITunnel) ──
     # Ключ вида sk-aitunnel-... . Не задан — ассистент просто выключен,
     # эндпоинт /assistant/chat отвечает 400 и фронт прячет панель.

@@ -32,3 +32,8 @@ class PaymentRequiredError(AppException):
 class UnauthorizedError(AppException):
     def __init__(self,detail: str = "Ошибка авторизации"):
         self.detail = detail
+
+# 429 — слишком часто (лимит запросов)
+class TooManyRequestsError(AppException):
+    def __init__(self, detail: str = "Слишком много запросов"):
+        self.detail = detail

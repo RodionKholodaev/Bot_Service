@@ -7,6 +7,7 @@ from src.models.user import User
 from src.core.security import decode_token
 from src.repositories.api_keys_repository import ApiKeysRepository
 from src.repositories.bot_repository import BotRepository
+from src.repositories.feedback_repository import FeedbackRepository
 from src.repositories.payments_repository import PaymentsRepository
 from src.repositories.trade_repository import TradeRepository
 from src.repositories.user_repository import UserRepository
@@ -26,6 +27,9 @@ async def get_user_repo(db: AsyncSession  = Depends(get_db)):
 
 async def get_api_key_repo(db: AsyncSession  = Depends(get_db)):
     return ApiKeysRepository(db)
+
+async def get_feedback_repo(db: AsyncSession  = Depends(get_db)):
+    return FeedbackRepository(db)
 
 
 async def get_current_user(

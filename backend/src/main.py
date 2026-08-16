@@ -4,9 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.logger_config import setup_logging
 from src.core.telegram_alerts import setup_telegram_alerts
-from src.core.telegram_alerts import setup_telegram_alerts
 from src.config import settings
-from src.routers import auth, bots, api_keys, user, stats, payments, assistant, assistant
+from src.database import Base, engine
+from src.routers import auth, bots, api_keys, user, stats, payments, assistant, feedback
 from src.services import docker_manager
 from src.core.exception_handlers import register_exception_handlers
 from src.services.polling_worker import run_polling_worker
@@ -55,7 +55,6 @@ if settings.GLITCHTIP_DSN:
 # ================
 
 setup_logging()
-setup_telegram_alerts(settings.TELEGRAM_ALERT_BOT_TOKEN, settings.TELEGRAM_ALERT_CHAT_ID)
 setup_telegram_alerts(settings.TELEGRAM_ALERT_BOT_TOKEN, settings.TELEGRAM_ALERT_CHAT_ID)
 
 logger = logging.getLogger(__name__)
@@ -106,8 +105,7 @@ app.include_router(user.router)
 app.include_router(stats.router)
 app.include_router(payments.router)
 app.include_router(assistant.router)
-app.include_router(assistant.router)
-# app.include_router(support.router)
+app.include_router(feedback.router)
 
 @app.get("/health")
 def health():
