@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.dependencies import get_current_user, get_bot_repo, get_api_key_repo
-from src.database import get_db
 from src.models.user import User
 from src.schemas.bot import BotCreate, BotPublic
 from src.repositories.bot_repository import BotRepository
@@ -38,11 +36,12 @@ async def create_bot(
 
 @router.get("", response_model=list[BotPublic])
 async def list_bots(
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    bot_repo: BotRepository = Depends(get_bot_repo),
 ):
-    bots = await BotRepository(db).get_user_bots(current_user.id)
-    return bots
+    # только активные: архивированные боты остаются в БД ради истории сделок,
+    # но пользователю их показывать нельзя
+    return await bot_repo.get_user_active_bots(current_user.id)
 
 
 @router.get("/{bot_id}", response_model=BotPublic)

@@ -35,7 +35,7 @@ type Period = "1D" | "1W" | "1M";
 type ViewKey = "all" | string;
 
 interface PnlPoint {
-  ts: string;
+  ts: string;   // ISO-время закрытия сделки (UTC), формат выбираем здесь
   value: number;
 }
 
@@ -53,6 +53,21 @@ interface TradeOut {
   close_time: string | null;
 }
 
+// Строка бота в сайдбаре. Отдельный тип, а не BotStats: портфель не тащит на каждого
+// бота его график и последние сделки — сайдбару они не нужны.
+interface BotSummary {
+  bot_id: string;
+  name: string;
+  pair: string;
+  leverage: number;
+  direction: string;
+  strategy_preset: string;
+  status: string;
+  profit: number;        // за выбранный период
+  trades_total: number;
+  winrate: number;
+}
+
 interface BotStats {
   bot_id: string;
   name: string;
@@ -61,7 +76,7 @@ interface BotStats {
   direction: string;
   strategy_preset: string;
   status: string;
-  total_profit: number;
+  profit: number;        // за выбранный период, а не за всё время
   trades_total: number;
   trades_win: number;
   trades_loss: number;
@@ -73,7 +88,7 @@ interface BotStats {
 }
 
 interface PortfolioStats {
-  total_profit: number;
+  profit: number;        // за выбранный период
   trades_total: number;
   trades_win: number;
   trades_loss: number;
@@ -83,7 +98,7 @@ interface PortfolioStats {
   bots_stopped: number;
   pnl_chart: PnlPoint[];
   recent_trades: TradeOut[];
-  bots: BotStats[];
+  bots: BotSummary[];
 }
 
 // ===== Helpers =====
@@ -138,25 +153,21 @@ const StatsPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      if (view === "all") {
-        const data: PortfolioStats = await apiFetch(`/stats/portfolio?period=${period}`);
-        setPortfolio(data);
-        setBotData(null);
-      } else {
-        const data: BotStats = await apiFetch(`/stats/bots/${view}?period=${period}`);
-        setBotData(data);
-        // Если портфель ещё не загружен — загрузим для сайдбара
-        if (!portfolio) {
-          const pData: PortfolioStats = await apiFetch(`/stats/portfolio?period=${period}`);
-          setPortfolio(pData);
-        }
-      }
+      // Портфель запрашиваем всегда: числа в сайдбаре считаются за выбранный период,
+      // поэтому при смене периода они устаревают, даже когда открыт отдельный бот.
+      const [pData, bData] = await Promise.all([
+        apiFetch<PortfolioStats>(`/stats/portfolio?period=${period}`),
+        view === "all"
+          ? Promise.resolve(null)
+          : apiFetch<BotStats>(`/stats/bots/${view}?period=${period}`),
+      ]);
+      setPortfolio(pData);
+      setBotData(bData);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Ошибка загрузки данных");
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, period]);
 
   useEffect(() => {
@@ -170,7 +181,7 @@ const StatsPage: React.FC = () => {
   const metrics = useMemo(() => {
     if (!current) return null;
     return {
-      profit: current.total_profit,
+      profit: current.profit,
       trades: current.trades_total,
       wins: current.trades_win,
       losses: current.trades_loss,
@@ -187,7 +198,7 @@ const StatsPage: React.FC = () => {
 
   // ===== Chart configs =====
   const lineData = useMemo(() => ({
-    labels: chartSeries.map((p) => p.ts),
+    labels: chartSeries.map((p) => formatDate(p.ts)),
     datasets: [
       {
         data: chartSeries.map((p) => p.value),
@@ -327,9 +338,9 @@ const StatsPage: React.FC = () => {
               </div>
               <div
                 className="bot-row-pnl"
-                style={{ color: b.total_profit >= 0 ? "#10b981" : "#ef4444" }}
+                style={{ color: b.profit >= 0 ? "#10b981" : "#ef4444" }}
               >
-                {formatUsdt(b.total_profit)}
+                {formatUsdt(b.profit)}
               </div>
             </div>
           ))}
@@ -338,8 +349,10 @@ const StatsPage: React.FC = () => {
         <div className="sb-footer">
           <div className="sb-footer-row">
             <div className="sb-status-dot" />
-            {runningCount} активных · {stoppedCount} остановлен
-            {stoppedCount === 1 ? "" : "ых"}
+            {/* «неактивных», а не «остановленных»: сюда же попадают боты в статусах
+                created, starting и error */}
+            {runningCount} активных · {stoppedCount} неактивн
+            {stoppedCount === 1 ? "ый" : "ых"}
           </div>
         </div>
       </aside>

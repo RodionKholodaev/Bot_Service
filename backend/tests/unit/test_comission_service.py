@@ -125,7 +125,10 @@ async def test_loss_trade_charges_no_commission(set_usdt_rate):
 
     # Assert: убыток всё равно уходит в накопленный профит бота, но баланс не трогаем
     assert bot.total_profit == -100.0
-    assert trade.commission_paid is False
+    # флаг ставится и на убыточной сделке: он означает "сделка уже учтена",
+    # а не "комиссия списана" — иначе убыток прибавлялся бы к total_profit
+    # заново на каждом опросе бота
+    assert trade.commission_paid is True
     assert user.service_balance == 5000.0
     assert bot.total_commission_paid_usdt == 0.0
     assert bot.total_commission_paid_rub == 0.0
@@ -240,9 +243,39 @@ async def test_missing_exchange_rate_raises(set_usdt_rate):
     with pytest.raises(ValueError):
         await CommissionService.process_commission(trade, user, bot)
 
-    # Баланс не тронут, сделка не помечена оплаченной
-    assert user.service_balance == 5000.0
+    # сделка НЕ помечена обработанной: исключение откатит транзакцию целиком,
+    # и следующий цикл воркера должен посчитать её заново
     assert trade.commission_paid is False
+
+
+@pytest.mark.asyncio
+async def test_second_call_does_not_count_the_trade_twice(monkeypatch):
+    # Повторный вызов возможен: например, если у закрытой сделки не разобралась дата
+    # закрытия, воркер каждые 30 секунд видел её как "только что закрывшуюся".
+    # Раньше bot.total_profit прибавлялся без всякой проверки и накручивался бесконечно.
+
+    # Arrange
+    trade = Trade(profit_usdt=100.0, commission_paid=False, freqtrade_trade_id=1)
+    user = User(commission_rate=0.1, service_balance=5000.0)
+    bot = Bot(
+        total_profit=0.0,
+        total_commission_paid_usdt=0.0,
+        total_commission_paid_rub=0.0,
+    )
+    monkeypatch.setattr(
+        "src.services.commission_service.ExchangeRateService",
+        lambda: FakeExchangeRateService(rate=90.0),
+    )
+
+    # Act
+    await CommissionService.process_commission(trade, user, bot)
+    await CommissionService.process_commission(trade, user, bot)
+
+    # Assert: всё осталось таким же, как после одного вызова
+    assert bot.total_profit == 100.0
+    assert bot.total_commission_paid_usdt == 10.0
+    assert user.service_balance == 4100.0
+
 
     # При этом bot.total_profit успел обновиться до выброса исключения — объект в
     # памяти остаётся «грязным». В проде это чинит db.rollback() в polling_worker,

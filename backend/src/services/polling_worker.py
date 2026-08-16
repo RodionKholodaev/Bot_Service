@@ -169,6 +169,27 @@ def _parse_dt(value: str | None) -> datetime | None:
         return None
 
 
+def _required_dt(value: str | None, bot_id: str, field: str) -> datetime:
+    """
+    То же, что _parse_dt, но с подстановкой текущего времени вместо None.
+
+    open_time в модели NOT NULL, а close_time — признак "сделка закрыта" для всей
+    статистики. Оставить их пустыми нельзя: без open_time INSERT падает и синхронизация
+    бота откатывается каждый цикл, а закрытая сделка без close_time навсегда выпадает из
+    статистики (все запросы фильтруют close_time IS NOT NULL) и на каждом опросе заново
+    выглядит "только что закрывшейся". Приблизительное время лучше потерянной сделки.
+    """
+    parsed = _parse_dt(value)
+    if parsed is not None:
+        return parsed
+
+    logger.warning(
+        "Trade has no usable timestamp, falling back to current time",
+        extra={"bot_id": bot_id, "field": field, "raw_value": value},
+    )
+    return datetime.now(timezone.utc)
+
+
 async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) -> None:
     """
     Синхронизирует список сделок от freqtrade в нашу таблицу.
@@ -210,8 +231,11 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
                 profit_usdt=ft.get("profit_abs") if not is_open else None,
                 profit_pct=ft.get("profit_ratio", 0.0) * 100 if not is_open else None,
                 exit_reason=ft.get("exit_reason") if not is_open else None,
-                open_time=_parse_dt(ft.get("open_date")),
-                close_time=_parse_dt(ft.get("close_date")) if not is_open else None,
+                open_time=_required_dt(ft.get("open_date"), bot.id, "open_date"),
+                close_time=(
+                    _required_dt(ft.get("close_date"), bot.id, "close_date")
+                    if not is_open else None
+                ),
             )
             db.add(trade)
             await db.flush()  # получаем trade.id для дальнейшей логики
@@ -242,7 +266,7 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
                 existing.profit_usdt = ft.get("profit_abs")
                 existing.profit_pct = (ft.get("profit_ratio", 0.0) or 0.0) * 100
                 existing.exit_reason = ft.get("exit_reason")
-                existing.close_time = _parse_dt(ft.get("close_date"))
+                existing.close_time = _required_dt(ft.get("close_date"), bot.id, "close_date")
                 await CommissionService.process_commission(existing, user, bot)
 
     await db.commit()

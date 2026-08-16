@@ -2,15 +2,13 @@
 
 from typing import Optional, Literal
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.dependencies import get_bot_repo, get_trade_repo
-from src.database import get_db
 from src.core.dependencies import get_current_user
+from src.core.exceptions import NotFoundError
 from src.models.user import User
 from src.models.bot import Bot
 from src.schemas.stats import PortfolioStats, BotStats, HomeStats
 from src.services.stats_service import StatsService
-from fastapi import HTTPException
 from src.repositories.bot_repository import BotRepository
 from src.repositories.trade_repository import TradeRepository
 
@@ -28,7 +26,6 @@ PERIOD_MAP: dict[str, Optional[int]] = {
 @router.get("/home", response_model=HomeStats)
 async def home_stats(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
     bot_repo: BotRepository = Depends(get_bot_repo),
     trade_repo: TradeRepository = Depends(get_trade_repo)
 ):
@@ -43,7 +40,6 @@ async def home_stats(
 async def portfolio_stats(
     period: Literal["1D", "1W", "1M", "all"] = Query(default="1W"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
     bot_repo: BotRepository = Depends(get_bot_repo),
     trade_repo: TradeRepository = Depends(get_trade_repo)
 ):
@@ -60,7 +56,6 @@ async def bot_stats(
     bot_id: str,
     period: Literal["1D", "1W", "1M", "all"] = Query(default="1W"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
     bot_repo: BotRepository = Depends(get_bot_repo),
     trade_repo: TradeRepository = Depends(get_trade_repo)
 ):
@@ -68,9 +63,11 @@ async def bot_stats(
     Детальная статистика по одному боту.
     Используется на странице статистики при выборе конкретного бота.
     """
-    bot: Optional[Bot] = await BotRepository(db).get_bot_by_id(bot_id)
-    if not bot or bot.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Bot not found")
+    bot: Optional[Bot] = await bot_repo.get_bot_by_id(bot_id)
+    # чужой и архивированный бот выглядят одинаково — 404, а не 403:
+    # по коду ответа нельзя узнать, существует ли бот с таким id
+    if bot is None or bot.user_id != current_user.id or not bot.is_active:
+        raise NotFoundError("Бот не найден")
 
     period_days = PERIOD_MAP[period]
     return await StatsService(bot_repo, trade_repo).get_bot_stats(bot, period_days)

@@ -28,7 +28,10 @@ class BotRepository:
         return result.scalar_one_or_none()
     
     async def get_all_busy_ports(self):
-        result = await self.db.execute(select(Bot.api_port))
+        # Только активные боты: у архивированного контейнер удалён, порт на хосте
+        # свободен, и держать его занятым навсегда — значит рано или поздно исчерпать
+        # весь диапазон BOT_API_PORT_RANGE.
+        result = await self.db.execute(select(Bot.api_port).where(Bot.is_active == True))
         return result.scalars().all()
 
     async def allocate_port(self) -> int | None:
@@ -47,6 +50,8 @@ class BotRepository:
         return bots
     
     async def get_user_bots(self, user_id):
+        """Все боты пользователя, включая архивированные — нужны там, где считается
+        статистика за всё время (иначе прибыль удалённых ботов исчезает задним числом)."""
         result = await self.db.execute(select(Bot).where(Bot.user_id==user_id))
         return result.scalars().all()
     
@@ -69,6 +74,15 @@ class BotRepository:
         await self.db.refresh(bot)
         return bot
         
-    async def delete_bot(self,bot: Bot):
-        await self.db.delete(bot)
+    async def archive_bot(self, bot: Bot) -> Bot:
+        """
+        Мягкое удаление. Физического DELETE тут намеренно нет: у trades.bot_id стоит
+        ondelete="CASCADE", и удаление бота уносило бы вместе с ним всю его историю
+        сделок — общий P&L, winrate и график пользователя менялись бы задним числом.
+        """
+        bot.is_active = False
+        # контейнера у архивированного бота уже нет, "running" был бы враньём
+        bot.status = "stopped"
         await self.db.flush()
+        await self.db.refresh(bot)
+        return bot
