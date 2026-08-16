@@ -11,12 +11,32 @@
 
 import json
 
-from src.services.assistant.tools import normalize_suggestions
+import pytest
+
+from src.services.assistant.tools import SUGGESTABLE_FIELDS, normalize_suggestions
 
 
 def _args(*suggestions: dict) -> str:
     """Аргументы вызова suggest_settings в том виде, в каком их шлёт модель."""
     return json.dumps({"suggestions": list(suggestions)})
+
+
+# По одному заведомо валидному значению на каждое поле из SUGGESTABLE_FIELDS.
+# Используется в test_every_advertised_field_survives_normalization — см. комментарий там.
+VALID_VALUE_PER_FIELD: dict[str, object] = {
+    "dryRun": True,
+    "stakeAmount": 100,
+    "balanceRatio": 20,
+    "tradingPair": "BTC/USDT",
+    "leverage": 3,
+    "algorithm": "long",
+    "strategyPreset": "moderate",
+    "filters": [{"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 30}],
+    "botName": "Мой бот",
+    "takeProfit": 2.5,
+    "useStopLoss": True,
+    "stopLoss": 1.5,
+}
 
 
 def test_valid_suggestions_pass_through_as_form_values():
@@ -74,6 +94,77 @@ def test_unknown_field_is_ignored():
 
     # Assert
     assert [item["field"] for item in result] == ["botName"]
+
+
+def test_every_advertised_field_survives_normalization():
+    # Arrange
+    # SUGGESTABLE_FIELDS уезжает в enum схемы инструмента — модель считает, что все
+    # эти поля можно предлагать. Но пропускает значения _normalize_value, у которого
+    # свой список веток и свой финальный `return None`.
+    #
+    # Оба списка нужно править вместе. Если добавить поле только в SUGGESTABLE_FIELDS,
+    # модель начнёт его предлагать, а нормализатор — молча выбрасывать: ассистент
+    # «советует», карточка не появляется, и по логам это выглядит как каприз модели.
+    # Тест ловит именно такую рассинхронизацию.
+    assert VALID_VALUE_PER_FIELD.keys() == SUGGESTABLE_FIELDS.keys(), (
+        "Список полей в тесте разошёлся с SUGGESTABLE_FIELDS — "
+        "добавьте валидное значение для нового поля в VALID_VALUE_PER_FIELD"
+    )
+
+    for field, value in VALID_VALUE_PER_FIELD.items():
+        # Act
+        result = normalize_suggestions(_args({"field": field, "value": value, "reason": "ок"}))
+
+        # Assert
+        assert len(result) == 1, f"поле {field} объявлено ассистенту, но отбраковано нормализатором"
+        assert result[0]["field"] == field
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    [
+        ("dryRun", "не булево"),
+        ("stakeAmount", "не число"),
+        ("balanceRatio", 3),            # ниже минимума ползунка (5)
+        ("tradingPair", "BTCUSDT"),     # без слэша
+        ("leverage", 0),                # ниже минимума формы (1)
+        ("algorithm", "sideways"),      # направления нет в продукте
+        ("strategyPreset", "scalping"), # пресета нет в продукте
+        ("filters", "не массив"),
+        ("botName", "   "),             # пустое после strip
+        ("takeProfit", 0),              # ноль процентов — не цель
+        ("useStopLoss", 1),             # число вместо булева
+        ("stopLoss", 150),              # больше 100%
+    ],
+)
+def test_invalid_value_is_dropped_for_each_field(field, value):
+    # Arrange — на каждое поле по одному характерному «мусорному» значению
+    raw = _args({"field": field, "value": value, "reason": "мимо"})
+
+    # Act
+    result = normalize_suggestions(raw)
+
+    # Assert
+    assert result == []
+
+
+def test_no_more_than_eight_suggestions_are_returned():
+    # Arrange
+    # В схеме инструмента стоит maxItems: 8, но схема — это просьба к модели, а не
+    # гарантия. Форма рисует карточку на каждое предложение, поэтому лимит
+    # дублируется на нашей стороне.
+    raw = _args(*[
+        {"field": field, "value": value, "reason": "ок"}
+        for field, value in VALID_VALUE_PER_FIELD.items()
+    ])
+
+    # Act
+    result = normalize_suggestions(raw)
+
+    # Assert: полей 12, но наружу уходит только 8 первых
+    assert len(VALID_VALUE_PER_FIELD) > 8
+    assert len(result) == 8
+    assert [item["field"] for item in result] == list(VALID_VALUE_PER_FIELD)[:8]
 
 
 def test_filters_keep_only_supported_indicators_and_timeframes():

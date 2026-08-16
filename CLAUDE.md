@@ -32,6 +32,28 @@ Bot_Service is a platform for creating and running automated crypto trading bots
 - **User-facing error text (HTTP `detail`) is in Russian**; that's the existing split, keep it.
 - Known gaps worth knowing about before touching related code: exchange-level errors (insufficient balance, rate limits, bad API key) are currently only visible in raw freqtrade container logs (`GET /bots/{id}/logs`) — the backend doesn't parse/classify them. `Bot.total_profit` and the sum of `Trade.profit_usdt` are two independent running totals that can drift. There is no CI.
 
+## Testing
+
+Full guide: `docs/testing/README.md` (structure, layers, patterns, blind spots) and `docs/testing/how-to.md` (recipes: add a test, fake the network/Docker/DB, debug). **There is no CI — run `python -m pytest` from `backend/` yourself before calling work done.**
+
+72 tests, ~5s, in `backend/tests/{unit,integration,fakes}/`. `pytest` + `pytest-asyncio`, `asyncio_mode = auto` (so `@pytest.mark.asyncio` isn't required — but it's on every async test, keep it). Unit tests are the main layer and touch neither DB nor network; `tests/integration/` is a deliberately thin layer hitting the real app via `httpx.AsyncClient(ASGITransport)` against a throwaway SQLite DB — put business logic in unit tests, not there. Note `tests/fakes/test_user_repository.py` is a reusable fake, not a test file, despite the `test_` prefix.
+
+**Style, applied consistently across all five test files:** module docstring saying what's tested and why it's fake-based; literal `# Arrange` / `# Act` / `# Assert` comments; file-local `make_bot()`/`make_trade()`/`make_user()` factories with keyword-only args instead of restating every required model field; hand-written `Fake*`/`Spy*` classes with a docstring naming what they replace — **`unittest.mock` is not used here, don't introduce it**. Test names are English assertions (`test_zero_profit_trade_counts_as_loss`); docstrings and comments are Russian; any non-obvious `assert` carries a comment with the arithmetic or the reason.
+
+**A new test must be shown to fail.** Break the line it covers, confirm red, restore. The suite is mutation-audited (last run: 23 mutations, all caught). Tests passing for the wrong reason have already happened here — a "unknown field is dropped" test stayed green after the allowlist was removed, because a second guard downstream masked it.
+
+**Traps, each of which has silently broken a test in this repo:**
+- `tests/conftest.py` calls `sentry_sdk.init(dsn="")` **before** importing `src.main` — `src.main` initializes Sentry with the production DSN at import time, so reordering those lines ships `logger.critical` from tests to the real Glitchtip.
+- `monkeypatch.setattr` must target the module that **imported** a name (`src.services.commission_service.ExchangeRateService`), not the one defining it.
+- A column `default=...` is applied by a real INSERT, and the fake session's `flush()` is a no-op — on an unflushed object `commission_paid` is `None`, not `False`. Assert `not trade.commission_paid`.
+- `FakeTradeRepo` in `test_stats_service.py` returns its list regardless of the query, so ordering/filtering is invisible in results — `_FakeQuery` records `.where()`/`.order_by()` calls and those are asserted separately (compare `str()` of the expression; SQLAlchemy objects don't compare with `==`).
+- `clear_database` walks `reversed(Base.metadata.sorted_tables)`, so a new model must be imported somewhere on the `src.main` path or it will be neither created nor cleaned between tests.
+- `ASGITransport` does not run `lifespan()` — `create_all` and `polling_worker` are never exercised by tests.
+
+**Not covered at all** — a green suite says nothing about: `payment_service` (YooKassa, webhook IP whitelist), `bot_service` (create/start/stop/delete), `exchange_api_key` Fernet encryption, `strategy_presets`, `get_portfolio_stats`/`get_home_stats`, `lifespan()`, and bot behavior itself (no testnet — dry-run by hand only).
+
+**Behaviors deliberately locked by tests — don't "fix" them:** a `profit_usdt == 0` trade counts as a loss; `_max_drawdown` returns `None` when cumulative P&L never went positive; `Bot.total_profit` double-counts if `process_commission` runs on the same trade twice (only `trade.commission_paid` guards the actual money, and that guard is tested). The tests document these as current behavior, not as endorsements.
+
 ## Commands
 
 Backend (from `backend/`):
@@ -41,8 +63,9 @@ uvicorn src.main:app --reload          # dev server
 python -m pytest                       # full test suite
 python -m pytest tests/unit/test_stats_service.py -v   # single file
 python -m pytest tests/unit/test_stats_service.py::test_max_drawdown_calculates_percent_from_peak  # single test
+python -m pytest -k commission          # by name
 ```
-Tests: `pytest` + `pytest-asyncio` (`asyncio_mode = auto`, no `@pytest.mark.asyncio` strictly required but used for consistency), `backend/tests/{unit,integration,fakes}/`. Pattern: Arrange/Act/Assert with comments, fake repositories instead of a real DB for services (`tests/fakes/`, `test_comission_service.py`, `test_stats_service.py`); integration tests hit the real app through `httpx.AsyncClient(ASGITransport)` against a throwaway SQLite DB (`tests/conftest.py`). No testnet access — bot-behavior testing is dry-run only.
+See **Testing** below before writing or changing tests.
 
 Frontend (from `frontend/`):
 ```

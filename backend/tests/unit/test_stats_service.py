@@ -95,14 +95,24 @@ class _FakeQuery:
     """Заглушка вместо SQLAlchemy select(...).
 
     Реальный код вызывает на запросе .where(...) и .order_by(...) перед выполнением.
-    Нам не нужно, чтобы они реально что-то фильтровали/сортировали — сделки
-    в тесте мы и так передаём в нужном порядке, поэтому просто возвращаем себя же.
+    Реально фильтровать и сортировать заглушке нечего — сделки в тесте мы и так
+    передаём в нужном порядке, — поэтому оба метода возвращают себя же.
+
+    Но сами вызовы записываются: без этого фейк «съедал» бы любую правку запроса,
+    и тест не заметил бы, например, разворот сортировки на .desc(). Что именно
+    попросили у запроса — проверяют тесты в блоке «форма запроса» ниже.
     """
 
+    def __init__(self):
+        self.where_calls: list[tuple] = []
+        self.order_by_calls: list[tuple] = []
+
     def where(self, *args, **kwargs):
+        self.where_calls.append(args)
         return self
 
     def order_by(self, *args, **kwargs):
+        self.order_by_calls.append(args)
         return self
 
 
@@ -130,12 +140,15 @@ class FakeTradeRepo:
 
     def __init__(self, trades: list[Trade]):
         self._trades = trades
+        # Запрос, который сервис собрал и отправил на выполнение. Хранится, чтобы
+        # тест мог посмотреть, о чём именно попросили БД.
+        self.query = _FakeQuery()
         # StatsService дёргает self.trade_repo.db.execute(...) — значит у fake-репозитория
         # тоже должен быть атрибут .db с методом execute(). Проще всего сделать db = сам репозиторий.
         self.db = self
 
     async def get_bot_close_trades(self, user_id, bot_id):
-        return _FakeQuery()
+        return self.query
 
     async def execute(self, query):
         return _FakeResult(self._trades)
@@ -303,3 +316,113 @@ async def test_get_bot_stats_no_trades_returns_zero_stats_without_crashing():
     assert stats.avg_profit_pct is None
     assert stats.max_drawdown_pct is None
     assert stats.pnl_chart == []
+    assert stats.recent_trades == []
+
+
+@pytest.mark.asyncio
+async def test_avg_profit_pct_ignores_trades_without_percent():
+    # Arrange: у одной сделки profit_pct не заполнен (freqtrade не всегда его отдаёт).
+    # Такие сделки не должны попадать в знаменатель среднего — иначе среднее
+    # «размывается» и тем сильнее, чем больше в выборке дырок.
+    trades = [
+        make_trade(id=1, profit_usdt=10.0, profit_pct=6.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
+        make_trade(id=2, profit_usdt=10.0, profit_pct=None, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
+        make_trade(id=3, profit_usdt=10.0, profit_pct=2.0, close_time=datetime(2026, 1, 3, tzinfo=timezone.utc)),
+    ]
+    bot = make_bot()
+    service = StatsService(bot_repo=None, trade_repo=FakeTradeRepo(trades)) #type: ignore
+
+    # Act
+    stats = await service.get_bot_stats(bot)
+
+    # Assert: (6 + 2) / 2 = 4.0, а не (6 + 2) / 3 = 2.67
+    assert stats.trades_total == 3
+    assert stats.avg_profit_pct == 4.0
+
+
+# ──────────────────────────────────────────────
+# Тесты recent_trades — «последние сделки» для карточки бота
+# ──────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_recent_trades_are_newest_first():
+    # Arrange: из БД сделки приходят по возрастанию close_time, а в интерфейсе
+    # список должен идти от свежих к старым — за это отвечает reversed() в сервисе.
+    trades = [
+        make_trade(id=1, profit_usdt=1.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
+        make_trade(id=2, profit_usdt=2.0, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
+        make_trade(id=3, profit_usdt=3.0, close_time=datetime(2026, 1, 3, tzinfo=timezone.utc)),
+    ]
+    bot = make_bot()
+    service = StatsService(bot_repo=None, trade_repo=FakeTradeRepo(trades)) #type: ignore
+
+    # Act
+    stats = await service.get_bot_stats(bot)
+
+    # Assert
+    assert [t.id for t in stats.recent_trades] == [3, 2, 1]
+
+
+@pytest.mark.asyncio
+async def test_recent_trades_are_limited_to_recent_limit():
+    # Arrange: сделок больше, чем помещается в список
+    trades = [
+        make_trade(id=i, profit_usdt=1.0, close_time=datetime(2026, 1, i, tzinfo=timezone.utc))
+        for i in range(1, 6)
+    ]
+    bot = make_bot()
+    service = StatsService(bot_repo=None, trade_repo=FakeTradeRepo(trades)) #type: ignore
+
+    # Act
+    stats = await service.get_bot_stats(bot, recent_limit=2)
+
+    # Assert: берём две последние по времени и отдаём свежую первой.
+    # Общая статистика при этом считается по ВСЕМ сделкам, а не по обрезанным.
+    assert [t.id for t in stats.recent_trades] == [5, 4]
+    assert stats.trades_total == 5
+
+
+# ──────────────────────────────────────────────
+# Форма запроса к БД
+#
+# FakeTradeRepo отдаёт заранее заданный список независимо от запроса, поэтому
+# сортировку и фильтр по периоду нельзя проверить по результату — сюда фейк
+# «слепой». Проверяем то, что сервис попросил у запроса.
+# ──────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_trades_are_requested_sorted_by_close_time_ascending():
+    # Arrange
+    # Накопленный P&L и просадка считаются одним проходом по списку, поэтому
+    # порядок сделок — часть контракта: развернёшь сортировку, и график
+    # «поедет», а сами числа останутся правдоподобными.
+    bot = make_bot()
+    repo = FakeTradeRepo([])
+    service = StatsService(bot_repo=None, trade_repo=repo) #type: ignore
+
+    # Act
+    await service.get_bot_stats(bot)
+
+    # Assert: сравниваем текст выражения — объекты SQLAlchemy напрямую не сравниваются
+    assert [str(arg) for args in repo.query.order_by_calls for arg in args] == [
+        "trades.close_time ASC"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_period_days_adds_filter_and_is_absent_by_default():
+    # Arrange
+    bot = make_bot()
+
+    # Act: без периода — сервис не должен ничего дофильтровывать
+    repo_all_time = FakeTradeRepo([])
+    await StatsService(bot_repo=None, trade_repo=repo_all_time).get_bot_stats(bot) #type: ignore
+
+    # Act: с периодом — появляется отсечка по close_time
+    repo_last_week = FakeTradeRepo([])
+    await StatsService(bot_repo=None, trade_repo=repo_last_week).get_bot_stats(bot, period_days=7) #type: ignore
+
+    # Assert
+    assert repo_all_time.query.where_calls == []
+    assert len(repo_last_week.query.where_calls) == 1
+    assert "trades.close_time >=" in str(repo_last_week.query.where_calls[0][0])

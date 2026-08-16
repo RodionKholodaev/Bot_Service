@@ -16,7 +16,6 @@ sentry_sdk.init(dsn="")
 from src.database import get_db
 from src.database import Base
 from sqlalchemy import delete
-from src.models.user import User
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db" # адрес тестовой бд
 
@@ -89,9 +88,14 @@ async def client():
         yield ac
 
 
-# очищает таблицу User перед каждым тестом
+# очищает БД перед каждым тестом, чтобы тесты не зависели от порядка запуска
 @pytest_asyncio.fixture(autouse=True)
 async def clear_database():
+    # Идём по всем таблицам метаданных, а не по списку моделей руками: новая модель
+    # начнёт чиститься сама, без правки этой фикстуры.
+    # reversed(sorted_tables) — порядок от зависимых к родительским (trades -> bots -> users),
+    # иначе удаление users упёрлось бы во внешние ключи.
     async with TestingSessionLocal() as session:
-        await session.execute(delete(User))
+        for table in reversed(Base.metadata.sorted_tables):
+            await session.execute(delete(table))
         await session.commit()
