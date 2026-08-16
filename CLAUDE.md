@@ -11,7 +11,7 @@ Bot_Service is a platform for creating and running automated crypto trading bots
 - **Backend**: Python, FastAPI, async SQLAlchemy 2.0 (`Mapped`/`mapped_column`), Pydantic Settings. Single Uvicorn process, entry point `backend/src/main.py`. No Celery/queue — all backend concurrency is one asyncio process: FastAPI request handlers + a single background `asyncio.create_task()`.
 - **Frontend**: Next.js 16 / React 19 / TypeScript in `frontend/`, chart.js for stats.
 - **Bots are not code in this repo** — each bot is a separate Docker container running `freqtradeorg/freqtrade:stable`, managed imperatively via the Docker SDK (`backend/src/services/docker_manager.py`), no docker-compose/k8s. `BotService.create_bot()`/`start_bot()` render a strategy `.py` file from `backend/src/templates/multifilter_strategy.template` (string `.replace()` + `repr()`, no sandboxing) and a `config.json` from `templates/config.template.json`, then launch the container. Each bot gets its own port (`BOT_API_PORT_RANGE_START`–`END`, default 9000–9999), its own freqtrade REST API with basic auth, and its own SQLite `tradesv3.sqlite` inside the container — **the backend never talks to the exchange directly**, only to each bot's freqtrade REST API.
-- **DB**: PostgreSQL in prod (`DATABASE_URL`), SQLite (`aiosqlite`) in tests. `alembic` is a listed dependency but **there are no migrations** — schema is created via `Base.metadata.create_all()` in `main.py`'s `lifespan()`. If you change a model, there's no migration to write, but also no safety net on schema drift.
+- **DB**: **SQLite (`aiosqlite`) everywhere** — local dev, tests, and the server (`DATABASE_URL`, default `sqlite+aiosqlite:///./cryptobot.db`). PostgreSQL is under consideration but not in use; `asyncpg` is not installed, and the `psycopg2-binary` in `requirements.txt` is a sync driver that `create_async_engine` rejects. Two consequences of SQLite that are live right now: **foreign keys are not enforced** (`PRAGMA foreign_keys = 0`, so every `ondelete="CASCADE"` in the models is a no-op — deleting a user leaves its bots/trades orphaned), and only one writer at a time (run a single uvicorn process, or expect `database is locked`). Schema is managed by **alembic** (`backend/alembic/`, config in `backend/alembic.ini`) — `main.py`'s `lifespan()` no longer calls `Base.metadata.create_all()`, so a fresh DB (new dev machine, new prod deploy) needs `alembic upgrade head` run once before the app can start. `alembic/env.py` builds `target_metadata` from `Base` and auto-imports every module in `src/models/` via `pkgutil` — deliberately not a hand-written import list, because a forgotten import makes autogenerate *silently* skip the table (that's how `balance_transactions` ended up missing from the dev DB). A new model still needs a normal import somewhere on the `src.main` path for the tests' `create_all`/`clear_database` to see it. Migrations run in batch mode (`render_as_batch=True`) — required, since SQLite can't `ALTER TABLE`; harmless if Postgres ever happens. When you change a model: `alembic revision --autogenerate -m "..."`, then **read the generated file by hand** before committing — autogenerate misses renames and some type changes.
 - **The only backend "bot loop"**: `services/polling_worker.py` — an infinite `while True` loop (started via `asyncio.create_task()` in `lifespan()`), polling every `POLL_INTERVAL = 30s`. Each cycle: fetch all `status="running"` bots → GET `/api/v1/trades` from each bot's own freqtrade container (hardcoded `http://127.0.0.1:{bot.api_port}`, note this ignores `settings.BOT_API_HOST` used elsewhere — known inconsistency) → diff against the local `trades` table → create/update rows → run `CommissionService.process_commission()` on newly-closed trades. Wrapped in nested try/except so one bad bot/DB error doesn't kill the whole worker.
 
 ## Key modules (`backend/src/`)
@@ -48,7 +48,7 @@ Full guide: `docs/testing/README.md` (structure, layers, patterns, blind spots) 
 - A column `default=...` is applied by a real INSERT, and the fake session's `flush()` is a no-op — on an unflushed object `commission_paid` is `None`, not `False`. Assert `not trade.commission_paid`.
 - `FakeTradeRepo` in `test_stats_service.py` returns its list regardless of the query, so ordering/filtering is invisible in results — `_FakeQuery` records `.where()`/`.order_by()` calls and those are asserted separately (compare `str()` of the expression; SQLAlchemy objects don't compare with `==`).
 - `clear_database` walks `reversed(Base.metadata.sorted_tables)`, so a new model must be imported somewhere on the `src.main` path or it will be neither created nor cleaned between tests.
-- `ASGITransport` does not run `lifespan()` — `create_all` and `polling_worker` are never exercised by tests.
+- `ASGITransport` does not run `lifespan()` — `polling_worker` is never exercised by tests. Tests don't use alembic either: `tests/conftest.py` builds its own schema straight from `Base.metadata.create_all()`/`drop_all()` against the throwaway test DB, independent of migration history.
 
 **Not covered at all** — a green suite says nothing about: `payment_service` (YooKassa, webhook IP whitelist), `bot_service` (create/start/stop/delete), `exchange_api_key` Fernet encryption, `strategy_presets`, `get_portfolio_stats`/`get_home_stats`, `lifespan()`, and bot behavior itself (no testnet — dry-run by hand only).
 
@@ -59,6 +59,7 @@ Full guide: `docs/testing/README.md` (structure, layers, patterns, blind spots) 
 Backend (from `backend/`):
 ```
 pip install -r requirements.txt
+alembic upgrade head                   # apply migrations — needed once before first run on a fresh DB
 uvicorn src.main:app --reload          # dev server
 python -m pytest                       # full test suite
 python -m pytest tests/unit/test_stats_service.py -v   # single file
@@ -66,6 +67,17 @@ python -m pytest tests/unit/test_stats_service.py::test_max_drawdown_calculates_
 python -m pytest -k commission          # by name
 ```
 See **Testing** below before writing or changing tests.
+
+Full DB guide: `docs/database/README.md` (tables, relations, alembic setup, gotchas) and `docs/database/how-to.md` (recipes: change a model, first start on a server, rollback, symptom→cause table).
+
+Migrations (from `backend/`), after changing a model in `src/models/`:
+```
+alembic revision --autogenerate -m "add X to bots"   # generate, then read the diff by hand
+alembic upgrade head                                  # apply locally
+alembic downgrade -1                                  # undo the last migration
+alembic history                                        # list all revisions
+alembic current                                        # what revision is this DB at
+```
 
 Frontend (from `frontend/`):
 ```

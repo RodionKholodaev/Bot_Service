@@ -6,7 +6,6 @@ from src.logger_config import setup_logging
 from src.core.telegram_alerts import setup_telegram_alerts
 from src.core.telegram_alerts import setup_telegram_alerts
 from src.config import settings
-from src.database import Base, engine
 from src.routers import auth, bots, api_keys, user, stats, payments, assistant, assistant
 from src.services import docker_manager
 from src.core.exception_handlers import register_exception_handlers
@@ -65,8 +64,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── startup ──
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Схема БД теперь управляется alembic, а не create_all() — перед стартом
+    # приложения (первый запуск / после pull с новыми моделями) нужно руками
+    # выполнить `alembic upgrade head` (см. backend/alembic/README или CLAUDE.md).
 
     settings.BOTS_DATA_DIR.mkdir(parents=True, exist_ok=True)
     logger.info(f"BOTS_DATA_DIR = {settings.BOTS_DATA_DIR.resolve()}")
