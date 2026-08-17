@@ -554,7 +554,10 @@ async def test_losing_trade_is_saved_but_charges_no_commission(sync_env):
     # Assert: убыток попадает в статистику и в total_profit, но баланс не трогает
     assert len(db.added) == 1
     assert db.added[0].profit_usdt == -30.0
-    assert not db.added[0].commission_paid   # см. комментарий про default=False выше
+    # commission_paid означает «сделка учтена», а не «комиссия списана», и на убытке
+    # тоже ставится. Здесь это не дефолт колонки (у неflushed-объекта он был бы None),
+    # а явное присваивание в CommissionService — поэтому сравнение с True корректно.
+    assert db.added[0].commission_paid is True
     assert user.service_balance == 5000.0
     assert bot.total_profit == -30.0
 

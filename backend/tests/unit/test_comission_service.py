@@ -137,9 +137,9 @@ async def test_loss_trade_charges_no_commission(set_usdt_rate):
 @pytest.mark.asyncio
 async def test_zero_profit_trade_charges_no_commission(set_usdt_rate):
     # Arrange
-    # Сделка, закрытая ровно «в ноль»: комиссия берётся строго с profit > 0.
-    # Граница неочевидная — при `profit >= 0` сервис списывал бы 0 ₽, но
-    # проставлял commission_paid=True, и сделка выглядела бы обработанной.
+    # Сделка, закрытая ровно «в ноль»: комиссия берётся строго с profit > 0,
+    # поэтому баланс не двигается. А вот обработанной сделка всё равно
+    # помечается — иначе воркер видел бы её незачтённой каждый цикл.
     trade = make_trade(profit_usdt=0.0)
     user = make_user()
     bot = make_bot()
@@ -150,7 +150,7 @@ async def test_zero_profit_trade_charges_no_commission(set_usdt_rate):
 
     # Assert
     assert bot.total_profit == 0.0
-    assert trade.commission_paid is False
+    assert trade.commission_paid is True
     assert user.service_balance == 5000.0
     assert bot.total_commission_paid_usdt == 0.0
 
@@ -170,7 +170,8 @@ async def test_none_profit_is_treated_as_zero(set_usdt_rate):
 
     # Assert
     assert bot.total_profit == 0.0
-    assert trade.commission_paid is False
+    # ноль — не прибыль, комиссии нет; но сделка всё равно учтена
+    assert trade.commission_paid is True
     assert user.service_balance == 5000.0
 
 
@@ -182,8 +183,10 @@ async def test_none_profit_is_treated_as_zero(set_usdt_rate):
 async def test_commission_is_not_charged_twice_for_the_same_trade(set_usdt_rate):
     # Arrange
     # polling_worker крутится каждые 30 секунд и в принципе может увидеть одну и ту же
-    # закрытую сделку повторно. Единственный барьер против двойного списания реальных
-    # денег — флаг trade.commission_paid, поэтому он проверяется отдельным тестом.
+    # закрытую сделку повторно — например, если у неё не разобралась дата закрытия и
+    # каждый цикл она выглядит «только что закрывшейся». Единственный барьер против
+    # двойного списания реальных денег — флаг trade.commission_paid, поэтому он
+    # проверяется отдельным тестом.
     trade = make_trade(profit_usdt=100.0)
     user = make_user()
     bot = make_bot()
@@ -200,12 +203,10 @@ async def test_commission_is_not_charged_twice_for_the_same_trade(set_usdt_rate)
     assert bot.total_commission_paid_usdt == 10.0
     assert bot.total_commission_paid_rub == 900.0
 
-    # А вот total_profit защиты не имеет и досчитывает прибыль второй раз.
-    # Это текущее поведение кода, а не желаемое: в проде спасает только то, что
-    # polling_worker вызывает process_commission один раз — в момент перехода
-    # сделки в закрытые (см. _async_bot_trades). Тест фиксирует факт, чтобы
-    # расхождение Bot.total_profit с суммой Trade.profit_usdt не стало сюрпризом.
-    assert bot.total_profit == 200.0
+    # total_profit тоже не удваивается: ранний return по commission_paid стоит до
+    # его обновления. Раньше профит прибавлялся без всякой проверки и на повторных
+    # вызовах накручивался бесконечно — этот ассерт держит защиту на месте.
+    assert bot.total_profit == 100.0
 
 
 @pytest.mark.asyncio
@@ -243,39 +244,10 @@ async def test_missing_exchange_rate_raises(set_usdt_rate):
     with pytest.raises(ValueError):
         await CommissionService.process_commission(trade, user, bot)
 
-    # сделка НЕ помечена обработанной: исключение откатит транзакцию целиком,
-    # и следующий цикл воркера должен посчитать её заново
+    # Баланс не тронут, сделка не помечена обработанной: исключение откатит
+    # транзакцию целиком, и следующий цикл воркера должен посчитать её заново
+    assert user.service_balance == 5000.0
     assert trade.commission_paid is False
-
-
-@pytest.mark.asyncio
-async def test_second_call_does_not_count_the_trade_twice(monkeypatch):
-    # Повторный вызов возможен: например, если у закрытой сделки не разобралась дата
-    # закрытия, воркер каждые 30 секунд видел её как "только что закрывшуюся".
-    # Раньше bot.total_profit прибавлялся без всякой проверки и накручивался бесконечно.
-
-    # Arrange
-    trade = Trade(profit_usdt=100.0, commission_paid=False, freqtrade_trade_id=1)
-    user = User(commission_rate=0.1, service_balance=5000.0)
-    bot = Bot(
-        total_profit=0.0,
-        total_commission_paid_usdt=0.0,
-        total_commission_paid_rub=0.0,
-    )
-    monkeypatch.setattr(
-        "src.services.commission_service.ExchangeRateService",
-        lambda: FakeExchangeRateService(rate=90.0),
-    )
-
-    # Act
-    await CommissionService.process_commission(trade, user, bot)
-    await CommissionService.process_commission(trade, user, bot)
-
-    # Assert: всё осталось таким же, как после одного вызова
-    assert bot.total_profit == 100.0
-    assert bot.total_commission_paid_usdt == 10.0
-    assert user.service_balance == 4100.0
-
 
     # При этом bot.total_profit успел обновиться до выброса исключения — объект в
     # памяти остаётся «грязным». В проде это чинит db.rollback() в polling_worker,
