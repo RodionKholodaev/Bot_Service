@@ -3,7 +3,19 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import type { TooltipItem } from 'chart.js';
-import { Bot, LayoutGrid, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import {
+  Zap,
+  Settings,
+  CreditCard,
+  LayoutGrid,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Activity,
+  ArrowDownRight,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -104,8 +116,13 @@ interface PortfolioStats {
 // ===== Helpers =====
 const PERIOD_LABEL: Record<Period, string> = { "1D": "1Д", "1W": "1Н", "1M": "1М" };
 
+// Палитра графиков — из общей схемы сайта (см. /home, /feedback)
+const COLOR_GREEN = "#34d399";
+const COLOR_RED = "#f87171";
+
 const formatPnl = (v: number): string => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
-const formatUsdt = (v: number): string => `${v >= 0 ? "+" : ""}$${Math.abs(v).toFixed(2)}`;
+// Знак ставим перед $, минус — обязательно: без него убыток выглядел бы как прибыль
+const formatUsdt = (v: number): string => `${v >= 0 ? "+" : "-"}$${Math.abs(v).toFixed(2)}`;
 
 const formatDuration = (open: string, close: string | null): string => {
   if (!close) return "—";
@@ -126,6 +143,13 @@ const formatDate = (iso: string | null): string => {
     .padStart(2, "0")}`;
 };
 
+// тот же светофор баланса, что на главной и в обратной связи
+const getBalanceStatus = (balance: number): string => {
+  if (balance < 100) return "critical";
+  if (balance < 1000) return "low";
+  return "good";
+};
+
 // ===== Component =====
 const StatsPage: React.FC = () => {
   const router = useRouter();
@@ -137,7 +161,8 @@ const StatsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const chartRef = useRef<ChartJS<"line"> | null>(null);
   const [isAuthed, setIsAuthed] = useState(false);
- 
+  const [serviceBalance, setServiceBalance] = useState<number>(0);
+
   // проверка того что пользователь имеет JWT
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -147,6 +172,21 @@ const StatsPage: React.FC = () => {
       setIsAuthed(true); // ← добавь
     }
   }, [router]);
+
+  // Баланс нужен только для индикатора в шапке — той же, что на /home и /feedback
+  const fetchBalance = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ service_balance: number }>("/users/me/balance");
+      setServiceBalance(data.service_balance);
+    } catch (e) {
+      console.error("Не удалось загрузить баланс:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthed) return;
+    fetchBalance();
+  }, [isAuthed, fetchBalance]);
 
   // Загрузка данных при смене вью или периода
   const fetchData = useCallback(async () => {
@@ -194,7 +234,7 @@ const StatsPage: React.FC = () => {
   const trades = useMemo(() => current?.recent_trades ?? [], [current]);
 
   const lastValue = chartSeries.length > 0 ? chartSeries[chartSeries.length - 1].value : 0;
-  const trendColor = lastValue >= 0 ? "#10b981" : "#ef4444";
+  const trendColor = lastValue >= 0 ? COLOR_GREEN : COLOR_RED;
 
   // ===== Chart configs =====
   const lineData = useMemo(() => ({
@@ -207,14 +247,14 @@ const StatsPage: React.FC = () => {
         pointRadius: 0,
         pointHoverRadius: 4,
         pointHoverBackgroundColor: trendColor,
-        pointHoverBorderColor: "#0b1220",
+        pointHoverBorderColor: "#0a0e1a",
         pointHoverBorderWidth: 2,
         fill: true,
         backgroundColor: (ctx: { chart: ChartJS }) => {
           const c = ctx.chart.ctx;
           if (!c) return trendColor + "20";
-          const g = c.createLinearGradient(0, 0, 0, 200);
-          g.addColorStop(0, trendColor + "40");
+          const g = c.createLinearGradient(0, 0, 0, 220);
+          g.addColorStop(0, trendColor + "45");
           g.addColorStop(1, trendColor + "00");
           return g;
         },
@@ -229,8 +269,8 @@ const StatsPage: React.FC = () => {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: "rgba(15, 23, 41, 0.95)",
-        borderColor: "rgba(255,255,255,0.1)",
+        backgroundColor: "rgba(26, 31, 53, 0.95)",
+        borderColor: "rgba(96, 165, 250, 0.25)",
         borderWidth: 1,
         padding: 10,
         titleColor: "#9ca3af",
@@ -245,17 +285,17 @@ const StatsPage: React.FC = () => {
     },
     scales: {
       x: {
-        ticks: { color: "#4b5563", font: { size: 10 }, maxTicksLimit: 8 },
-        grid: { color: "rgba(255,255,255,0.04)" },
+        ticks: { color: "#6b7280", font: { size: 10 }, maxTicksLimit: 8 },
+        grid: { color: "rgba(255,255,255,0.05)" },
       },
       y: {
         ticks: {
-          color: "#4b5563",
+          color: "#6b7280",
           font: { size: 10 },
           callback: (v: string | number) =>
             `$${Number(v) >= 0 ? "+" : ""}${Number(v).toFixed(1)}`,
         },
-        grid: { color: "rgba(255,255,255,0.04)" },
+        grid: { color: "rgba(255,255,255,0.05)" },
       },
     },
   }), []);
@@ -265,7 +305,7 @@ const StatsPage: React.FC = () => {
     datasets: [
       {
         data: metrics ? [metrics.wins, metrics.losses] : [0, 0],
-        backgroundColor: ["#10b981", "#ef4444"],
+        backgroundColor: [COLOR_GREEN, COLOR_RED],
         borderWidth: 0,
         hoverOffset: 4,
       },
@@ -279,8 +319,8 @@ const StatsPage: React.FC = () => {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: "rgba(15, 23, 41, 0.95)",
-        borderColor: "rgba(255,255,255,0.1)",
+        backgroundColor: "rgba(26, 31, 53, 0.95)",
+        borderColor: "rgba(96, 165, 250, 0.25)",
         borderWidth: 1,
         padding: 10,
         titleColor: "#9ca3af",
@@ -300,262 +340,303 @@ const StatsPage: React.FC = () => {
 
   return (
     <div className="stats-page">
-      {/* ===== SIDEBAR ===== */}
-      <aside className="stats-sidebar">
-        <div className="sb-header">
-          <Link href="/" className="sb-logo">
-            <span className="sb-logo-icon">
-              <Bot size={15} />
-            </span>
-            CryptoBot
+      {/* ===== HEADER — тот же, что на главной и в обратной связи ===== */}
+      <header className="stats-topbar">
+        <div className="stats-topbar-left">
+          <Link href="/home" className="stats-brand">
+            <Zap size={28} />
+            <span>CryptoBot</span>
           </Link>
-          <div className="sb-section-label">Портфель</div>
-          <button
-            className={`sb-all-btn ${view === "all" ? "active" : ""}`}
-            onClick={() => setView("all")}
-          >
-            <LayoutGrid size={14} />
-            Все боты
-          </button>
+          <nav className="stats-nav">
+            <Link href="/home" className="stats-nav-item">Главная</Link>
+            <Link href="/stats" className="stats-nav-item active">Статистика</Link>
+            <Link href="/feedback" className="stats-nav-item">Обратная связь</Link>
+          </nav>
         </div>
-
-        <div className="sb-bots">
-          <div className="sb-section-label">
-            Боты ({sidebarBots.length})
+        <div className="stats-topbar-right">
+          <div className={`stats-balance ${getBalanceStatus(serviceBalance)}`}>
+            <CreditCard size={16} />
+            <span>{serviceBalance.toLocaleString('ru-RU')} ₽</span>
           </div>
-          {sidebarBots.map((b) => (
-            <div
-              key={b.bot_id}
-              className={`bot-row ${view === b.bot_id ? "active" : ""}`}
-              onClick={() => setView(b.bot_id)}
-            >
-              <div className={`bot-row-dot ${b.status === "running" ? "running" : "stopped"}`} />
-              <div className="bot-row-info">
-                <div className="bot-row-name">{b.pair}</div>
-                <div className="bot-row-sub">
-                  x{b.leverage} · {b.strategy_preset}
-                </div>
+          <Link href="/settings">
+            <button className="stats-icon-btn">
+              <Settings size={20} />
+            </button>
+          </Link>
+        </div>
+      </header>
+
+      {/* ===== SCROLL AREA ===== */}
+      <div className="stats-scroll">
+        <main className="stats-main">
+          {/* Заголовок вью + период */}
+          <section className="stats-hero">
+            <div>
+              <h1>{selectedBot ? selectedBot.pair : "Все боты"}</h1>
+              <p className="stats-hero-sub">
+                {selectedBot
+                  ? `x${selectedBot.leverage} · ${selectedBot.direction} · ${selectedBot.strategy_preset} · ${
+                      selectedBot.status === "running" ? "Работает" : "Остановлен"
+                    }`
+                  : "Общая статистика портфеля"}
+              </p>
+            </div>
+            <div className="stats-period">
+              {(["1D", "1W", "1M"] as Period[]).map((p) => (
+                <button
+                  key={p}
+                  className={`stats-period-tab ${period === p ? "active" : ""}`}
+                  onClick={() => setPeriod(p)}
+                >
+                  {PERIOD_LABEL[p]}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <div className="stats-layout">
+            {/* ===== SIDEBAR ===== */}
+            <aside className="stats-sidebar">
+              <div className="sb-header">
+                <div className="sb-section-label">Портфель</div>
+                <button
+                  className={`sb-all-btn ${view === "all" ? "active" : ""}`}
+                  onClick={() => setView("all")}
+                >
+                  <LayoutGrid size={16} />
+                  Все боты
+                </button>
               </div>
-              <div
-                className="bot-row-pnl"
-                style={{ color: b.profit >= 0 ? "#10b981" : "#ef4444" }}
-              >
-                {formatUsdt(b.profit)}
-              </div>
-            </div>
-          ))}
-        </div>
 
-        <div className="sb-footer">
-          <div className="sb-footer-row">
-            <div className="sb-status-dot" />
-            {/* «неактивных», а не «остановленных»: сюда же попадают боты в статусах
-                created, starting и error */}
-            {runningCount} активных · {stoppedCount} неактивн
-            {stoppedCount === 1 ? "ый" : "ых"}
-          </div>
-        </div>
-      </aside>
-
-      {/* ===== MAIN ===== */}
-      <main className="stats-main">
-        <header className="main-header">
-          <div>
-            <div className="view-title">
-              {selectedBot ? selectedBot.pair : "Все боты"}
-            </div>
-            <div className="view-subtitle">
-              {selectedBot
-                ? `x${selectedBot.leverage} · ${selectedBot.direction} · ${selectedBot.strategy_preset} · ${
-                    selectedBot.status === "running" ? "Работает" : "Остановлен"
-                  }`
-                : "Общая статистика портфеля"}
-            </div>
-          </div>
-          <div className="header-period">
-            {(["1D", "1W", "1M"] as Period[]).map((p) => (
-              <button
-                key={p}
-                className={`period-tab ${period === p ? "active" : ""}`}
-                onClick={() => setPeriod(p)}
-              >
-                {PERIOD_LABEL[p]}
-              </button>
-            ))}
-          </div>
-        </header>
-
-        <div className="main-body">
-          {/* Loading */}
-          {loading && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#6b7280", padding: "40px 0" }}>
-              <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
-              Загрузка статистики…
-            </div>
-          )}
-
-          {/* Error */}
-          {!loading && error && (
-            <div style={{ color: "#ef4444", padding: "20px 0" }}>{error}</div>
-          )}
-
-          {/* Content */}
-          {!loading && !error && metrics && (
-            <>
-              {/* Metrics */}
-              <div className="metrics-row">
-                <div className="metric-card">
-                  <div className="metric-label">Общий P&L</div>
-                  <div className={`metric-value ${pnlClass}`}>
-                    {formatUsdt(metrics.profit)}
-                  </div>
-                  <div className="metric-sub">
-                    {metrics.profit >= 0 ? (
-                      <TrendingUp size={11} style={{ display: "inline", marginRight: 4 }} />
-                    ) : (
-                      <TrendingDown size={11} style={{ display: "inline", marginRight: 4 }} />
-                    )}
-                    За период
-                  </div>
+              <div className="sb-bots">
+                <div className="sb-section-label">
+                  Боты ({sidebarBots.length})
                 </div>
-
-                <div className="metric-card">
-                  <div className="metric-label">Winrate</div>
-                  <div className="metric-value text-white">{metrics.winrate}%</div>
-                  <div className="metric-bar">
+                {sidebarBots.length > 0 ? (
+                  sidebarBots.map((b) => (
                     <div
-                      className="metric-bar-fill"
-                      style={{ width: `${metrics.winrate}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="metric-card">
-                  <div className="metric-label">Всего сделок</div>
-                  <div className="metric-value text-blue">{metrics.trades}</div>
-                  <div className="metric-sub">
-                    {metrics.wins} прибыль · {metrics.losses} убыток
-                  </div>
-                </div>
-
-                <div className="metric-card">
-                  <div className="metric-label">Макс. просадка</div>
-                  <div className={`metric-value ${ddClass}`}>
-                    {metrics.drawdown !== 0 ? `${metrics.drawdown.toFixed(1)}%` : "—"}
-                  </div>
-                  <div className="metric-sub">За период</div>
-                </div>
-              </div>
-
-              {/* Charts */}
-              <div className="charts-row">
-                <div className="stats-card">
-                  <div className="card-head">
-                    <span className="card-label">P&L по времени</span>
-                    <span
-                      className="card-note"
-                      style={{ color: trendColor, fontWeight: 600 }}
+                      key={b.bot_id}
+                      className={`bot-row ${view === b.bot_id ? "active" : ""}`}
+                      onClick={() => setView(b.bot_id)}
                     >
-                      {lastValue >= 0 ? "+" : ""}${lastValue.toFixed(2)} за период
-                    </span>
-                  </div>
-                  <div className="chart-wrap">
-                    {chartSeries.length > 0 ? (
-                      <Line ref={chartRef as React.RefObject<ChartJS<"line">>} data={lineData} options={lineOptions} />
-                    ) : (
-                      <div className="empty-trades">Нет данных за период</div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="stats-card">
-                  <div className="card-head">
-                    <span className="card-label">Распределение сделок</span>
-                    <span className="card-note">
-                      {metrics.wins} побед · {metrics.losses} убытков
-                    </span>
-                  </div>
-                  <div className="donut-row">
-                    <div className="donut-canvas-wrap">
-                      <Doughnut data={donutData} options={donutOptions} />
-                    </div>
-                    <div className="donut-legend">
-                      <div className="donut-legend-row">
-                        <span className="legend-square" style={{ background: "#10b981" }} />
-                        <span className="legend-label">Прибыльные</span>
-                        <span className="legend-value text-green">{metrics.wins}</span>
+                      <div className={`bot-row-dot ${b.status === "running" ? "running" : "stopped"}`} />
+                      <div className="bot-row-info">
+                        <div className="bot-row-name">{b.pair}</div>
+                        <div className="bot-row-sub">
+                          x{b.leverage} · {b.strategy_preset}
+                        </div>
                       </div>
-                      <div className="donut-legend-row">
-                        <span className="legend-square" style={{ background: "#ef4444" }} />
-                        <span className="legend-label">Убыточные</span>
-                        <span className="legend-value text-red">{metrics.losses}</span>
-                      </div>
-                      <div className="donut-divider">
-                        <span style={{ color: "#6b7280", fontSize: 11 }}>Winrate</span>
-                        <span style={{ marginLeft: "auto", fontSize: 14, fontWeight: 700, color: "#e4e7f0" }}>
-                          {metrics.winrate}%
-                        </span>
+                      <div className={`bot-row-pnl ${b.profit >= 0 ? "text-green" : "text-red"}`}>
+                        {formatUsdt(b.profit)}
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Trades table */}
-              <div className="stats-card">
-                <div className="card-head">
-                  <span className="card-label">Последние сделки</span>
-                  <span className="card-note">{trades.length} сделок</span>
-                </div>
-                {trades.length > 0 ? (
-                  <table className="trades-table">
-                    <thead>
-                      <tr>
-                        <th>Пара</th>
-                        <th>Направление</th>
-                        <th>Вход</th>
-                        <th>Выход</th>
-                        <th>P&L (USDT)</th>
-                        <th>P&L (%)</th>
-                        <th>Длительность</th>
-                        <th>Дата</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {trades.map((t) => (
-                        <tr key={t.id}>
-                          <td style={{ fontWeight: 600, color: "#e4e7f0" }}>{t.pair}</td>
-                          <td>
-                            <span className={`dir-badge ${t.direction === "long" ? "long" : "short"}`}>
-                              {t.direction === "long" ? "Long" : "Short"}
-                            </span>
-                          </td>
-                          <td>{t.open_rate.toFixed(4)}</td>
-                          <td>{t.close_rate != null ? t.close_rate.toFixed(4) : "—"}</td>
-                          <td style={{ fontWeight: 700, color: (t.profit_usdt ?? 0) >= 0 ? "#10b981" : "#ef4444" }}>
-                            {t.profit_usdt != null ? formatUsdt(t.profit_usdt) : "—"}
-                          </td>
-                          <td style={{ color: (t.profit_pct ?? 0) >= 0 ? "#10b981" : "#ef4444" }}>
-                            {t.profit_pct != null ? formatPnl(t.profit_pct) : "—"}
-                          </td>
-                          <td>{formatDuration(t.open_time, t.close_time)}</td>
-                          <td style={{ color: "#4b5563" }}>{formatDate(t.close_time)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  ))
                 ) : (
-                  <div className="empty-trades">Сделок пока нет</div>
+                  <div className="sb-empty">Ботов пока нет</div>
                 )}
               </div>
-            </>
-          )}
-        </div>
-      </main>
 
-      <style jsx global>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+              <div className="sb-footer">
+                <div className="sb-footer-row">
+                  <div className="sb-status-dot" />
+                  {/* «неактивных», а не «остановленных»: сюда же попадают боты в статусах
+                      created, starting и error */}
+                  {runningCount} активных · {stoppedCount} неактивн
+                  {stoppedCount === 1 ? "ый" : "ых"}
+                </div>
+              </div>
+            </aside>
+
+            {/* ===== CONTENT ===== */}
+            <div className="stats-content">
+              {/* Loading */}
+              {loading && (
+                <div className="stats-state">
+                  <span className="stats-spin"><Loader2 size={20} /></span>
+                  Загружаем статистику...
+                </div>
+              )}
+
+              {/* Error */}
+              {!loading && error && (
+                <div className="stats-state error">
+                  <AlertTriangle size={20} />
+                  <span>{error}</span>
+                  <button className="stats-retry-btn" onClick={fetchData}>Повторить</button>
+                </div>
+              )}
+
+              {/* Content */}
+              {!loading && !error && metrics && (
+                <>
+                  {/* Metrics */}
+                  <div className="metrics-row">
+                    <div className="metric-card">
+                      <div className="metric-head">
+                        <span className={`metric-icon ${metrics.profit >= 0 ? "green" : "red"}`}>
+                          {metrics.profit >= 0 ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                        </span>
+                        <span className="metric-label">Общий P&L</span>
+                      </div>
+                      <div className={`metric-value ${pnlClass}`}>
+                        {formatUsdt(metrics.profit)}
+                      </div>
+                      <div className="metric-sub">За выбранный период</div>
+                    </div>
+
+                    <div className="metric-card">
+                      <div className="metric-head">
+                        <span className="metric-icon blue">
+                          <Target size={18} />
+                        </span>
+                        <span className="metric-label">Winrate</span>
+                      </div>
+                      <div className="metric-value text-white">{metrics.winrate}%</div>
+                      <div className="metric-bar">
+                        <div
+                          className="metric-bar-fill"
+                          style={{ width: `${metrics.winrate}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="metric-card">
+                      <div className="metric-head">
+                        <span className="metric-icon blue">
+                          <Activity size={18} />
+                        </span>
+                        <span className="metric-label">Всего сделок</span>
+                      </div>
+                      <div className="metric-value text-blue">{metrics.trades}</div>
+                      <div className="metric-sub">
+                        {metrics.wins} прибыль · {metrics.losses} убыток
+                      </div>
+                    </div>
+
+                    <div className="metric-card">
+                      <div className="metric-head">
+                        <span className="metric-icon amber">
+                          <ArrowDownRight size={18} />
+                        </span>
+                        <span className="metric-label">Макс. просадка</span>
+                      </div>
+                      <div className={`metric-value ${ddClass}`}>
+                        {metrics.drawdown !== 0 ? `${metrics.drawdown.toFixed(1)}%` : "—"}
+                      </div>
+                      <div className="metric-sub">За выбранный период</div>
+                    </div>
+                  </div>
+
+                  {/* Charts */}
+                  <div className="charts-row">
+                    <div className="stats-card">
+                      <div className="stats-card-head">
+                        <span className="card-label">P&L по времени</span>
+                        <span
+                          className="card-note"
+                          style={{ color: trendColor, fontWeight: 700 }}
+                        >
+                          {lastValue >= 0 ? "+" : "-"}${Math.abs(lastValue).toFixed(2)} за период
+                        </span>
+                      </div>
+                      <div className="chart-wrap">
+                        {chartSeries.length > 0 ? (
+                          <Line ref={chartRef as React.RefObject<ChartJS<"line">>} data={lineData} options={lineOptions} />
+                        ) : (
+                          <div className="empty-trades">Нет данных за период</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="stats-card">
+                      <div className="stats-card-head">
+                        <span className="card-label">Распределение сделок</span>
+                        <span className="card-note">
+                          {metrics.wins} побед · {metrics.losses} убытков
+                        </span>
+                      </div>
+                      <div className="donut-row">
+                        <div className="donut-canvas-wrap">
+                          <Doughnut data={donutData} options={donutOptions} />
+                        </div>
+                        <div className="donut-legend">
+                          <div className="donut-legend-row">
+                            <span className="legend-square" style={{ background: COLOR_GREEN }} />
+                            <span className="legend-label">Прибыльные</span>
+                            <span className="legend-value text-green">{metrics.wins}</span>
+                          </div>
+                          <div className="donut-legend-row">
+                            <span className="legend-square" style={{ background: COLOR_RED }} />
+                            <span className="legend-label">Убыточные</span>
+                            <span className="legend-value text-red">{metrics.losses}</span>
+                          </div>
+                          <div className="donut-divider">
+                            <span className="donut-divider-label">Winrate</span>
+                            <span className="donut-divider-value">{metrics.winrate}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Trades table */}
+                  <div className="stats-card">
+                    <div className="stats-card-head">
+                      <span className="card-label">Последние сделки</span>
+                      <span className="card-note">{trades.length} сделок</span>
+                    </div>
+                    {trades.length > 0 ? (
+                      <div className="table-scroll">
+                        <table className="trades-table">
+                          <thead>
+                            <tr>
+                              <th>Пара</th>
+                              <th>Направление</th>
+                              <th>Вход</th>
+                              <th>Выход</th>
+                              <th>P&L (USDT)</th>
+                              <th>P&L (%)</th>
+                              <th>Длительность</th>
+                              <th>Дата</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {trades.map((t) => (
+                              <tr key={t.id}>
+                                <td className="td-pair">{t.pair}</td>
+                                <td>
+                                  <span className={`dir-badge ${t.direction === "long" ? "long" : "short"}`}>
+                                    {t.direction === "long" ? "Long" : "Short"}
+                                  </span>
+                                </td>
+                                <td>{t.open_rate.toFixed(4)}</td>
+                                <td>{t.close_rate != null ? t.close_rate.toFixed(4) : "—"}</td>
+                                <td
+                                  className={(t.profit_usdt ?? 0) >= 0 ? "text-green" : "text-red"}
+                                  style={{ fontWeight: 700 }}
+                                >
+                                  {t.profit_usdt != null ? formatUsdt(t.profit_usdt) : "—"}
+                                </td>
+                                <td className={(t.profit_pct ?? 0) >= 0 ? "text-green" : "text-red"}>
+                                  {t.profit_pct != null ? formatPnl(t.profit_pct) : "—"}
+                                </td>
+                                <td>{formatDuration(t.open_time, t.close_time)}</td>
+                                <td className="td-muted">{formatDate(t.close_time)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="empty-trades">Сделок пока нет</div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
