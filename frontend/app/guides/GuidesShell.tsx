@@ -52,8 +52,8 @@ export const GuidesShell = ({ children }: { children: React.ReactNode }) => {
           <nav className="gd-nav">
             <Link href={isAuthed ? '/home' : '/'} className="gd-nav-item">Главная</Link>
             {isAuthed && <Link href="/stats" className="gd-nav-item">Статистика</Link>}
-            <Link href="/guides" className="gd-nav-item active">Обучение</Link>
             {isAuthed && <Link href="/feedback" className="gd-nav-item">Обратная связь</Link>}
+            <Link href="/guides" className="gd-nav-item active">Обучение</Link>
           </nav>
         </div>
 
