@@ -687,6 +687,22 @@
   font-size: 13.5px;
   line-height: 1.5;
   resize: none;
+  /* Тонкий скролл-бар в стиле остальной панели, см. .ai-panel__scroll */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+.ai-composer__field textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-composer__field textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ai-composer__field textarea::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
 }
 
 .ai-composer__field textarea::placeholder {
