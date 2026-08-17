@@ -1,10 +1,42 @@
 /* ===== BASE ===== */
 .landing-page {
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: linear-gradient(135deg, #0f1729 0%, #1a1f35 100%);
   color: #e4e7f0;
   font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ===== SCROLL AREA (как на /home, /feedback и /stats) =====
+   Страница скроллится не документом, а этим контейнером — иначе браузер
+   рисует свой системный скроллбар, а не тонкий тёмный как на остальных
+   страницах. Класс с префиксом landing-: файл глобальный, а на /home и
+   /feedback такой же блок называется dashboard-scroll (styled-jsx). */
+.landing-scroll {
+  flex: 1;
+  overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.35) rgba(255, 255, 255, 0.05);
+}
+
+.landing-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.landing-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.landing-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.35);
+  border-radius: 4px;
+}
+
+.landing-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
 }
 
 /* ===== NAV ===== */
