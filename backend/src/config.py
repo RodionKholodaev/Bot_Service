@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     AITUNNEL_BASE_URL: str = "https://api.aitunnel.ru/v1"
 
     # Модель для диалога. Обязана уметь tool calling. Список: https://aitunnel.ru/models
-    AI_ASSISTANT_MODEL: str = "gpt-4.1-mini"
+    AI_ASSISTANT_MODEL: str = "deepseek-v4-flash"
 
     # Модель для веб-поиска: perplexity sonar сама ходит в интернет и возвращает ссылки.
     AI_SEARCH_MODEL: str = "sonar"
