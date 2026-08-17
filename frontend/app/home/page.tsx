@@ -275,7 +275,7 @@ const TradingBotDashboard = () => {
             {/* span внутри Link обязателен: styled-jsx не скоупит классы на React-компоненты */}
             <Link href="/stats"><span className="nav-item">Статистика</span></Link>
             <Link href="/feedback"><span className="nav-item">Обратная связь</span></Link>
-            {/* <a href="#" className="nav-item">Обучение</a> */}
+            <Link href="/guides"><span className="nav-item">Обучение</span></Link>
           </nav>
         </div>
         <div className="header-right">
@@ -514,14 +514,16 @@ const TradingBotDashboard = () => {
               <ChevronRight size={20} />
             </button>
           </Link>
-          {/* <button className="action-card">
-            <BookOpen size={24} />
-            <div>
-              <h3>Обучение</h3>
-              <p>Гайды для новичков</p>
-            </div>
-            <ChevronRight size={20} />
-          </button> */}
+          <Link href="/guides" style={{ display: 'contents' }}>
+            <button className="action-card">
+              <BookOpen size={24} />
+              <div>
+                <h3>Обучение</h3>
+                <p>Гайды для новичков</p>
+              </div>
+              <ChevronRight size={20} />
+            </button>
+          </Link>
         </section>
       </main>
       </div>
