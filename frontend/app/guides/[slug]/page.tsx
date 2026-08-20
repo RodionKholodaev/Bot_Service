@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronRight, Clock, ArrowLeft, ArrowRight, MessageCircle } from 'lucide-react';
+import {
+  ChevronRight,
+  Clock,
+  ArrowLeft,
+  ArrowRight,
+  MessageCircle,
+} from 'lucide-react';
 
 import { GuidesShell } from '../GuidesShell';
 import { GuideToc } from '../GuideToc';
@@ -112,12 +118,11 @@ export default async function GuideArticlePage({
         {/* Подвал */}
         <section className="gd-article-foot">
           <p>
-            <strong>Остались вопросы?</strong> Напишите нам — ответим
-            в течение 2–4 часов в рабочее время.
+            <strong>Остались вопросы?</strong> Напишите нам — ответим в течение
+            2–4 часов в рабочее время.
           </p>
           <Link href="/support" className="gd-btn-primary">
-            <MessageCircle size={17} />
-            В поддержку
+            <MessageCircle size={17} />В поддержку
           </Link>
         </section>
       </main>

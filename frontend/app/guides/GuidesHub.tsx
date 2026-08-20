@@ -8,7 +8,14 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search, ArrowRight, Clock, SearchX, MessageCircle, Sparkles } from 'lucide-react';
+import {
+  Search,
+  ArrowRight,
+  Clock,
+  SearchX,
+  MessageCircle,
+  Sparkles,
+} from 'lucide-react';
 import { CATEGORIES, GUIDES, type GuideMeta } from './meta';
 
 // Быстрый старт — маршрут «с нуля до запущенного бота» четырьмя ссылками.
@@ -21,7 +28,9 @@ const QUICK_START = [
 ];
 
 const matches = (g: GuideMeta, query: string): boolean => {
-  const haystack = [g.title, g.description, ...g.keywords].join(' ').toLowerCase();
+  const haystack = [g.title, g.description, ...g.keywords]
+    .join(' ')
+    .toLowerCase();
   // Все слова запроса должны найтись: «стоп лосс» не должен выдавать всё
   // подряд из-за того, что слово «стоп» встречается в одной статье.
   return query
@@ -92,7 +101,11 @@ export const GuidesHub = () => {
           </p>
           <div className="gd-quickstart-steps">
             {QUICK_START.map((s, i) => (
-              <Link key={s.slug} href={`/guides/${s.slug}`} className="gd-qs-step">
+              <Link
+                key={s.slug}
+                href={`/guides/${s.slug}`}
+                className="gd-qs-step"
+              >
                 <span className="gd-qs-num">{i + 1}</span>
                 <span>{s.label}</span>
               </Link>
@@ -127,8 +140,8 @@ export const GuidesHub = () => {
             </div>
             <h3>Ничего не нашлось</h3>
             <p>
-              Попробуйте другое слово — или напишите нам в поддержку,
-              и мы ответим лично.
+              Попробуйте другое слово — или напишите нам в поддержку, и мы
+              ответим лично.
             </p>
           </div>
         )
@@ -163,7 +176,8 @@ export const GuidesHub = () => {
         <div>
           <h3>Не нашли ответ?</h3>
           <p>
-            Опишите вопрос — обычно отвечаем в течение 2–4 часов в рабочее время.
+            Опишите вопрос — обычно отвечаем в течение 2–4 часов в рабочее
+            время.
           </p>
         </div>
         <div className="gd-help-actions">

@@ -5,12 +5,21 @@
  * работает на нативном <details>, а не на useState, ровно по этой же причине. */
 
 import React from 'react';
-import { Info, Lightbulb, AlertTriangle, ShieldAlert, ChevronDown } from 'lucide-react';
+import {
+  Info,
+  Lightbulb,
+  AlertTriangle,
+  ShieldAlert,
+  ChevronDown,
+} from 'lucide-react';
 
 // ── Выноска ────────────────────────────────────────────────
 type CalloutKind = 'info' | 'tip' | 'warning' | 'danger';
 
-const CALLOUT_ICON: Record<CalloutKind, React.ComponentType<{ size?: number }>> = {
+const CALLOUT_ICON: Record<
+  CalloutKind,
+  React.ComponentType<{ size?: number }>
+> = {
   info: Info,
   tip: Lightbulb,
   warning: AlertTriangle,

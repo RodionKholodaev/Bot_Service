@@ -24,8 +24,12 @@ export const GuideToc = () => {
 
   useEffect(() => {
     const nodes = Array.from(
-      document.querySelectorAll<HTMLHeadingElement>('.gd-body h2[id]')
+      document.querySelectorAll<HTMLHeadingElement>('.gd-body h2[id]'),
     );
+    // Заголовки берутся из уже отрисованного DOM, до первого рендера их
+    // не существует — посчитать список заранее физически нельзя. Правило
+    // ловит лишние каскадные перерисовки, здесь вторая отрисовка обязательна.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHeadings(nodes.map((n) => ({ id: n.id, text: n.textContent ?? '' })));
 
     if (nodes.length === 0) return;
@@ -45,7 +49,7 @@ export const GuideToc = () => {
         // когда доезжает до верха экрана, а не когда только появляется снизу.
         rootMargin: '0px 0px -70% 0px',
         threshold: 0,
-      }
+      },
     );
 
     nodes.forEach((n) => observer.observe(n));
@@ -61,10 +65,7 @@ export const GuideToc = () => {
       <ul>
         {headings.map((h) => (
           <li key={h.id}>
-            <a
-              href={`#${h.id}`}
-              className={activeId === h.id ? 'active' : ''}
-            >
+            <a href={`#${h.id}`} className={activeId === h.id ? 'active' : ''}>
               {h.text}
             </a>
           </li>

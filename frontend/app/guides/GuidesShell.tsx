@@ -29,6 +29,9 @@ export const GuidesShell = ({ children }: { children: React.ReactNode }) => {
   const [serviceBalance, setServiceBalance] = useState<number>(0);
 
   useEffect(() => {
+    // localStorage доступен только в браузере, при серверном рендере токена
+    // не видно — узнать про авторизацию раньше монтирования нельзя.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsAuthed(Boolean(localStorage.getItem('access_token')));
   }, []);
 
@@ -50,10 +53,22 @@ export const GuidesShell = ({ children }: { children: React.ReactNode }) => {
             <span>CryptoBot</span>
           </Link>
           <nav className="gd-nav">
-            <Link href={isAuthed ? '/home' : '/'} className="gd-nav-item">Главная</Link>
-            {isAuthed && <Link href="/stats" className="gd-nav-item">Статистика</Link>}
-            {isAuthed && <Link href="/feedback" className="gd-nav-item">Обратная связь</Link>}
-            <Link href="/guides" className="gd-nav-item active">Обучение</Link>
+            <Link href={isAuthed ? '/home' : '/'} className="gd-nav-item">
+              Главная
+            </Link>
+            {isAuthed && (
+              <Link href="/stats" className="gd-nav-item">
+                Статистика
+              </Link>
+            )}
+            {isAuthed && (
+              <Link href="/feedback" className="gd-nav-item">
+                Обратная связь
+              </Link>
+            )}
+            <Link href="/guides" className="gd-nav-item active">
+              Обучение
+            </Link>
           </nav>
         </div>
 

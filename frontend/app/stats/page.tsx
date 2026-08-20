@@ -378,10 +378,18 @@ const StatsPage: React.FC = () => {
             <span>CryptoBot</span>
           </Link>
           <nav className="stats-nav">
-            <Link href="/home" className="stats-nav-item">Главная</Link>
-            <Link href="/stats" className="stats-nav-item active">Статистика</Link>
-            <Link href="/feedback" className="stats-nav-item">Обратная связь</Link>
-            <Link href="/guides" className="stats-nav-item">Обучение</Link>
+            <Link href="/home" className="stats-nav-item">
+              Главная
+            </Link>
+            <Link href="/stats" className="stats-nav-item active">
+              Статистика
+            </Link>
+            <Link href="/feedback" className="stats-nav-item">
+              Обратная связь
+            </Link>
+            <Link href="/guides" className="stats-nav-item">
+              Обучение
+            </Link>
           </nav>
         </div>
         <div className="stats-topbar-right">

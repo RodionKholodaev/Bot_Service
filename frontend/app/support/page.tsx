@@ -88,10 +88,18 @@ const SupportPage = () => {
           </div>
           {/* span внутри Link обязателен: styled-jsx не скоупит классы на React-компоненты */}
           <nav className="main-nav">
-            <Link href="/home"><span className="nav-item">Главная</span></Link>
-            <Link href="/stats"><span className="nav-item">Статистика</span></Link>
-            <Link href="/feedback"><span className="nav-item">Обратная связь</span></Link>
-            <Link href="/guides"><span className="nav-item">Обучение</span></Link>
+            <Link href="/home">
+              <span className="nav-item">Главная</span>
+            </Link>
+            <Link href="/stats">
+              <span className="nav-item">Статистика</span>
+            </Link>
+            <Link href="/feedback">
+              <span className="nav-item">Обратная связь</span>
+            </Link>
+            <Link href="/guides">
+              <span className="nav-item">Обучение</span>
+            </Link>
           </nav>
         </div>
         <div className="header-right">

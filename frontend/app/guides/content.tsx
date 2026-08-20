@@ -24,7 +24,7 @@ export const CONTENT: Record<string, React.ComponentType> = {
   'kak-eto-rabotaet': KakEtoRabotaet,
   'api-klyuch-bybit': ApiKlyuchBybit,
   'pervyj-bot': PervyjBot,
-  'strategii': Strategii,
+  strategii: Strategii,
   'take-profit-i-stop-loss': TakeProfitIStopLoss,
   'demo-i-realnye-torgi': DemoIRealnyeTorgi,
   'upravlenie-botom': UpravlenieBotom,

@@ -300,9 +300,15 @@ const TradingBotDashboard = () => {
               Главная
             </a>
             {/* span внутри Link обязателен: styled-jsx не скоупит классы на React-компоненты */}
-            <Link href="/stats"><span className="nav-item">Статистика</span></Link>
-            <Link href="/feedback"><span className="nav-item">Обратная связь</span></Link>
-            <Link href="/guides"><span className="nav-item">Обучение</span></Link>
+            <Link href="/stats">
+              <span className="nav-item">Статистика</span>
+            </Link>
+            <Link href="/feedback">
+              <span className="nav-item">Обратная связь</span>
+            </Link>
+            <Link href="/guides">
+              <span className="nav-item">Обучение</span>
+            </Link>
           </nav>
         </div>
         <div className="header-right">
@@ -563,28 +569,28 @@ const TradingBotDashboard = () => {
             </div>
             <ChevronRight size={20} />
           </button> */}
-          <Link href="/stats" style={{ display: 'contents' }}>
-            <button className="action-card">
-              <BarChart3 size={24} />
-              <div>
-                <h3>Детальная статистика</h3>
-                <p>Анализ и графики</p>
-              </div>
-              <ChevronRight size={20} />
-            </button>
-          </Link>
-          <Link href="/guides" style={{ display: 'contents' }}>
-            <button className="action-card">
-              <BookOpen size={24} />
-              <div>
-                <h3>Обучение</h3>
-                <p>Гайды для новичков</p>
-              </div>
-              <ChevronRight size={20} />
-            </button>
-          </Link>
-        </section>
-      </main>
+            <Link href="/stats" style={{ display: 'contents' }}>
+              <button className="action-card">
+                <BarChart3 size={24} />
+                <div>
+                  <h3>Детальная статистика</h3>
+                  <p>Анализ и графики</p>
+                </div>
+                <ChevronRight size={20} />
+              </button>
+            </Link>
+            <Link href="/guides" style={{ display: 'contents' }}>
+              <button className="action-card">
+                <BookOpen size={24} />
+                <div>
+                  <h3>Обучение</h3>
+                  <p>Гайды для новичков</p>
+                </div>
+                <ChevronRight size={20} />
+              </button>
+            </Link>
+          </section>
+        </main>
       </div>
 
       {/* Delete confirmation modal */}
