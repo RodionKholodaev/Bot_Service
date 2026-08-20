@@ -92,19 +92,19 @@ class FakeSession:
 
 
 def make_bot(**overrides) -> Bot:
-    defaults = dict(
-        id="bot-1",
-        user_id=1,
-        status="running",
-        container_id="container-1",
-        api_port=9000,
-        api_username="user",
-        api_password="pass",
-        leverage=5,
-        total_profit=0.0,
-        total_commission_paid_usdt=0.0,
-        total_commission_paid_rub=0.0,
-    )
+    defaults = {
+        "id": "bot-1",
+        "user_id": 1,
+        "status": "running",
+        "container_id": "container-1",
+        "api_port": 9000,
+        "api_username": "user",
+        "api_password": "pass",
+        "leverage": 5,
+        "total_profit": 0.0,
+        "total_commission_paid_usdt": 0.0,
+        "total_commission_paid_rub": 0.0,
+    }
     defaults.update(overrides)
     return Bot(**defaults)
 
@@ -114,9 +114,7 @@ def stopped_containers(monkeypatch):
     """Подменяет docker_manager — тесты не трогают реальный Docker."""
     stopped: list[str] = []
     monkeypatch.setattr(docker_manager, "get_container_status", lambda cid: "running")
-    monkeypatch.setattr(
-        docker_manager, "get_container_logs", lambda cid, tail=50: "Could not load markets"
-    )
+    monkeypatch.setattr(docker_manager, "get_container_logs", lambda cid, tail=50: "Could not load markets")
     monkeypatch.setattr(docker_manager, "stop_container", lambda cid: stopped.append(cid))
     return stopped
 
@@ -442,7 +440,7 @@ async def test_new_closed_trade_is_saved_and_commission_charged(sync_env):
     assert trade.bot_id == "bot-1"
     assert trade.direction == "long"
     assert trade.profit_usdt == 10.0
-    assert trade.profit_pct == 5.0        # profit_ratio 0.05 -> проценты
+    assert trade.profit_pct == 5.0  # profit_ratio 0.05 -> проценты
     assert trade.close_time is not None
     # плечо берётся у бота: freqtrade его в сделке не отдаёт
     assert trade.leverage == 5
@@ -450,7 +448,7 @@ async def test_new_closed_trade_is_saved_and_commission_charged(sync_env):
     # Комиссия начислена сразу: сделка пришла уже закрытой
     assert commission.calls == [trade]
     assert trade.commission_paid is True
-    assert user.service_balance == 4910.0   # 5000 - (10 * 0.1 * 90)
+    assert user.service_balance == 4910.0  # 5000 - (10 * 0.1 * 90)
     assert bot.total_profit == 10.0
     assert db.commits == 1
 
@@ -535,7 +533,7 @@ async def test_open_trade_that_closed_is_updated_and_commission_charged(sync_env
     # Комиссия берётся именно в момент закрытия — и ровно один раз
     assert commission.calls == [open_trade]
     assert open_trade.commission_paid is True
-    assert user.service_balance == 4820.0   # 5000 - (20 * 0.1 * 90)
+    assert user.service_balance == 4820.0  # 5000 - (20 * 0.1 * 90)
     assert bot.total_profit == 20.0
     assert db.commits == 1
 
@@ -602,7 +600,7 @@ async def test_several_trades_are_processed_in_one_pass(sync_env):
 
     # Act
     await _async_bot_trades(  # type: ignore
-        db, #type: ignore
+        db,  # type: ignore
         bot,
         [
             make_raw_trade(trade_id=1, profit_abs=10.0),
@@ -613,7 +611,7 @@ async def test_several_trades_are_processed_in_one_pass(sync_env):
 
     # Assert: создались только две новые, комиссия списана дважды
     assert [t.freqtrade_trade_id for t in db.added] == [2, 3]
-    assert user.service_balance == 4820.0   # 5000 - 2 * (10 * 0.1 * 90)
+    assert user.service_balance == 4820.0  # 5000 - 2 * (10 * 0.1 * 90)
     assert bot.total_profit == 20.0
     # коммит один на весь пакет, а не на каждую сделку
     assert db.commits == 1

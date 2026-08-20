@@ -10,17 +10,15 @@
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 
 from src.models.bot import Bot
 from src.models.trade import Trade
 from src.models.user import User
-from src.schemas.stats import (
-    TradeOut, PnlPoint, BotSummary, BotStats, PortfolioStats, HomeStats
-)
 from src.repositories.bot_repository import BotRepository
 from src.repositories.trade_repository import TradeRepository
+from src.schemas.stats import BotStats, BotSummary, HomeStats, PnlPoint, PortfolioStats, TradeOut
 
 logger = logging.getLogger(__name__)
 
@@ -29,16 +27,16 @@ logger = logging.getLogger(__name__)
 # Сервис
 # ──────────────────────────────────────────────
 
-class StatsService:
 
+class StatsService:
     # ── Вспомогательные методы ──────────────────
 
     @staticmethod
-    def _period_start(period_days: Optional[int]) -> Optional[datetime]:
+    def _period_start(period_days: int | None) -> datetime | None:
         """Начало периода в UTC. None — период "all", отсекать нечего."""
         if not period_days:
             return None
-        return datetime.now(timezone.utc) - timedelta(days=period_days)
+        return datetime.now(UTC) - timedelta(days=period_days)
 
     @staticmethod
     def _profit(trades: Sequence[Trade]) -> float:
@@ -69,10 +67,12 @@ class StatsService:
             if t.close_time is None or t.profit_usdt is None:
                 continue
             cumulative += t.profit_usdt
-            points.append(PnlPoint(
-                ts=t.close_time,
-                value=round(cumulative, 4),
-            ))
+            points.append(
+                PnlPoint(
+                    ts=t.close_time,
+                    value=round(cumulative, 4),
+                )
+            )
         logger.debug(
             "P&L chart built",
             extra={"points_count": len(points), "final_cumulative": round(cumulative, 4)},
@@ -80,7 +80,7 @@ class StatsService:
         return points
 
     @staticmethod
-    def _max_drawdown(trades: Sequence[Trade], base_capital: Optional[float]) -> Optional[float]:
+    def _max_drawdown(trades: Sequence[Trade], base_capital: float | None) -> float | None:
         """
         Максимальная просадка кривой капитала в процентах.
 
@@ -196,7 +196,7 @@ class StatsService:
     async def get_bot_stats(
         self,
         bot: Bot,
-        period_days: Optional[int] = None,
+        period_days: int | None = None,
         recent_limit: int = 20,
     ) -> BotStats:
         """Статистика по одному боту."""
@@ -227,7 +227,7 @@ class StatsService:
     async def get_portfolio_stats(
         self,
         user: User,
-        period_days: Optional[int] = None,
+        period_days: int | None = None,
         recent_limit: int = 30,
     ) -> PortfolioStats:
         """Агрегированная статистика по всем ботам пользователя."""
@@ -300,7 +300,7 @@ class StatsService:
         bots_running = sum(1 for b in active_bots if b.status == "running")
 
         # Прибыль за последние 7 дней
-        since = datetime.now(timezone.utc) - timedelta(days=7)
+        since = datetime.now(UTC) - timedelta(days=7)
         weekly_trades = await self.trade_repo.get_closed_trades(user.id, since=since)
         weekly_profit = self._profit(weekly_trades)
 

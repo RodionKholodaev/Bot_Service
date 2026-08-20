@@ -7,7 +7,7 @@
 пользователя (отзыв к этому моменту уже сохранён в БД).
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 import pytest
@@ -59,7 +59,7 @@ def make_feedback(**overrides) -> Feedback:
         "message": "Хочу больше пресетов стратегий",
         "email": None,
         "rating": None,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": datetime.now(UTC),
     }
     data.update(overrides)
     return Feedback(**data)
@@ -138,8 +138,8 @@ async def test_message_contains_feedback_details(fake_client, telegram_configure
     assert "#17" in text
     assert "Баг" in text
     assert "2/5" in text
-    assert "user@test.com" in text      # чей аккаунт
-    assert "answer@test.com" in text    # куда отвечать
+    assert "user@test.com" in text  # чей аккаунт
+    assert "answer@test.com" in text  # куда отвечать
     assert "Кнопка запуска бота не реагирует на клик" in text
 
     # разметку не включаем — текст отзыва пишет пользователь

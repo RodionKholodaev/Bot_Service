@@ -1,9 +1,18 @@
-"use client"
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Key, Plus, Trash2, Eye, EyeOff,
-  AlertCircle, Check, Loader2, ShieldCheck, X
+  ArrowLeft,
+  Key,
+  Plus,
+  Trash2,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Check,
+  Loader2,
+  ShieldCheck,
+  X,
 } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
 import './api-keys.css';
@@ -44,7 +53,10 @@ export default function ApiKeysPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<AddKeyForm>({
-    name: '', exchange: 'binance', api_key: '', api_secret: '',
+    name: '',
+    exchange: 'binance',
+    api_key: '',
+    api_secret: '',
   });
   const [showSecret, setShowSecret] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -53,15 +65,11 @@ export default function ApiKeysPage() {
 
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [isAuthed, setIsAuthed] = useState(false);
 
   // проверка того что пользователь имеет JWT
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    if (!localStorage.getItem('access_token')) {
       router.replace('/auth');
-    } else {
-      setIsAuthed(true); 
     }
   }, [router]);
 
@@ -78,15 +86,28 @@ export default function ApiKeysPage() {
     }
   };
 
-  useEffect(() => { 
-    if (!isAuthed) return;
+  useEffect(() => {
+    if (!localStorage.getItem('access_token')) return;
+    // Обычная загрузка данных при монтировании: setState происходит уже после
+    // await внутри loadKeys, каскадного ререндера нет. Правило этого
+    // не различает и ругается на любой вызов функции с setState внутри.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadKeys();
-  }, [isAuthed]);
+  }, []);
 
   const handleAdd = async () => {
-    if (!form.name.trim()) { setSaveError('Укажите название'); return; }
-    if (!form.api_key.trim()) { setSaveError('Введите API Key'); return; }
-    if (!form.api_secret.trim()) { setSaveError('Введите API Secret'); return; }
+    if (!form.name.trim()) {
+      setSaveError('Укажите название');
+      return;
+    }
+    if (!form.api_key.trim()) {
+      setSaveError('Введите API Key');
+      return;
+    }
+    if (!form.api_secret.trim()) {
+      setSaveError('Введите API Secret');
+      return;
+    }
 
     setSaving(true);
     setSaveError(null);
@@ -95,13 +116,15 @@ export default function ApiKeysPage() {
         method: 'POST',
         body: form,
       });
-      setKeys(prev => [created, ...prev]);
+      setKeys((prev) => [created, ...prev]);
       setSavedId(created.id);
       setForm({ name: '', exchange: 'binance', api_key: '', api_secret: '' });
       setShowForm(false);
       setTimeout(() => setSavedId(null), 3000);
     } catch (err) {
-      setSaveError(err instanceof ApiError ? err.message : 'Ошибка при сохранении');
+      setSaveError(
+        err instanceof ApiError ? err.message : 'Ошибка при сохранении',
+      );
     } finally {
       setSaving(false);
     }
@@ -111,7 +134,7 @@ export default function ApiKeysPage() {
     setDeletingId(id);
     try {
       await apiFetch(`/api/api-keys/${id}`, { method: 'DELETE' });
-      setKeys(prev => prev.filter(k => k.id !== id));
+      setKeys((prev) => prev.filter((k) => k.id !== id));
     } catch {
       // можно показать toast
     } finally {
@@ -122,7 +145,9 @@ export default function ApiKeysPage() {
 
   const formatDate = (iso: string) => {
     return new Date(iso).toLocaleDateString('ru-RU', {
-      day: '2-digit', month: 'short', year: 'numeric',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
@@ -147,7 +172,10 @@ export default function ApiKeysPage() {
         </div>
         <button
           className="ak-add-btn"
-          onClick={() => { setShowForm(true); setSaveError(null); }}
+          onClick={() => {
+            setShowForm(true);
+            setSaveError(null);
+          }}
         >
           <Plus size={18} />
           Добавить ключ
@@ -155,7 +183,6 @@ export default function ApiKeysPage() {
       </div>
 
       <div className="ak-content">
-
         {/* Форма добавления */}
         {showForm && (
           <div className="ak-form-card">
@@ -164,7 +191,10 @@ export default function ApiKeysPage() {
                 <Key size={20} />
                 Новый API-ключ
               </div>
-              <button className="ak-form-close" onClick={() => setShowForm(false)}>
+              <button
+                className="ak-form-close"
+                onClick={() => setShowForm(false)}
+              >
                 <X size={18} />
               </button>
             </div>
@@ -177,7 +207,7 @@ export default function ApiKeysPage() {
                     type="text"
                     placeholder="Например: Мой Binance"
                     value={form.name}
-                    onChange={e => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="ak-input"
                     maxLength={100}
                   />
@@ -186,11 +216,15 @@ export default function ApiKeysPage() {
                   <label>Биржа</label>
                   <select
                     value={form.exchange}
-                    onChange={e => setForm({ ...form, exchange: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, exchange: e.target.value })
+                    }
                     className="ak-select"
                   >
-                    {EXCHANGES.map(ex => (
-                      <option key={ex.value} value={ex.value}>{ex.label}</option>
+                    {EXCHANGES.map((ex) => (
+                      <option key={ex.value} value={ex.value}>
+                        {ex.label}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -202,7 +236,9 @@ export default function ApiKeysPage() {
                   type="text"
                   placeholder="Вставьте API Key"
                   value={form.api_key}
-                  onChange={e => setForm({ ...form, api_key: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, api_key: e.target.value })
+                  }
                   className="ak-input ak-input--mono"
                   autoComplete="off"
                 />
@@ -215,13 +251,15 @@ export default function ApiKeysPage() {
                     type={showSecret ? 'text' : 'password'}
                     placeholder="Вставьте API Secret"
                     value={form.api_secret}
-                    onChange={e => setForm({ ...form, api_secret: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, api_secret: e.target.value })
+                    }
                     className="ak-input ak-input--mono ak-input--padded"
                     autoComplete="off"
                   />
                   <button
                     className="ak-eye-btn"
-                    onClick={() => setShowSecret(v => !v)}
+                    onClick={() => setShowSecret((v) => !v)}
                     type="button"
                   >
                     {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -231,7 +269,8 @@ export default function ApiKeysPage() {
 
               <div className="ak-notice">
                 <ShieldCheck size={15} />
-                Ключ шифруется перед сохранением. Secret не отображается после добавления.
+                Ключ шифруется перед сохранением. Secret не отображается после
+                добавления.
               </div>
 
               {saveError && (
@@ -254,10 +293,15 @@ export default function ApiKeysPage() {
                   onClick={handleAdd}
                   disabled={saving}
                 >
-                  {saving
-                    ? <><Loader2 size={16} className="spin" /> Сохраняем...</>
-                    : <><Check size={16} /> Сохранить</>
-                  }
+                  {saving ? (
+                    <>
+                      <Loader2 size={16} className="spin" /> Сохраняем...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={16} /> Сохранить
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -282,7 +326,9 @@ export default function ApiKeysPage() {
             <div className="ak-state-placeholder ak-state-placeholder--error">
               <AlertCircle size={28} className="ak-state-icon" />
               <p>{loadError}</p>
-              <button className="ak-retry-btn" onClick={loadKeys}>Повторить</button>
+              <button className="ak-retry-btn" onClick={loadKeys}>
+                Повторить
+              </button>
             </div>
           )}
 
@@ -296,14 +342,16 @@ export default function ApiKeysPage() {
 
           {!loading && !loadError && keys.length > 0 && (
             <div className="ak-list">
-              {keys.map(key => (
+              {keys.map((key) => (
                 <div
                   key={key.id}
                   className={`ak-key-card ${savedId === key.id ? 'ak-key-card--new' : ''}`}
                 >
                   <div
                     className="ak-key-exchange-bar"
-                    style={{ background: EXCHANGE_COLORS[key.exchange] ?? '#3b82f6' }}
+                    style={{
+                      background: EXCHANGE_COLORS[key.exchange] ?? '#3b82f6',
+                    }}
                   />
                   <div className="ak-key-body">
                     <div className="ak-key-info">
@@ -318,11 +366,15 @@ export default function ApiKeysPage() {
                       <div className="ak-key-meta">
                         <span
                           className="ak-exchange-badge"
-                          style={{ color: EXCHANGE_COLORS[key.exchange] ?? '#3b82f6' }}
+                          style={{
+                            color: EXCHANGE_COLORS[key.exchange] ?? '#3b82f6',
+                          }}
                         >
                           {key.exchange.toUpperCase()}
                         </span>
-                        <span className="ak-key-date">с {formatDate(key.created_at)}</span>
+                        <span className="ak-key-date">
+                          с {formatDate(key.created_at)}
+                        </span>
                       </div>
                     </div>
 
@@ -335,10 +387,11 @@ export default function ApiKeysPage() {
                             onClick={() => handleDelete(key.id)}
                             disabled={deletingId === key.id}
                           >
-                            {deletingId === key.id
-                              ? <Loader2 size={14} className="spin" />
-                              : 'Да'
-                            }
+                            {deletingId === key.id ? (
+                              <Loader2 size={14} className="spin" />
+                            ) : (
+                              'Да'
+                            )}
                           </button>
                           <button
                             className="ak-confirm-no"
@@ -363,7 +416,6 @@ export default function ApiKeysPage() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

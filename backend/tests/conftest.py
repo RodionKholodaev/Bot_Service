@@ -1,10 +1,10 @@
 import pytest_asyncio
 import sentry_sdk
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
-    create_async_engine,
-    async_sessionmaker,
     AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
 )
 
 from src.main import app
@@ -21,13 +21,13 @@ from src.config import settings
 settings.TELEGRAM_FEEDBACK_BOT_TOKEN = None
 settings.TELEGRAM_FEEDBACK_CHAT_ID = None
 
-from src.database import get_db
-from src.database import Base
 from sqlalchemy import delete
-from src.models.user import User
-from src.models.feedback import Feedback
 
-DATABASE_URL = "sqlite+aiosqlite:///./test.db" # адрес тестовой бд
+from src.database import Base, get_db
+from src.models.feedback import Feedback
+from src.models.user import User
+
+DATABASE_URL = "sqlite+aiosqlite:///./test.db"  # адрес тестовой бд
 
 
 engine = create_async_engine(
@@ -36,23 +36,24 @@ engine = create_async_engine(
     echo=False,
 )
 
-TestingSessionLocal = async_sessionmaker( # тестовая фабрика сессий
+TestingSessionLocal = async_sessionmaker(  # тестовая фабрика сессий
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
 
 
-async def override_get_db(): # зависимость для получения тестовой сессии
+async def override_get_db():  # зависимость для получения тестовой сессии
     async with TestingSessionLocal() as session:
         try:
             yield session
-            await session.commit()  
+            await session.commit()
         except Exception:
             await session.rollback()
             raise
         finally:
             await session.close()
+
 
 # преопределение зависимостей
 # говорим, когда нужна get_db используй override_get_db
@@ -61,26 +62,27 @@ app.dependency_overrides[get_db] = override_get_db
 
 # фикстура - функция, которая преобразует данные или окружение для тестов
 
+
 # говорим, что это фиктура, а не тест
 # scope="session" - загружается один раз перед всеми тестами в сессии
 # autouse=True - автоматически используется, без явного указания в параметрах теста
-@pytest_asyncio.fixture(scope="session", autouse=True) 
+@pytest_asyncio.fixture(scope="session", autouse=True)
 async def prepare_database():
     """
     Создание таблиц один раз перед тестами.
     """
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all) # удаляем старые таблицы
-        await conn.run_sync(Base.metadata.create_all) # создаем новые
+        await conn.run_sync(Base.metadata.drop_all)  # удаляем старые таблицы
+        await conn.run_sync(Base.metadata.create_all)  # создаем новые
 
-    yield # тут прогоняются все тесты
+    yield  # тут прогоняются все тесты
 
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all) # после всех тестов удаляем все данные
+        await conn.run_sync(Base.metadata.drop_all)  # после всех тестов удаляем все данные
 
 
 @pytest_asyncio.fixture
-async def db_session(): # фикстура из зависимости override_get_db
+async def db_session():  # фикстура из зависимости override_get_db
     async with TestingSessionLocal() as session:
         yield session
 

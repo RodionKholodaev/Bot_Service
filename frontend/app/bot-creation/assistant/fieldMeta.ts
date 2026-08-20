@@ -19,7 +19,8 @@ const PRESET_LABELS: Record<string, string> = {
 };
 
 export function formatFilterRule(rule: FilterRule): string {
-  const sign = rule.condition === 'less' || rule.condition === 'less_equal' ? '<' : '>';
+  const sign =
+    rule.condition === 'less' || rule.condition === 'less_equal' ? '<' : '>';
   return `${rule.indicator.toUpperCase()} ${rule.timeframe} ${sign} ${rule.value}`;
 }
 
@@ -30,7 +31,11 @@ export const FIELD_META: Record<SuggestableField, FieldMeta> = {
     format: (v) => (v ? '🧪 Dry Run' : '🔴 Боевой'),
   },
   stakeAmount: { label: 'Депозит бота', step: 1, format: (v) => `${v} USDT` },
-  balanceRatio: { label: 'Размер сделки', step: 1, format: (v) => `${v}% от депозита` },
+  balanceRatio: {
+    label: 'Размер сделки',
+    step: 1,
+    format: (v) => `${v}% от депозита`,
+  },
   tradingPair: { label: 'Торговая пара', step: 2, format: (v) => String(v) },
   leverage: { label: 'Плечо', step: 2, format: (v) => `x${v}` },
   algorithm: {
@@ -62,6 +67,6 @@ export const FIELD_META: Record<SuggestableField, FieldMeta> = {
 export function firstStepOf(suggestions: Suggestion[]): number {
   return suggestions.reduce(
     (min, s) => Math.min(min, FIELD_META[s.field]?.step ?? 4),
-    4
+    4,
   );
 }

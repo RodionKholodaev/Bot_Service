@@ -1,7 +1,19 @@
-"use client"
+'use client';
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bot, TrendingUp, Shield, Zap, BarChart2, Settings, ChevronRight, ArrowRight, Activity, Lock, Globe } from 'lucide-react';
+import {
+  Bot,
+  TrendingUp,
+  Shield,
+  Zap,
+  BarChart2,
+  Settings,
+  ChevronRight,
+  ArrowRight,
+  Activity,
+  Lock,
+  Globe,
+} from 'lucide-react';
 import './landing.css';
 
 const LandingPage = () => {
@@ -53,10 +65,26 @@ const LandingPage = () => {
   ];
 
   const steps = [
-    { num: '01', title: 'Подключите биржу', desc: 'Вставьте API-ключ от Binance или Bybit — это займёт минуту.' },
-    { num: '02', title: 'Настройте стратегию', desc: 'Выберите пресет или настройте индикаторы (RSI, CCI) вручную.' },
-    { num: '03', title: 'Запустите бота', desc: 'Бот стартует в изолированном контейнере и начинает торговать.' },
-    { num: '04', title: 'Следите за P&L', desc: 'Смотрите сделки, статистику и управляйте ботами в реальном времени.' },
+    {
+      num: '01',
+      title: 'Подключите биржу',
+      desc: 'Вставьте API-ключ от Binance или Bybit — это займёт минуту.',
+    },
+    {
+      num: '02',
+      title: 'Настройте стратегию',
+      desc: 'Выберите пресет или настройте индикаторы (RSI, CCI) вручную.',
+    },
+    {
+      num: '03',
+      title: 'Запустите бота',
+      desc: 'Бот стартует в изолированном контейнере и начинает торговать.',
+    },
+    {
+      num: '04',
+      title: 'Следите за P&L',
+      desc: 'Смотрите сделки, статистику и управляйте ботами в реальном времени.',
+    },
   ];
 
   return (
@@ -73,8 +101,12 @@ const LandingPage = () => {
             <a href="#how">Как это работает</a>
           </div>
           <div className="nav-actions">
-            <Link href="/auth?mode=login" className="nav-btn-ghost">Войти</Link>
-            <Link href="/auth?mode=register" className="nav-btn-primary">Начать бесплатно</Link>
+            <Link href="/auth?mode=login" className="nav-btn-ghost">
+              Войти
+            </Link>
+            <Link href="/auth?mode=register" className="nav-btn-primary">
+              Начать бесплатно
+            </Link>
           </div>
         </div>
       </nav>
@@ -93,9 +125,10 @@ const LandingPage = () => {
               <span>Автоматическая торговля на фьючерсах</span>
             </div>
             <h1 className="hero-title">
-              Торговые боты<br />
-              <span className="hero-accent">без кода</span><br />
-              и сложностей
+              Торговые боты
+              <br />
+              <span className="hero-accent">без кода</span>
+              <br />и сложностей
             </h1>
             <p className="hero-subtitle">
               Подключите биржу, выберите стратегию и запустите бота за 5 минут.
@@ -140,11 +173,17 @@ const LandingPage = () => {
                 <svg viewBox="0 0 200 60" fill="none">
                   <polyline
                     points="0,50 20,44 40,46 60,35 80,30 100,32 120,22 140,18 160,14 180,10 200,8"
-                    stroke="#10b981" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"
+                    stroke="#10b981"
+                    strokeWidth="2"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                   <polyline
                     points="0,50 20,44 40,46 60,35 80,30 100,32 120,22 140,18 160,14 180,10 200,8"
-                    stroke="url(#chartGrad)" strokeWidth="0" fill="url(#chartGrad)"
+                    stroke="url(#chartGrad)"
+                    strokeWidth="0"
+                    fill="url(#chartGrad)"
                   />
                   <defs>
                     <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
@@ -180,12 +219,20 @@ const LandingPage = () => {
         <section className="features-section" id="features">
           <div className="section-inner">
             <div className="section-label">Возможности</div>
-            <h2 className="section-title">Всё что нужно для<br />автоматической торговли</h2>
+            <h2 className="section-title">
+              Всё что нужно для
+              <br />
+              автоматической торговли
+            </h2>
             <div className="features-grid">
               {features.map((f) => {
                 const Icon = f.icon;
                 return (
-                  <div className="feature-card" key={f.title} style={{ '--accent': f.color } as React.CSSProperties}>
+                  <div
+                    className="feature-card"
+                    key={f.title}
+                    style={{ '--accent': f.color } as React.CSSProperties}
+                  >
                     <div className="feature-icon">
                       <Icon size={22} />
                     </div>
@@ -202,7 +249,11 @@ const LandingPage = () => {
         <section className="how-section" id="how">
           <div className="section-inner">
             <div className="section-label">Как это работает</div>
-            <h2 className="section-title">Запустите бота<br />за 4 шага</h2>
+            <h2 className="section-title">
+              Запустите бота
+              <br />
+              за 4 шага
+            </h2>
             <div className="steps-list">
               {steps.map((s, i) => (
                 <div className="step-card" key={s.num}>
@@ -211,7 +262,9 @@ const LandingPage = () => {
                     <h3>{s.title}</h3>
                     <p>{s.desc}</p>
                   </div>
-                  {i < steps.length - 1 && <ChevronRight size={20} className="step-arrow" />}
+                  {i < steps.length - 1 && (
+                    <ChevronRight size={20} className="step-arrow" />
+                  )}
                 </div>
               ))}
             </div>
@@ -238,7 +291,9 @@ const LandingPage = () => {
               <Bot size={20} />
               <span>CryptoBot</span>
             </div>
-            <p className="footer-note">Торговля несёт риски. Используйте ответственно.</p>
+            <p className="footer-note">
+              Торговля несёт риски. Используйте ответственно.
+            </p>
           </div>
         </footer>
       </div>

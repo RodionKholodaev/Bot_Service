@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Float, Boolean
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from src.database import Base
 
 
@@ -35,7 +37,7 @@ class Trade(Base):
     profit_usdt: Mapped[float | None] = mapped_column(Float, nullable=True)
     profit_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
 
-    exchange_rate_rub_usdt: Mapped[float] = mapped_column(Float,nullable=True)
+    exchange_rate_rub_usdt: Mapped[float] = mapped_column(Float, nullable=True)
     # курс рубля к usdt в момент закрытия сделки
 
     commission_usdt: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)

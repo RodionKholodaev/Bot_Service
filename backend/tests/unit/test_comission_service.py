@@ -19,11 +19,11 @@ from src.models.trade import Trade
 from src.models.user import User
 from src.services.commission_service import CommissionService
 
-
 # ──────────────────────────────────────────────
 # Вспомогательные фабрики — чтобы в каждом тесте задавать
 # только то, что важно именно для него.
 # ──────────────────────────────────────────────
+
 
 def make_trade(
     *,
@@ -46,11 +46,11 @@ def make_user(*, commission_rate: float = 0.1, service_balance: float = 5000.0) 
 
 def make_bot(**overrides) -> Bot:
     """Бот с обнулёнными накопительными полями — их и проверяют тесты."""
-    defaults = dict(
-        total_profit=0.0,
-        total_commission_paid_usdt=0.0,
-        total_commission_paid_rub=0.0,
-    )
+    defaults = {
+        "total_profit": 0.0,
+        "total_commission_paid_usdt": 0.0,
+        "total_commission_paid_rub": 0.0,
+    }
     defaults.update(overrides)
     return Bot(**defaults)
 
@@ -87,6 +87,7 @@ def set_usdt_rate(monkeypatch):
 # Прибыльная сделка — основной расчёт
 # ──────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_commission_calculated_correctly_for_profitable_trade(set_usdt_rate):
     # Arrange
@@ -100,10 +101,10 @@ async def test_commission_calculated_correctly_for_profitable_trade(set_usdt_rat
 
     # Assert
     assert bot.total_profit == 100.0
-    assert trade.commission_usdt == 10.0          # 100 * 0.1
-    assert trade.commission_rub == 900.0          # 10 * 90
+    assert trade.commission_usdt == 10.0  # 100 * 0.1
+    assert trade.commission_rub == 900.0  # 10 * 90
     assert trade.commission_paid is True
-    assert user.service_balance == 4100.0         # 5000 - 900
+    assert user.service_balance == 4100.0  # 5000 - 900
     assert bot.total_commission_paid_usdt == 10.0
     assert bot.total_commission_paid_rub == 900.0
 
@@ -111,6 +112,7 @@ async def test_commission_calculated_correctly_for_profitable_trade(set_usdt_rat
 # ──────────────────────────────────────────────
 # Границы: когда комиссию брать НЕ нужно
 # ──────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_loss_trade_charges_no_commission(set_usdt_rate):
@@ -178,6 +180,7 @@ async def test_none_profit_is_treated_as_zero(set_usdt_rate):
 # Защита от повторного списания
 # ──────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_commission_is_not_charged_twice_for_the_same_trade(set_usdt_rate):
     # Arrange
@@ -228,6 +231,7 @@ async def test_already_paid_trade_does_not_touch_balance(set_usdt_rate):
 # ──────────────────────────────────────────────
 # Недоступный курс USDT/RUB
 # ──────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_missing_exchange_rate_raises(set_usdt_rate):

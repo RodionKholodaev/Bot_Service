@@ -1,5 +1,6 @@
 from src.models.user import User
 
+
 class FakeUserRepository:
     def __init__(self):
         self.users = {}

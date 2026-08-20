@@ -1,9 +1,10 @@
 import bcrypt
 from jose import jwt
+
 from src.config import settings
 
-
 # ── Password ──────────────────────────────────────────────
+
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -16,6 +17,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 # ── JWT ───────────────────────────────────────────────────
+
 
 def create_token(user_id: int) -> str:
     payload = {"sub": str(user_id)}

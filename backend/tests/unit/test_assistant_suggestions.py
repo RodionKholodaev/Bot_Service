@@ -125,16 +125,16 @@ def test_every_advertised_field_survives_normalization():
     [
         ("dryRun", "не булево"),
         ("stakeAmount", "не число"),
-        ("balanceRatio", 3),            # ниже минимума ползунка (5)
-        ("tradingPair", "BTCUSDT"),     # без слэша
-        ("leverage", 0),                # ниже минимума формы (1)
-        ("algorithm", "sideways"),      # направления нет в продукте
-        ("strategyPreset", "scalping"), # пресета нет в продукте
+        ("balanceRatio", 3),  # ниже минимума ползунка (5)
+        ("tradingPair", "BTCUSDT"),  # без слэша
+        ("leverage", 0),  # ниже минимума формы (1)
+        ("algorithm", "sideways"),  # направления нет в продукте
+        ("strategyPreset", "scalping"),  # пресета нет в продукте
         ("filters", "не массив"),
-        ("botName", "   "),             # пустое после strip
-        ("takeProfit", 0),              # ноль процентов — не цель
-        ("useStopLoss", 1),             # число вместо булева
-        ("stopLoss", 150),              # больше 100%
+        ("botName", "   "),  # пустое после strip
+        ("takeProfit", 0),  # ноль процентов — не цель
+        ("useStopLoss", 1),  # число вместо булева
+        ("stopLoss", 150),  # больше 100%
     ],
 )
 def test_invalid_value_is_dropped_for_each_field(field, value):
@@ -153,10 +153,7 @@ def test_no_more_than_eight_suggestions_are_returned():
     # В схеме инструмента стоит maxItems: 8, но схема — это просьба к модели, а не
     # гарантия. Форма рисует карточку на каждое предложение, поэтому лимит
     # дублируется на нашей стороне.
-    raw = _args(*[
-        {"field": field, "value": value, "reason": "ок"}
-        for field, value in VALID_VALUE_PER_FIELD.items()
-    ])
+    raw = _args(*[{"field": field, "value": value, "reason": "ок"} for field, value in VALID_VALUE_PER_FIELD.items()])
 
     # Act
     result = normalize_suggestions(raw)

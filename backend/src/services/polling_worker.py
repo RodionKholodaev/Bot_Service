@@ -11,20 +11,21 @@
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 import sentry_sdk
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.config import settings
-from src.services import docker_manager
-from src.services.commission_service import CommissionService
 from src.database import AsyncSessionLocal
 from src.models.bot import Bot
 from src.models.trade import Trade
 from src.models.user import User
 from src.repositories.bot_repository import BotRepository
 from src.repositories.trade_repository import TradeRepository
+from src.services import docker_manager
+from src.services.commission_service import CommissionService
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,7 @@ CONTAINER_LOG_TAIL_CHARS = 1000
 # ──────────────────────────────────────────────────────────────
 # Запрос к freqtrade REST API
 # ──────────────────────────────────────────────────────────────
+
 
 async def _bot_api_get(
     bot: Bot,
@@ -151,6 +153,7 @@ async def _fetch_trades(bot: Bot, client: httpx.AsyncClient) -> list[dict]:
 # Обработка одного бота
 # ──────────────────────────────────────────────────────────────
 
+
 def _parse_dt(value: str | None) -> datetime | None:
     """Парсит ISO-строку от freqtrade в datetime с UTC."""
     if not value:
@@ -159,7 +162,7 @@ def _parse_dt(value: str | None) -> datetime | None:
     try:
         dt = datetime.fromisoformat(value)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         return dt
     except ValueError:
         logger.warning(
@@ -187,7 +190,7 @@ def _required_dt(value: str | None, bot_id: str, field: str) -> datetime:
         "Trade has no usable timestamp, falling back to current time",
         extra={"bot_id": bot_id, "field": field, "raw_value": value},
     )
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) -> None:
@@ -232,10 +235,7 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
                 profit_pct=ft.get("profit_ratio", 0.0) * 100 if not is_open else None,
                 exit_reason=ft.get("exit_reason") if not is_open else None,
                 open_time=_required_dt(ft.get("open_date"), bot.id, "open_date"),
-                close_time=(
-                    _required_dt(ft.get("close_date"), bot.id, "close_date")
-                    if not is_open else None
-                ),
+                close_time=(_required_dt(ft.get("close_date"), bot.id, "close_date") if not is_open else None),
             )
             db.add(trade)
             await db.flush()  # получаем trade.id для дальнейшей логики
@@ -280,9 +280,8 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
 # Реакция на отказ бота
 # ──────────────────────────────────────────────────────────────
 
-async def _mark_bot_failed(
-    db: AsyncSession, bot: Bot, reason: str, detail: str | None = None
-) -> None:
+
+async def _mark_bot_failed(db: AsyncSession, bot: Bot, reason: str, detail: str | None = None) -> None:
     """
     Единая реакция на любой обнаруженный отказ: алерт разработчику, статус "error"
     в БД и остановка контейнера.
@@ -291,15 +290,11 @@ async def _mark_bot_failed(
     пользователю (String(500)). detail — сырой текст ошибки, только для разработчика:
     в БД его класть нельзя ни по длине, ни по смыслу.
     """
-    container_status = (
-        docker_manager.get_container_status(bot.container_id) if bot.container_id else None
-    )
+    container_status = docker_manager.get_container_status(bot.container_id) if bot.container_id else None
     # При отказе на старте freqtrade падает до того, как поднимет свой REST API,
     # поэтому /api/v1/logs недоступен и docker-логи — единственный источник причины.
     tail_logs = (
-        docker_manager.get_container_logs(bot.container_id, tail=CONTAINER_LOG_TAIL_LINES)
-        if bot.container_id
-        else ""
+        docker_manager.get_container_logs(bot.container_id, tail=CONTAINER_LOG_TAIL_LINES) if bot.container_id else ""
     )
 
     # new_scope, а не глобальный sentry_sdk.set_tag: воркер — одна долгоживущая таска,
@@ -350,6 +345,7 @@ async def _mark_bot_failed(
 # ──────────────────────────────────────────────────────────────
 # Проверка и синхронизация одного бота
 # ──────────────────────────────────────────────────────────────
+
 
 async def _check_and_sync_bot(
     db: AsyncSession,
@@ -409,6 +405,7 @@ async def _check_and_sync_bot(
 # ──────────────────────────────────────────────────────────────
 # Основной цикл
 # ──────────────────────────────────────────────────────────────
+
 
 async def run_polling_worker() -> None:
     """

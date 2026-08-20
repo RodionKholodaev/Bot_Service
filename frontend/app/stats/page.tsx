@@ -1,6 +1,12 @@
-"use client";
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import Link from "next/link";
+'use client';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { TooltipItem } from 'chart.js';
 import {
@@ -15,7 +21,7 @@ import {
   ArrowDownRight,
   AlertTriangle,
   Loader2,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,10 +32,10 @@ import {
   Filler,
   Tooltip,
   Legend,
-} from "chart.js";
-import { Line, Doughnut } from "react-chartjs-2";
-import "./stats.css";
-import { apiFetch } from "@/lib/api";
+} from 'chart.js';
+import { Line, Doughnut } from 'react-chartjs-2';
+import './stats.css';
+import { apiFetch } from '@/lib/api';
 
 ChartJS.register(
   CategoryScale,
@@ -39,15 +45,15 @@ ChartJS.register(
   ArcElement,
   Filler,
   Tooltip,
-  Legend
+  Legend,
 );
 
 // ===== Types (зеркалят бэкенд schemas/stats.py) =====
-type Period = "1D" | "1W" | "1M";
-type ViewKey = "all" | string;
+type Period = '1D' | '1W' | '1M';
+type ViewKey = 'all' | string;
 
 interface PnlPoint {
-  ts: string;   // ISO-время закрытия сделки (UTC), формат выбираем здесь
+  ts: string; // ISO-время закрытия сделки (UTC), формат выбираем здесь
   value: number;
 }
 
@@ -75,7 +81,7 @@ interface BotSummary {
   direction: string;
   strategy_preset: string;
   status: string;
-  profit: number;        // за выбранный период
+  profit: number; // за выбранный период
   trades_total: number;
   winrate: number;
 }
@@ -88,7 +94,7 @@ interface BotStats {
   direction: string;
   strategy_preset: string;
   status: string;
-  profit: number;        // за выбранный период, а не за всё время
+  profit: number; // за выбранный период, а не за всё время
   trades_total: number;
   trades_win: number;
   trades_loss: number;
@@ -100,7 +106,7 @@ interface BotStats {
 }
 
 interface PortfolioStats {
-  profit: number;        // за выбранный период
+  profit: number; // за выбранный период
   trades_total: number;
   trades_win: number;
   trades_loss: number;
@@ -114,18 +120,23 @@ interface PortfolioStats {
 }
 
 // ===== Helpers =====
-const PERIOD_LABEL: Record<Period, string> = { "1D": "1Д", "1W": "1Н", "1M": "1М" };
+const PERIOD_LABEL: Record<Period, string> = {
+  '1D': '1Д',
+  '1W': '1Н',
+  '1M': '1М',
+};
 
 // Палитра графиков — из общей схемы сайта (см. /home, /feedback)
-const COLOR_GREEN = "#34d399";
-const COLOR_RED = "#f87171";
+const COLOR_GREEN = '#34d399';
+const COLOR_RED = '#f87171';
 
-const formatPnl = (v: number): string => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+const formatPnl = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
 // Знак ставим перед $, минус — обязательно: без него убыток выглядел бы как прибыль
-const formatUsdt = (v: number): string => `${v >= 0 ? "+" : "-"}$${Math.abs(v).toFixed(2)}`;
+const formatUsdt = (v: number): string =>
+  `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
 
 const formatDuration = (open: string, close: string | null): string => {
-  if (!close) return "—";
+  if (!close) return '—';
   const diff = (new Date(close).getTime() - new Date(open).getTime()) / 1000;
   const h = Math.floor(diff / 3600);
   const m = Math.floor((diff % 3600) / 60);
@@ -133,60 +144,62 @@ const formatDuration = (open: string, close: string | null): string => {
 };
 
 const formatDate = (iso: string | null): string => {
-  if (!iso) return "—";
+  if (!iso) return '—';
   const d = new Date(iso);
-  return `${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1)
+  return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1)
     .toString()
-    .padStart(2, "0")} ${d.getHours().toString().padStart(2, "0")}:${d
+    .padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d
     .getMinutes()
     .toString()
-    .padStart(2, "0")}`;
+    .padStart(2, '0')}`;
 };
 
 // тот же светофор баланса, что на главной и в обратной связи
 const getBalanceStatus = (balance: number): string => {
-  if (balance < 100) return "critical";
-  if (balance < 1000) return "low";
-  return "good";
+  if (balance < 100) return 'critical';
+  if (balance < 1000) return 'low';
+  return 'good';
 };
 
 // ===== Component =====
 const StatsPage: React.FC = () => {
   const router = useRouter();
-  const [view, setView] = useState<ViewKey>("all");
-  const [period, setPeriod] = useState<Period>("1W");
+  const [view, setView] = useState<ViewKey>('all');
+  const [period, setPeriod] = useState<Period>('1W');
   const [portfolio, setPortfolio] = useState<PortfolioStats | null>(null);
   const [botData, setBotData] = useState<BotStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const chartRef = useRef<ChartJS<"line"> | null>(null);
-  const [isAuthed, setIsAuthed] = useState(false);
+  const chartRef = useRef<ChartJS<'line'> | null>(null);
   const [serviceBalance, setServiceBalance] = useState<number>(0);
 
   // проверка того что пользователь имеет JWT
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    if (!localStorage.getItem('access_token')) {
       router.replace('/auth');
-    } else {
-      setIsAuthed(true); // ← добавь
     }
   }, [router]);
 
   // Баланс нужен только для индикатора в шапке — той же, что на /home и /feedback
   const fetchBalance = useCallback(async () => {
     try {
-      const data = await apiFetch<{ service_balance: number }>("/users/me/balance");
+      const data = await apiFetch<{ service_balance: number }>(
+        '/users/me/balance',
+      );
       setServiceBalance(data.service_balance);
     } catch (e) {
-      console.error("Не удалось загрузить баланс:", e);
+      console.error('Не удалось загрузить баланс:', e);
     }
   }, []);
 
   useEffect(() => {
-    if (!isAuthed) return;
+    if (!localStorage.getItem('access_token')) return;
+    // Обычная загрузка данных при монтировании: setState происходит уже после
+    // await внутри fetchBalance, каскадного ререндера нет. Правило этого
+    // не различает и ругается на любой вызов функции с setState внутри.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBalance();
-  }, [isAuthed, fetchBalance]);
+  }, [fetchBalance]);
 
   // Загрузка данных при смене вью или периода
   const fetchData = useCallback(async () => {
@@ -197,26 +210,29 @@ const StatsPage: React.FC = () => {
       // поэтому при смене периода они устаревают, даже когда открыт отдельный бот.
       const [pData, bData] = await Promise.all([
         apiFetch<PortfolioStats>(`/stats/portfolio?period=${period}`),
-        view === "all"
+        view === 'all'
           ? Promise.resolve(null)
           : apiFetch<BotStats>(`/stats/bots/${view}?period=${period}`),
       ]);
       setPortfolio(pData);
       setBotData(bData);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Ошибка загрузки данных");
+      setError(e instanceof Error ? e.message : 'Ошибка загрузки данных');
     } finally {
       setLoading(false);
     }
   }, [view, period]);
 
   useEffect(() => {
-    if (!isAuthed) return;
+    if (!localStorage.getItem('access_token')) return;
+    // Перезагрузка при смене вью/периода — fetchData ставит state после await.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
-  }, [isAuthed, fetchData]);
+  }, [fetchData]);
 
   // ===== Текущие метрики =====
-  const current: PortfolioStats | BotStats | null = view === "all" ? portfolio : botData;
+  const current: PortfolioStats | BotStats | null =
+    view === 'all' ? portfolio : botData;
 
   const metrics = useMemo(() => {
     if (!current) return null;
@@ -233,110 +249,124 @@ const StatsPage: React.FC = () => {
   const chartSeries = useMemo(() => current?.pnl_chart ?? [], [current]);
   const trades = useMemo(() => current?.recent_trades ?? [], [current]);
 
-  const lastValue = chartSeries.length > 0 ? chartSeries[chartSeries.length - 1].value : 0;
+  const lastValue =
+    chartSeries.length > 0 ? chartSeries[chartSeries.length - 1].value : 0;
   const trendColor = lastValue >= 0 ? COLOR_GREEN : COLOR_RED;
 
   // ===== Chart configs =====
-  const lineData = useMemo(() => ({
-    labels: chartSeries.map((p) => formatDate(p.ts)),
-    datasets: [
-      {
-        data: chartSeries.map((p) => p.value),
-        borderColor: trendColor,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointHoverBackgroundColor: trendColor,
-        pointHoverBorderColor: "#0a0e1a",
-        pointHoverBorderWidth: 2,
-        fill: true,
-        backgroundColor: (ctx: { chart: ChartJS }) => {
-          const c = ctx.chart.ctx;
-          if (!c) return trendColor + "20";
-          const g = c.createLinearGradient(0, 0, 0, 220);
-          g.addColorStop(0, trendColor + "45");
-          g.addColorStop(1, trendColor + "00");
-          return g;
+  const lineData = useMemo(
+    () => ({
+      labels: chartSeries.map((p) => formatDate(p.ts)),
+      datasets: [
+        {
+          data: chartSeries.map((p) => p.value),
+          borderColor: trendColor,
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHoverBackgroundColor: trendColor,
+          pointHoverBorderColor: '#0a0e1a',
+          pointHoverBorderWidth: 2,
+          fill: true,
+          backgroundColor: (ctx: { chart: ChartJS }) => {
+            const c = ctx.chart.ctx;
+            if (!c) return trendColor + '20';
+            const g = c.createLinearGradient(0, 0, 0, 220);
+            g.addColorStop(0, trendColor + '45');
+            g.addColorStop(1, trendColor + '00');
+            return g;
+          },
+          tension: 0.4,
         },
-        tension: 0.4,
-      },
-    ],
-  }), [chartSeries, trendColor]);
+      ],
+    }),
+    [chartSeries, trendColor],
+  );
 
-  const lineOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: "rgba(26, 31, 53, 0.95)",
-        borderColor: "rgba(96, 165, 250, 0.25)",
-        borderWidth: 1,
-        padding: 10,
-        titleColor: "#9ca3af",
-        bodyColor: "#e4e7f0",
-        callbacks: {
-          label: (ctx: TooltipItem<'line'>) => {
-            const y = ctx.parsed.y ?? 0;
-            return `$${y >= 0 ? "+" : ""}${y.toFixed(2)} USDT`;
-          }
+  const lineOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(26, 31, 53, 0.95)',
+          borderColor: 'rgba(96, 165, 250, 0.25)',
+          borderWidth: 1,
+          padding: 10,
+          titleColor: '#9ca3af',
+          bodyColor: '#e4e7f0',
+          callbacks: {
+            label: (ctx: TooltipItem<'line'>) => {
+              const y = ctx.parsed.y ?? 0;
+              return `$${y >= 0 ? '+' : ''}${y.toFixed(2)} USDT`;
+            },
+          },
         },
       },
-    },
-    scales: {
-      x: {
-        ticks: { color: "#6b7280", font: { size: 10 }, maxTicksLimit: 8 },
-        grid: { color: "rgba(255,255,255,0.05)" },
-      },
-      y: {
-        ticks: {
-          color: "#6b7280",
-          font: { size: 10 },
-          callback: (v: string | number) =>
-            `$${Number(v) >= 0 ? "+" : ""}${Number(v).toFixed(1)}`,
+      scales: {
+        x: {
+          ticks: { color: '#6b7280', font: { size: 10 }, maxTicksLimit: 8 },
+          grid: { color: 'rgba(255,255,255,0.05)' },
         },
-        grid: { color: "rgba(255,255,255,0.05)" },
+        y: {
+          ticks: {
+            color: '#6b7280',
+            font: { size: 10 },
+            callback: (v: string | number) =>
+              `$${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(1)}`,
+          },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+        },
       },
-    },
-  }), []);
+    }),
+    [],
+  );
 
-  const donutData = useMemo(() => ({
-    labels: ["Прибыльные", "Убыточные"],
-    datasets: [
-      {
-        data: metrics ? [metrics.wins, metrics.losses] : [0, 0],
-        backgroundColor: [COLOR_GREEN, COLOR_RED],
-        borderWidth: 0,
-        hoverOffset: 4,
-      },
-    ],
-  }), [metrics]);
+  const donutData = useMemo(
+    () => ({
+      labels: ['Прибыльные', 'Убыточные'],
+      datasets: [
+        {
+          data: metrics ? [metrics.wins, metrics.losses] : [0, 0],
+          backgroundColor: [COLOR_GREEN, COLOR_RED],
+          borderWidth: 0,
+          hoverOffset: 4,
+        },
+      ],
+    }),
+    [metrics],
+  );
 
-  const donutOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: "72%",
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: "rgba(26, 31, 53, 0.95)",
-        borderColor: "rgba(96, 165, 250, 0.25)",
-        borderWidth: 1,
-        padding: 10,
-        titleColor: "#9ca3af",
-        bodyColor: "#e4e7f0",
+  const donutOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(26, 31, 53, 0.95)',
+          borderColor: 'rgba(96, 165, 250, 0.25)',
+          borderWidth: 1,
+          padding: 10,
+          titleColor: '#9ca3af',
+          bodyColor: '#e4e7f0',
+        },
       },
-    },
-  }), []);
+    }),
+    [],
+  );
 
   // Данные для сайдбара всегда из portfolio
   const sidebarBots = portfolio?.bots ?? [];
   const runningCount = portfolio?.bots_running ?? 0;
   const stoppedCount = portfolio?.bots_stopped ?? 0;
 
-  const selectedBot = view === "all" ? null : sidebarBots.find((b) => b.bot_id === view);
-  const pnlClass = (metrics?.profit ?? 0) >= 0 ? "text-green" : "text-red";
-  const ddClass = (metrics?.drawdown ?? 0) <= -2 ? "text-red" : "text-amber";
+  const selectedBot =
+    view === 'all' ? null : sidebarBots.find((b) => b.bot_id === view);
+  const pnlClass = (metrics?.profit ?? 0) >= 0 ? 'text-green' : 'text-red';
+  const ddClass = (metrics?.drawdown ?? 0) <= -2 ? 'text-red' : 'text-amber';
 
   return (
     <div className="stats-page">
@@ -348,9 +378,15 @@ const StatsPage: React.FC = () => {
             <span>CryptoBot</span>
           </Link>
           <nav className="stats-nav">
-            <Link href="/home" className="stats-nav-item">Главная</Link>
-            <Link href="/stats" className="stats-nav-item active">Статистика</Link>
-            <Link href="/feedback" className="stats-nav-item">Обратная связь</Link>
+            <Link href="/home" className="stats-nav-item">
+              Главная
+            </Link>
+            <Link href="/stats" className="stats-nav-item active">
+              Статистика
+            </Link>
+            <Link href="/feedback" className="stats-nav-item">
+              Обратная связь
+            </Link>
           </nav>
         </div>
         <div className="stats-topbar-right">
@@ -372,20 +408,22 @@ const StatsPage: React.FC = () => {
           {/* Заголовок вью + период */}
           <section className="stats-hero">
             <div>
-              <h1>{selectedBot ? selectedBot.pair : "Все боты"}</h1>
+              <h1>{selectedBot ? selectedBot.pair : 'Все боты'}</h1>
               <p className="stats-hero-sub">
                 {selectedBot
                   ? `x${selectedBot.leverage} · ${selectedBot.direction} · ${selectedBot.strategy_preset} · ${
-                      selectedBot.status === "running" ? "Работает" : "Остановлен"
+                      selectedBot.status === 'running'
+                        ? 'Работает'
+                        : 'Остановлен'
                     }`
-                  : "Общая статистика портфеля"}
+                  : 'Общая статистика портфеля'}
               </p>
             </div>
             <div className="stats-period">
-              {(["1D", "1W", "1M"] as Period[]).map((p) => (
+              {(['1D', '1W', '1M'] as Period[]).map((p) => (
                 <button
                   key={p}
-                  className={`stats-period-tab ${period === p ? "active" : ""}`}
+                  className={`stats-period-tab ${period === p ? 'active' : ''}`}
                   onClick={() => setPeriod(p)}
                 >
                   {PERIOD_LABEL[p]}
@@ -400,8 +438,8 @@ const StatsPage: React.FC = () => {
               <div className="sb-header">
                 <div className="sb-section-label">Портфель</div>
                 <button
-                  className={`sb-all-btn ${view === "all" ? "active" : ""}`}
-                  onClick={() => setView("all")}
+                  className={`sb-all-btn ${view === 'all' ? 'active' : ''}`}
+                  onClick={() => setView('all')}
                 >
                   <LayoutGrid size={16} />
                   Все боты
@@ -416,17 +454,21 @@ const StatsPage: React.FC = () => {
                   sidebarBots.map((b) => (
                     <div
                       key={b.bot_id}
-                      className={`bot-row ${view === b.bot_id ? "active" : ""}`}
+                      className={`bot-row ${view === b.bot_id ? 'active' : ''}`}
                       onClick={() => setView(b.bot_id)}
                     >
-                      <div className={`bot-row-dot ${b.status === "running" ? "running" : "stopped"}`} />
+                      <div
+                        className={`bot-row-dot ${b.status === 'running' ? 'running' : 'stopped'}`}
+                      />
                       <div className="bot-row-info">
                         <div className="bot-row-name">{b.pair}</div>
                         <div className="bot-row-sub">
                           x{b.leverage} · {b.strategy_preset}
                         </div>
                       </div>
-                      <div className={`bot-row-pnl ${b.profit >= 0 ? "text-green" : "text-red"}`}>
+                      <div
+                        className={`bot-row-pnl ${b.profit >= 0 ? 'text-green' : 'text-red'}`}
+                      >
                         {formatUsdt(b.profit)}
                       </div>
                     </div>
@@ -442,7 +484,7 @@ const StatsPage: React.FC = () => {
                   {/* «неактивных», а не «остановленных»: сюда же попадают боты в статусах
                       created, starting и error */}
                   {runningCount} активных · {stoppedCount} неактивн
-                  {stoppedCount === 1 ? "ый" : "ых"}
+                  {stoppedCount === 1 ? 'ый' : 'ых'}
                 </div>
               </div>
             </aside>
@@ -452,7 +494,9 @@ const StatsPage: React.FC = () => {
               {/* Loading */}
               {loading && (
                 <div className="stats-state">
-                  <span className="stats-spin"><Loader2 size={20} /></span>
+                  <span className="stats-spin">
+                    <Loader2 size={20} />
+                  </span>
                   Загружаем статистику...
                 </div>
               )}
@@ -462,7 +506,9 @@ const StatsPage: React.FC = () => {
                 <div className="stats-state error">
                   <AlertTriangle size={20} />
                   <span>{error}</span>
-                  <button className="stats-retry-btn" onClick={fetchData}>Повторить</button>
+                  <button className="stats-retry-btn" onClick={fetchData}>
+                    Повторить
+                  </button>
                 </div>
               )}
 
@@ -473,8 +519,14 @@ const StatsPage: React.FC = () => {
                   <div className="metrics-row">
                     <div className="metric-card">
                       <div className="metric-head">
-                        <span className={`metric-icon ${metrics.profit >= 0 ? "green" : "red"}`}>
-                          {metrics.profit >= 0 ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                        <span
+                          className={`metric-icon ${metrics.profit >= 0 ? 'green' : 'red'}`}
+                        >
+                          {metrics.profit >= 0 ? (
+                            <TrendingUp size={18} />
+                          ) : (
+                            <TrendingDown size={18} />
+                          )}
                         </span>
                         <span className="metric-label">Общий P&L</span>
                       </div>
@@ -491,7 +543,9 @@ const StatsPage: React.FC = () => {
                         </span>
                         <span className="metric-label">Winrate</span>
                       </div>
-                      <div className="metric-value text-white">{metrics.winrate}%</div>
+                      <div className="metric-value text-white">
+                        {metrics.winrate}%
+                      </div>
                       <div className="metric-bar">
                         <div
                           className="metric-bar-fill"
@@ -507,7 +561,9 @@ const StatsPage: React.FC = () => {
                         </span>
                         <span className="metric-label">Всего сделок</span>
                       </div>
-                      <div className="metric-value text-blue">{metrics.trades}</div>
+                      <div className="metric-value text-blue">
+                        {metrics.trades}
+                      </div>
                       <div className="metric-sub">
                         {metrics.wins} прибыль · {metrics.losses} убыток
                       </div>
@@ -521,7 +577,9 @@ const StatsPage: React.FC = () => {
                         <span className="metric-label">Макс. просадка</span>
                       </div>
                       <div className={`metric-value ${ddClass}`}>
-                        {metrics.drawdown !== 0 ? `${metrics.drawdown.toFixed(1)}%` : "—"}
+                        {metrics.drawdown !== 0
+                          ? `${metrics.drawdown.toFixed(1)}%`
+                          : '—'}
                       </div>
                       <div className="metric-sub">За выбранный период</div>
                     </div>
@@ -536,14 +594,21 @@ const StatsPage: React.FC = () => {
                           className="card-note"
                           style={{ color: trendColor, fontWeight: 700 }}
                         >
-                          {lastValue >= 0 ? "+" : "-"}${Math.abs(lastValue).toFixed(2)} за период
+                          {lastValue >= 0 ? '+' : '-'}$
+                          {Math.abs(lastValue).toFixed(2)} за период
                         </span>
                       </div>
                       <div className="chart-wrap">
                         {chartSeries.length > 0 ? (
-                          <Line ref={chartRef as React.RefObject<ChartJS<"line">>} data={lineData} options={lineOptions} />
+                          <Line
+                            ref={chartRef as React.RefObject<ChartJS<'line'>>}
+                            data={lineData}
+                            options={lineOptions}
+                          />
                         ) : (
-                          <div className="empty-trades">Нет данных за период</div>
+                          <div className="empty-trades">
+                            Нет данных за период
+                          </div>
                         )}
                       </div>
                     </div>
@@ -561,18 +626,30 @@ const StatsPage: React.FC = () => {
                         </div>
                         <div className="donut-legend">
                           <div className="donut-legend-row">
-                            <span className="legend-square" style={{ background: COLOR_GREEN }} />
+                            <span
+                              className="legend-square"
+                              style={{ background: COLOR_GREEN }}
+                            />
                             <span className="legend-label">Прибыльные</span>
-                            <span className="legend-value text-green">{metrics.wins}</span>
+                            <span className="legend-value text-green">
+                              {metrics.wins}
+                            </span>
                           </div>
                           <div className="donut-legend-row">
-                            <span className="legend-square" style={{ background: COLOR_RED }} />
+                            <span
+                              className="legend-square"
+                              style={{ background: COLOR_RED }}
+                            />
                             <span className="legend-label">Убыточные</span>
-                            <span className="legend-value text-red">{metrics.losses}</span>
+                            <span className="legend-value text-red">
+                              {metrics.losses}
+                            </span>
                           </div>
                           <div className="donut-divider">
                             <span className="donut-divider-label">Winrate</span>
-                            <span className="donut-divider-value">{metrics.winrate}%</span>
+                            <span className="donut-divider-value">
+                              {metrics.winrate}%
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -605,23 +682,47 @@ const StatsPage: React.FC = () => {
                               <tr key={t.id}>
                                 <td className="td-pair">{t.pair}</td>
                                 <td>
-                                  <span className={`dir-badge ${t.direction === "long" ? "long" : "short"}`}>
-                                    {t.direction === "long" ? "Long" : "Short"}
+                                  <span
+                                    className={`dir-badge ${t.direction === 'long' ? 'long' : 'short'}`}
+                                  >
+                                    {t.direction === 'long' ? 'Long' : 'Short'}
                                   </span>
                                 </td>
                                 <td>{t.open_rate.toFixed(4)}</td>
-                                <td>{t.close_rate != null ? t.close_rate.toFixed(4) : "—"}</td>
+                                <td>
+                                  {t.close_rate != null
+                                    ? t.close_rate.toFixed(4)
+                                    : '—'}
+                                </td>
                                 <td
-                                  className={(t.profit_usdt ?? 0) >= 0 ? "text-green" : "text-red"}
+                                  className={
+                                    (t.profit_usdt ?? 0) >= 0
+                                      ? 'text-green'
+                                      : 'text-red'
+                                  }
                                   style={{ fontWeight: 700 }}
                                 >
-                                  {t.profit_usdt != null ? formatUsdt(t.profit_usdt) : "—"}
+                                  {t.profit_usdt != null
+                                    ? formatUsdt(t.profit_usdt)
+                                    : '—'}
                                 </td>
-                                <td className={(t.profit_pct ?? 0) >= 0 ? "text-green" : "text-red"}>
-                                  {t.profit_pct != null ? formatPnl(t.profit_pct) : "—"}
+                                <td
+                                  className={
+                                    (t.profit_pct ?? 0) >= 0
+                                      ? 'text-green'
+                                      : 'text-red'
+                                  }
+                                >
+                                  {t.profit_pct != null
+                                    ? formatPnl(t.profit_pct)
+                                    : '—'}
                                 </td>
-                                <td>{formatDuration(t.open_time, t.close_time)}</td>
-                                <td className="td-muted">{formatDate(t.close_time)}</td>
+                                <td>
+                                  {formatDuration(t.open_time, t.close_time)}
+                                </td>
+                                <td className="td-muted">
+                                  {formatDate(t.close_time)}
+                                </td>
                               </tr>
                             ))}
                           </tbody>

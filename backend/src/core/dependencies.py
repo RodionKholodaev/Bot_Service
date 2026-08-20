@@ -1,34 +1,42 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.database import get_db
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
-from src.models.user import User
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.core.security import decode_token
+from src.database import get_db
+from src.models.user import User
 from src.repositories.api_keys_repository import ApiKeysRepository
 from src.repositories.bot_repository import BotRepository
 from src.repositories.feedback_repository import FeedbackRepository
 from src.repositories.payments_repository import PaymentsRepository
 from src.repositories.trade_repository import TradeRepository
 from src.repositories.user_repository import UserRepository
+
 bearer_scheme = HTTPBearer()
 
-async def get_bot_repo(db: AsyncSession  = Depends(get_db)):
+
+async def get_bot_repo(db: AsyncSession = Depends(get_db)):
     return BotRepository(db)
 
-async def get_payments_repo(db: AsyncSession  = Depends(get_db)):
+
+async def get_payments_repo(db: AsyncSession = Depends(get_db)):
     return PaymentsRepository(db)
 
-async def get_trade_repo(db: AsyncSession  = Depends(get_db)):
+
+async def get_trade_repo(db: AsyncSession = Depends(get_db)):
     return TradeRepository(db)
 
-async def get_user_repo(db: AsyncSession  = Depends(get_db)):
+
+async def get_user_repo(db: AsyncSession = Depends(get_db)):
     return UserRepository(db)
 
-async def get_api_key_repo(db: AsyncSession  = Depends(get_db)):
+
+async def get_api_key_repo(db: AsyncSession = Depends(get_db)):
     return ApiKeysRepository(db)
 
-async def get_feedback_repo(db: AsyncSession  = Depends(get_db)):
+
+async def get_feedback_repo(db: AsyncSession = Depends(get_db)):
     return FeedbackRepository(db)
 
 

@@ -1,21 +1,25 @@
-from src.repositories.bot_repository import BotRepository
-from src.models.user import User
-from src.schemas.bot import BotCreate
-from src.services.strategy_presets import resolve_filters
-import uuid
-import secrets
-from src.models.bot import Bot
-from src.services.bot_file_manager import BotFileManager
-from src.repositories.api_keys_repository import ApiKeysRepository
-from src.core.crypto import decrypt
-from src.config import settings
-from pathlib import Path
-from src.services import docker_manager, freqtrade_client
 import logging
+import secrets
 import shutil
+import uuid
+from pathlib import Path
+
 import sentry_sdk
-from src.core.exceptions import NotFoundError, BadRequestError
+
+from src.config import settings
+from src.core.crypto import decrypt
+from src.core.exceptions import BadRequestError, NotFoundError
+from src.models.bot import Bot
+from src.models.user import User
+from src.repositories.api_keys_repository import ApiKeysRepository
+from src.repositories.bot_repository import BotRepository
+from src.schemas.bot import BotCreate
+from src.services import docker_manager, freqtrade_client
+from src.services.bot_file_manager import BotFileManager
+from src.services.strategy_presets import resolve_filters
+
 logger = logging.getLogger(__name__)
+
 
 class BotService:
     def __init__(self, bot_repo: BotRepository, api_keys_repo: ApiKeysRepository):
@@ -36,14 +40,12 @@ class BotService:
         if not enabled or percent is None:
             return -0.99
         return -round(percent / 100.0, 6)
-    
+
     @staticmethod
     def _bot_dir(bot_id: str) -> Path:
         return settings.BOTS_DATA_DIR / bot_id
 
-
     async def create_bot(self, current_user: User, body: BotCreate):
-
         """
         Создаем папку бота, делаем запись в бд
         """
@@ -58,15 +60,13 @@ class BotService:
         long_filters, short_filters = resolve_filters(
             preset=body.strategy_preset,
             direction=body.direction,
-            custom_long=[f.model_dump() for f in body.entry_filters_long]
-            if body.entry_filters_long else None,
-            custom_short=[f.model_dump() for f in body.entry_filters_short]
-            if body.entry_filters_short else None,
+            custom_long=[f.model_dump() for f in body.entry_filters_long] if body.entry_filters_long else None,
+            custom_short=[f.model_dump() for f in body.entry_filters_short] if body.entry_filters_short else None,
         )
         # преобразуем стопы в нужный формат
         take_profit = BotService._build_take_profit(body.take_profit_percent)
         stop_loss = BotService._build_stoploss(body.stop_loss_enabled, body.stop_loss_percent)
-        
+
         api_username = "freqtrader"
         # пароль для api
         api_password = secrets.token_urlsafe(16)
@@ -91,8 +91,8 @@ class BotService:
             api_port=api_port,
             api_username=api_username,
             api_password=api_password,
-            api_key_id = body.api_key_id,
-            stake_amount=body.stake_amount,                   
+            api_key_id=body.api_key_id,
+            stake_amount=body.stake_amount,
             tradable_balance_ratio=body.tradable_balance_ratio,
         )
 
@@ -104,7 +104,7 @@ class BotService:
                 "bot_id": bot.id,
                 "bot_name": bot.name,
             },
-        )      
+        )
 
         # получаем ключи из бд
         api_key = None
@@ -118,7 +118,7 @@ class BotService:
                     "user_id": bot.user_id,
                 },
             )
-        
+
         exchange_key = decrypt(api_key.api_key_encrypted) if api_key else ""
         exchange_secret = decrypt(api_key.api_secret_encrypted) if api_key else ""
 
@@ -141,7 +141,7 @@ class BotService:
         )
 
         return bot
-    
+
     async def start_bot(self, bot: Bot):
         """Запускает контейнер для уже созданного бота."""
         logger.info(
@@ -156,16 +156,16 @@ class BotService:
         bot_dir = BotService._bot_dir(bot.id)
         if not (bot_dir / "config.json").exists():
             logger.error(
-                "No bot files found", extra={
+                "No bot files found",
+                extra={
                     "user_id": bot.user_id,
                     "bot_id": bot.id,
                 },
             )
             raise NotFoundError("Не найдены файлы бота")
-        
+
         # меняем статус на starting
         await self.bot_repo.change_bot_status("starting", bot)
-  
 
         try:
             # проверяем что образ freqtrade есть на сервере
@@ -222,7 +222,7 @@ class BotService:
             await self.bot_repo.add_error_message(str(e)[:500], bot)
 
         return bot
-    
+
     async def stop_bot(self, bot: Bot) -> Bot:
         logger.info(
             "Stopping the bot",
@@ -241,7 +241,7 @@ class BotService:
                     "container_id": bot.container_id,
                 },
             )
-            
+
             ans = await self.bot_repo.change_bot_status("stopped", bot)
 
             return ans
@@ -253,9 +253,6 @@ class BotService:
             },
         )
         raise BadRequestError("У бота не найден id контейнера")
-        
-        
-
 
     async def delete_bot(self, bot: Bot) -> None:
         """
@@ -276,7 +273,7 @@ class BotService:
                 extra={
                     "bot_id": bot.id,
                     "container_id": bot.container_id,
-                }
+                },
             )
             docker_manager.remove_container(bot.container_id)
         else:
@@ -317,7 +314,7 @@ class BotService:
             extra={
                 "bot_id": bot.id,
                 "user_id": bot.user_id,
-            }
+            },
         )
 
     async def get_user_bot(self, bot_id: str, user: User) -> Bot:
@@ -332,7 +329,7 @@ class BotService:
         if not bot.is_active:
             raise NotFoundError("Бот не найден")
         return bot
-    
+
     @staticmethod
     async def get_logs(bot: Bot, tail: int):
         if not bot.container_id:
@@ -340,11 +337,9 @@ class BotService:
         logs = docker_manager.get_container_logs(bot.container_id, tail=tail)
         return {"logs": logs}
 
-    
     @staticmethod
     async def freqtrade_status(bot: Bot):
         data = freqtrade_client.get_status(bot)
         if data is None:
             raise NotFoundError("Не удалось получить открытые сделки")
         return data
-    

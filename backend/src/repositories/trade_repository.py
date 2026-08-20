@@ -20,9 +20,7 @@ class TradeRepository:
         self.db = db
 
     async def get_trade(self, bot_id: str, ft_id: int) -> Trade | None:
-        result = await self.db.execute(
-            select(Trade).where(Trade.bot_id == bot_id, Trade.freqtrade_trade_id == ft_id)
-        )
+        result = await self.db.execute(select(Trade).where(Trade.bot_id == bot_id, Trade.freqtrade_trade_id == ft_id))
         return result.scalar_one_or_none()
 
     async def get_closed_trades(

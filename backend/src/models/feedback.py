@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
-from sqlalchemy import Integer, String, Text, DateTime, ForeignKey
+from datetime import UTC, datetime
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from src.database import Base
 
 
@@ -26,6 +28,6 @@ class Feedback(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )

@@ -9,16 +9,19 @@ import React from 'react';
 const INLINE = /(\*\*[^*]+\*\*|`[^`]+`)/g;
 
 function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
-  return text.split(INLINE).filter(Boolean).map((part, i) => {
-    const key = `${keyPrefix}-${i}`;
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={key}>{part.slice(2, -2)}</strong>;
-    }
-    if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={key}>{part.slice(1, -1)}</code>;
-    }
-    return <React.Fragment key={key}>{part}</React.Fragment>;
-  });
+  return text
+    .split(INLINE)
+    .filter(Boolean)
+    .map((part, i) => {
+      const key = `${keyPrefix}-${i}`;
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={key}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return <code key={key}>{part.slice(1, -1)}</code>;
+      }
+      return <React.Fragment key={key}>{part}</React.Fragment>;
+    });
 }
 
 type Block =
@@ -47,7 +50,8 @@ function toBlocks(source: string): Block[] {
     }
     if (!line.trim()) {
       // Пустая строка закрывает текущий блок
-      if (last?.kind === 'p' && last.lines.length) blocks.push({ kind: 'p', lines: [] });
+      if (last?.kind === 'p' && last.lines.length)
+        blocks.push({ kind: 'p', lines: [] });
       continue;
     }
 
@@ -56,7 +60,9 @@ function toBlocks(source: string): Block[] {
     else blocks.push({ kind: 'p', lines: [clean] });
   }
 
-  return blocks.filter((b) => (b.kind === 'p' ? b.lines.length > 0 : b.items.length > 0));
+  return blocks.filter((b) =>
+    b.kind === 'p' ? b.lines.length > 0 : b.items.length > 0,
+  );
 }
 
 export const Markdown = ({ text }: { text: string }) => (

@@ -11,7 +11,7 @@
 которые отдают заранее заданные списки вместо похода в Postgres/SQLite.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -20,12 +20,12 @@ from src.models.trade import Trade
 from src.models.user import User
 from src.services.stats_service import StatsService
 
-
 # ──────────────────────────────────────────────
 # Вспомогательные фабрики — чтобы в каждом тесте не перечислять
 # по 10 обязательных полей Trade/Bot, а указывать только то, что
 # важно для конкретного теста.
 # ──────────────────────────────────────────────
+
 
 def make_trade(
     *,
@@ -54,7 +54,7 @@ def make_trade(
         profit_usdt=profit_usdt,
         profit_pct=profit_pct,
         exit_reason="tp",
-        open_time=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        open_time=datetime(2026, 1, 1, tzinfo=UTC),
         close_time=close_time,
     )
 
@@ -66,19 +66,19 @@ def make_bot(**overrides) -> Bot:
     созданного в памяти без flush, они остались бы None — и активный бот выглядел бы
     архивированным, а просадку было бы не от чего считать.
     """
-    defaults = dict(
-        id="bot-1",
-        user_id=1,
-        name="Test Bot",
-        pair="BTC/USDT",
-        leverage=1,
-        direction="long",
-        strategy_preset="moderate",
-        status="running",
-        total_profit=0.0,
-        stake_amount=1000.0,
-        is_active=True,
-    )
+    defaults = {
+        "id": "bot-1",
+        "user_id": 1,
+        "name": "Test Bot",
+        "pair": "BTC/USDT",
+        "leverage": 1,
+        "direction": "long",
+        "strategy_preset": "moderate",
+        "status": "running",
+        "total_profit": 0.0,
+        "stake_amount": 1000.0,
+        "is_active": True,
+    }
     defaults.update(overrides)
     return Bot(**defaults)
 
@@ -91,6 +91,7 @@ def make_bot(**overrides) -> Bot:
 # доводил бы до ума. Поэтому и fake простой: отдать заданный список и запомнить,
 # с какими аргументами его позвали.
 # ──────────────────────────────────────────────
+
 
 class FakeTradeRepo:
     def __init__(self, trades: list[Trade]):
@@ -131,12 +132,13 @@ def make_service(trades: list[Trade] | None = None, bots: list[Bot] | None = Non
 # Тесты _build_pnl_chart
 # ──────────────────────────────────────────────
 
+
 def test_pnl_chart_accumulates_profit_step_by_step():
     # Arrange: три закрытые сделки с известной прибылью
     trades = [
-        make_trade(id=1, profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
-        make_trade(id=2, profit_usdt=-5.0, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
-        make_trade(id=3, profit_usdt=20.0, close_time=datetime(2026, 1, 3, tzinfo=timezone.utc)),
+        make_trade(id=1, profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
+        make_trade(id=2, profit_usdt=-5.0, close_time=datetime(2026, 1, 2, tzinfo=UTC)),
+        make_trade(id=3, profit_usdt=20.0, close_time=datetime(2026, 1, 3, tzinfo=UTC)),
     ]
 
     # Act
@@ -151,7 +153,7 @@ def test_pnl_chart_point_keeps_raw_close_time():
     # Метка времени уезжает на фронт как datetime, а не как заранее склеенная строка
     # "%d.%m %H:%M": в такой строке нет года (за период "all" метки повторяются между
     # годами) и нет часового пояса пользователя.
-    close_time = datetime(2026, 1, 1, 12, 30, tzinfo=timezone.utc)
+    close_time = datetime(2026, 1, 1, 12, 30, tzinfo=UTC)
     trades = [make_trade(id=1, profit_usdt=10.0, close_time=close_time)]
 
     chart = StatsService._build_pnl_chart(trades)
@@ -164,10 +166,10 @@ def test_pnl_chart_skips_trades_without_close_time_or_profit():
     # присылает такие "хвосты", их не должно быть на графике и они не должны
     # влиять на накопленную сумму следующих точек.
     trades = [
-        make_trade(id=1, profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
+        make_trade(id=1, profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
         make_trade(id=2, profit_usdt=100.0, close_time=None),  # не закрыта — пропускаем
-        make_trade(id=3, profit_usdt=None, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),  # нет profit — пропускаем
-        make_trade(id=4, profit_usdt=5.0, close_time=datetime(2026, 1, 3, tzinfo=timezone.utc)),
+        make_trade(id=3, profit_usdt=None, close_time=datetime(2026, 1, 2, tzinfo=UTC)),  # нет profit — пропускаем
+        make_trade(id=4, profit_usdt=5.0, close_time=datetime(2026, 1, 3, tzinfo=UTC)),
     ]
 
     # Act
@@ -189,6 +191,7 @@ def test_pnl_chart_empty_list_returns_empty_chart():
 # прибавляется P&L каждой сделки; ищем самое глубокое падение от достигнутого пика
 # и переводим его в проценты от этого пика.
 # ──────────────────────────────────────────────
+
 
 def test_max_drawdown_no_trades_returns_none():
     assert StatsService._max_drawdown([], 1000.0) is None
@@ -221,7 +224,7 @@ def test_max_drawdown_calculates_percent_from_peak_equity():
         make_trade(id=1, profit_usdt=100.0),
         make_trade(id=2, profit_usdt=50.0),
         make_trade(id=3, profit_usdt=-80.0),
-        make_trade(id=4, profit_usdt=-20.0),   # <- дно
+        make_trade(id=4, profit_usdt=-20.0),  # <- дно
         make_trade(id=5, profit_usdt=10.0),
     ]
 
@@ -249,14 +252,15 @@ def test_max_drawdown_never_profitable_bot_still_has_drawdown():
 # Тесты get_bot_stats: winrate, победы/поражения, средняя прибыль в %
 # ──────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_get_bot_stats_winrate_and_counts():
     # Arrange: 2 победы, 1 поражение, 1 сделка "в ноль"
     trades = [
-        make_trade(id=1, profit_usdt=100.0, profit_pct=5.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
-        make_trade(id=2, profit_usdt=-50.0, profit_pct=-2.0, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
-        make_trade(id=3, profit_usdt=0.0, profit_pct=0.0, close_time=datetime(2026, 1, 3, tzinfo=timezone.utc)),
-        make_trade(id=4, profit_usdt=30.0, profit_pct=3.0, close_time=datetime(2026, 1, 4, tzinfo=timezone.utc)),
+        make_trade(id=1, profit_usdt=100.0, profit_pct=5.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
+        make_trade(id=2, profit_usdt=-50.0, profit_pct=-2.0, close_time=datetime(2026, 1, 2, tzinfo=UTC)),
+        make_trade(id=3, profit_usdt=0.0, profit_pct=0.0, close_time=datetime(2026, 1, 3, tzinfo=UTC)),
+        make_trade(id=4, profit_usdt=30.0, profit_pct=3.0, close_time=datetime(2026, 1, 4, tzinfo=UTC)),
     ]
     bot = make_bot()
     service = make_service(trades)
@@ -281,8 +285,8 @@ async def test_get_bot_stats_profit_comes_from_trades_not_from_bot_counter():
     # Раньше именно он уезжал в ответ, и карточка "P&L за период" на фронте
     # расходилась с графиком под ней.
     trades = [
-        make_trade(id=1, profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
-        make_trade(id=2, profit_usdt=-4.0, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
+        make_trade(id=1, profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
+        make_trade(id=2, profit_usdt=-4.0, close_time=datetime(2026, 1, 2, tzinfo=UTC)),
     ]
     bot = make_bot(total_profit=999.0)
     service = make_service(trades)
@@ -307,7 +311,7 @@ async def test_get_bot_stats_passes_period_boundary_to_repository():
     assert call["bot_id"] == bot.id
     assert call["since"] is not None
     # примерно неделю назад (с запасом на время выполнения теста)
-    expected = datetime.now(timezone.utc) - timedelta(days=7)
+    expected = datetime.now(UTC) - timedelta(days=7)
     assert abs((call["since"] - expected).total_seconds()) < 60
 
 
@@ -325,10 +329,7 @@ async def test_get_bot_stats_all_period_has_no_boundary():
 @pytest.mark.asyncio
 async def test_get_bot_stats_recent_trades_are_newest_first():
     # Репозиторий отдаёт сделки по возрастанию close_time, в таблице нужен обратный порядок
-    trades = [
-        make_trade(id=i, profit_usdt=1.0, close_time=datetime(2026, 1, i, tzinfo=timezone.utc))
-        for i in range(1, 6)
-    ]
+    trades = [make_trade(id=i, profit_usdt=1.0, close_time=datetime(2026, 1, i, tzinfo=UTC)) for i in range(1, 6)]
     service = make_service(trades)
 
     stats = await service.get_bot_stats(make_bot(), recent_limit=3)
@@ -343,7 +344,7 @@ async def test_get_bot_stats_zero_profit_trade_counts_as_loss():
     # а не в отдельную категорию "без результата". Если бы кто-то по интуиции
     # считал такие сделки нейтральными, здесь бы разошлось с ожиданием.
     trades = [
-        make_trade(id=1, profit_usdt=0.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
+        make_trade(id=1, profit_usdt=0.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
     ]
     service = make_service(trades)
 
@@ -375,6 +376,7 @@ async def test_get_bot_stats_no_trades_returns_zero_stats_without_crashing():
 # Тесты get_portfolio_stats
 # ──────────────────────────────────────────────
 
+
 def make_user() -> User:
     return User(id=1, service_balance=0.0, commission_rate=0.1)
 
@@ -385,8 +387,8 @@ async def test_portfolio_profit_matches_its_own_chart_and_winrate():
     # набору сделок. Раньше прибыль брали из Bot.total_profit (за всё время), и на любом
     # периоде кроме "all" карточка расходилась с графиком.
     trades = [
-        make_trade(id=1, profit_usdt=30.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
-        make_trade(id=2, profit_usdt=-10.0, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
+        make_trade(id=1, profit_usdt=30.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
+        make_trade(id=2, profit_usdt=-10.0, close_time=datetime(2026, 1, 2, tzinfo=UTC)),
     ]
     bots = [make_bot(total_profit=999.0)]
     service = make_service(trades, bots)
@@ -406,9 +408,9 @@ async def test_portfolio_splits_trades_between_bots_for_sidebar():
     # Сводка по каждому боту собирается из той же единственной выборки сделок,
     # без отдельного запроса на каждого бота.
     trades = [
-        make_trade(id=1, bot_id="bot-1", profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
-        make_trade(id=2, bot_id="bot-2", profit_usdt=-5.0, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
-        make_trade(id=3, bot_id="bot-1", profit_usdt=4.0, close_time=datetime(2026, 1, 3, tzinfo=timezone.utc)),
+        make_trade(id=1, bot_id="bot-1", profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
+        make_trade(id=2, bot_id="bot-2", profit_usdt=-5.0, close_time=datetime(2026, 1, 2, tzinfo=UTC)),
+        make_trade(id=3, bot_id="bot-1", profit_usdt=4.0, close_time=datetime(2026, 1, 3, tzinfo=UTC)),
     ]
     bots = [make_bot(id="bot-1"), make_bot(id="bot-2", status="stopped")]
     service = make_service(trades, bots)
@@ -432,8 +434,8 @@ async def test_portfolio_keeps_trades_of_archived_bots_but_hides_them_from_sideb
     # должно остаться в общей истории, иначе удаление бота молча переписывает
     # статистику пользователя за прошлые периоды.
     trades = [
-        make_trade(id=1, bot_id="bot-1", profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
-        make_trade(id=2, bot_id="bot-archived", profit_usdt=25.0, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
+        make_trade(id=1, bot_id="bot-1", profit_usdt=10.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
+        make_trade(id=2, bot_id="bot-archived", profit_usdt=25.0, close_time=datetime(2026, 1, 2, tzinfo=UTC)),
     ]
     bots = [make_bot(id="bot-1"), make_bot(id="bot-archived", is_active=False)]
     service = make_service(trades, bots)
@@ -448,8 +450,8 @@ async def test_portfolio_keeps_trades_of_archived_bots_but_hides_them_from_sideb
 @pytest.mark.asyncio
 async def test_portfolio_drawdown_uses_total_invested_capital():
     trades = [
-        make_trade(id=1, profit_usdt=100.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
-        make_trade(id=2, profit_usdt=-200.0, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
+        make_trade(id=1, profit_usdt=100.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
+        make_trade(id=2, profit_usdt=-200.0, close_time=datetime(2026, 1, 2, tzinfo=UTC)),
     ]
     # два бота по 1000 => база 2000, кривая 2000 -> 2100 -> 1900
     bots = [make_bot(id="bot-1"), make_bot(id="bot-2")]
@@ -476,6 +478,7 @@ async def test_portfolio_without_bots_and_trades_does_not_crash():
 # ──────────────────────────────────────────────
 # Тесты get_home_stats
 # ──────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_home_total_profit_includes_archived_bots():
@@ -515,8 +518,8 @@ async def test_home_funds_under_management_counts_only_working_bots():
 @pytest.mark.asyncio
 async def test_home_weekly_profit_asks_repository_for_last_seven_days():
     trades = [
-        make_trade(id=1, profit_usdt=5.0, close_time=datetime(2026, 1, 1, tzinfo=timezone.utc)),
-        make_trade(id=2, profit_usdt=2.5, close_time=datetime(2026, 1, 2, tzinfo=timezone.utc)),
+        make_trade(id=1, profit_usdt=5.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
+        make_trade(id=2, profit_usdt=2.5, close_time=datetime(2026, 1, 2, tzinfo=UTC)),
     ]
     repo = FakeTradeRepo(trades)
     service = StatsService(bot_repo=FakeBotRepo([]), trade_repo=repo)  # type: ignore[arg-type]
@@ -524,5 +527,5 @@ async def test_home_weekly_profit_asks_repository_for_last_seven_days():
     stats = await service.get_home_stats(make_user())
 
     assert stats.weekly_profit == 7.5
-    expected = datetime.now(timezone.utc) - timedelta(days=7)
+    expected = datetime.now(UTC) - timedelta(days=7)
     assert abs((repo.calls[0]["since"] - expected).total_seconds()) < 60

@@ -1,14 +1,17 @@
-import logging
 import ipaddress
-from fastapi import Request, status
-from src.repositories.payments_repository import PaymentsRepository
-from src.schemas.payments import PaymentCreate, PaymentCreateResponse
-from yookassa import Configuration, Payment as YKPayment
-from src.models.user import User
+import logging
+
+from fastapi import Request
+from yookassa import Configuration
+from yookassa import Payment as YKPayment
+
 from src.config import settings
+from src.core.exceptions import ForbiddenError, NotFoundError
+from src.models.user import User
+from src.repositories.payments_repository import PaymentsRepository
 from src.repositories.user_repository import UserRepository
+from src.schemas.payments import PaymentCreate, PaymentCreateResponse
 from src.services.get_ip import get_ip
-from src.core.exceptions import NotFoundError, ForbiddenError
 
 logger = logging.getLogger(__name__)
 
@@ -41,25 +44,25 @@ class PaymentService:
             extra={"user_id": current_user.id, "amount": body.amount},
         )
 
-        raw = await request.body()
-
         _configure_yookassa()
 
-        yk_payment = YKPayment.create({
-            "amount": {
-                "value": f"{body.amount:.2f}",
-                "currency": "RUB",
-            },
-            "confirmation": {
-                "type": "redirect",
-                "return_url": f"{settings.FRONTEND_URL}/?payment=success",
-            },
-            "capture": True,
-            "description": f"Пополнение баланса CryptoBot, user_id={current_user.id}",
-            "metadata": {
-                "user_id": str(current_user.id),
-            },
-        })
+        yk_payment = YKPayment.create(
+            {
+                "amount": {
+                    "value": f"{body.amount:.2f}",
+                    "currency": "RUB",
+                },
+                "confirmation": {
+                    "type": "redirect",
+                    "return_url": f"{settings.FRONTEND_URL}/?payment=success",
+                },
+                "capture": True,
+                "description": f"Пополнение баланса CryptoBot, user_id={current_user.id}",
+                "metadata": {
+                    "user_id": str(current_user.id),
+                },
+            }
+        )
         logger.info(
             "YooKassa payment created",
             extra={
@@ -69,7 +72,7 @@ class PaymentService:
             },
         )
 
-        db_payment = await self.payment_repo.create_payment(
+        await self.payment_repo.create_payment(
             id=yk_payment.id,
             user_id=current_user.id,
             amount=body.amount,

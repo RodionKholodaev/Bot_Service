@@ -7,7 +7,7 @@
 (см. FakeFeedbackRepo ниже).
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -38,7 +38,7 @@ class FakeFeedbackRepo:
             message=message,
             email=email,
             rating=rating,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         self.created.append(feedback)
         return feedback
@@ -100,7 +100,7 @@ async def test_limit_counted_per_user_and_for_last_hour():
     user_id, since = repo.count_since_calls[0]
     assert user_id == 42
 
-    expected_since = datetime.now(timezone.utc) - timedelta(hours=1)
+    expected_since = datetime.now(UTC) - timedelta(hours=1)
     assert abs((since - expected_since).total_seconds()) < 5
 
 
@@ -115,9 +115,7 @@ async def test_notification_sent_with_saved_feedback(monkeypatch):
     async def fake_notify(feedback, current_user):
         sent.append((feedback, current_user))
 
-    monkeypatch.setattr(
-        "src.services.feedback_service.notify_new_feedback", fake_notify
-    )
+    monkeypatch.setattr("src.services.feedback_service.notify_new_feedback", fake_notify)
 
     # Act
     await FeedbackService(repo).create_feedback(user, make_payload())
@@ -141,9 +139,7 @@ async def test_no_notification_when_rate_limited(monkeypatch):
     async def fake_notify(feedback, current_user):
         sent.append((feedback, current_user))
 
-    monkeypatch.setattr(
-        "src.services.feedback_service.notify_new_feedback", fake_notify
-    )
+    monkeypatch.setattr("src.services.feedback_service.notify_new_feedback", fake_notify)
 
     # Act
     with pytest.raises(TooManyRequestsError):

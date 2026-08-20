@@ -15,25 +15,25 @@ logger = logging.getLogger(__name__)
 PRESETS: dict[str, dict[str, list[dict]]] = {
     "conservative": {
         "long": [
-            {"indicator": "rsi", "timeframe": "5m",  "condition": "less", "value": 30},
+            {"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 30},
             {"indicator": "rsi", "timeframe": "15m", "condition": "less", "value": 35},
-            {"indicator": "cci", "timeframe": "1h",  "condition": "less", "value": -100},
+            {"indicator": "cci", "timeframe": "1h", "condition": "less", "value": -100},
         ],
         "short": [
-            {"indicator": "rsi", "timeframe": "5m",  "condition": "greater", "value": 70},
+            {"indicator": "rsi", "timeframe": "5m", "condition": "greater", "value": 70},
             {"indicator": "rsi", "timeframe": "15m", "condition": "greater", "value": 65},
-            {"indicator": "cci", "timeframe": "1h",  "condition": "greater", "value": 100},
+            {"indicator": "cci", "timeframe": "1h", "condition": "greater", "value": 100},
         ],
     },
     "moderate": {
         "long": [
-            {"indicator": "rsi", "timeframe": "1m",  "condition": "less", "value": 40},
-            {"indicator": "rsi", "timeframe": "5m",  "condition": "less", "value": 45},
+            {"indicator": "rsi", "timeframe": "1m", "condition": "less", "value": 40},
+            {"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 45},
             {"indicator": "cci", "timeframe": "30m", "condition": "less", "value": -50},
         ],
         "short": [
-            {"indicator": "rsi", "timeframe": "1m",  "condition": "greater", "value": 60},
-            {"indicator": "rsi", "timeframe": "5m",  "condition": "greater", "value": 55},
+            {"indicator": "rsi", "timeframe": "1m", "condition": "greater", "value": 60},
+            {"indicator": "rsi", "timeframe": "5m", "condition": "greater", "value": 55},
             {"indicator": "cci", "timeframe": "30m", "condition": "greater", "value": 50},
         ],
     },

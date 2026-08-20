@@ -1,5 +1,6 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     FERNET_KEY: str
     GLITCHTIP_DSN: str
     SERVICE_COMMISION: float
-    
+
     # ── Запуск ботов ──────────────────────────────────────
     # Папка, где будут лежать данные каждого бота (config.json, стратегия, логи, sqlite).
     # Дефолт — ./bots_data/ в корне проекта (рядом с cryptobot.db).
@@ -37,7 +38,6 @@ class Settings(BaseSettings):
     # Хост, по которому бэкенд (запущенный с хоста) ходит в API ботов.
     # Поскольку контейнеры пробрасывают порт на хост — это localhost.
     BOT_API_HOST: str = "127.0.0.1"
-
 
     YOOKASSA_SHOP_ID: str
     YOOKASSA_SECRET_KEY: str
@@ -71,5 +71,6 @@ class Settings(BaseSettings):
 
     # Таймаут одного запроса к AITunnel, секунды.
     AI_ASSISTANT_TIMEOUT: float = 120.0
+
 
 settings = Settings()  # type: ignore

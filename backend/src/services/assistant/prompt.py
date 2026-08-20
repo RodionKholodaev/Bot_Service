@@ -74,11 +74,13 @@ SYSTEM_PROMPT = """\
   для объяснения того, как устроен сам сервис.
 """
 
+
 # форматирование
 def _fmt(value: object, empty: str = "не заполнено") -> str:
     if value is None or value == "":
         return empty
     return str(value)
+
 
 # описание формы, чтобы передать в нейронку
 def render_form_context(form: BotFormSnapshot) -> str:
@@ -110,11 +112,7 @@ def render_form_context(form: BotFormSnapshot) -> str:
     lines += [
         f"- Имя бота: {_fmt(form.botName, 'не указано')}",
         f"- Take Profit: {_fmt(form.takeProfit)}%",
-        (
-            f"- Stop Loss: {_fmt(form.stopLoss)}%"
-            if form.useStopLoss
-            else "- Stop Loss: выключен"
-        ),
+        (f"- Stop Loss: {_fmt(form.stopLoss)}%" if form.useStopLoss else "- Stop Loss: выключен"),
     ]
     return "\n".join(lines)
 

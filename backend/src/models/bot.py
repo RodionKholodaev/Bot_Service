@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Float, Boolean, JSON
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from src.database import Base
 
 
@@ -18,8 +20,8 @@ class Bot(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     pair: Mapped[str] = mapped_column(String(50), nullable=False)
     leverage: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    direction: Mapped[str] = mapped_column(String(10), nullable=False) # long / short / both
-    
+    direction: Mapped[str] = mapped_column(String(10), nullable=False)  # long / short / both
+
     tradable_balance_ratio: Mapped[float]
     stake_amount: Mapped[float]
 
@@ -45,14 +47,13 @@ class Bot(Base):
     )
     # False — бот архивирован (soft delete)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    
+
     # накопленная прибыль в USDT, обновляется при каждом закрытии сделки
     total_profit: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    
+
     # суммарно списанная комиссия сервиса
     total_commission_paid_usdt: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     total_commission_paid_rub: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-
 
     # ── Что задаёт бэкенд ─────────────────────────────────
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="created")
@@ -68,12 +69,12 @@ class Bot(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )

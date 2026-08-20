@@ -30,11 +30,11 @@ Bot_Service is a platform for creating and running automated crypto trading bots
 
 - **Log messages in English**, `extra={...}` dict for structured context (`bot_id`, `user_id`, etc.), `logger.exception()` inside `except` blocks for the traceback, `logger.critical()` reserved for things that should page the developer (see `telegram_alerts.py` above) — don't casually bump something to `critical`.
 - **User-facing error text (HTTP `detail`) is in Russian**; that's the existing split, keep it.
-- Known gaps worth knowing about before touching related code: exchange-level errors (insufficient balance, rate limits, bad API key) are currently only visible in raw freqtrade container logs (`GET /bots/{id}/logs`) — the backend doesn't parse/classify them. `Bot.total_profit` and the sum of `Trade.profit_usdt` are two independent running totals that can drift. There is no CI.
+- Known gaps worth knowing about before touching related code: exchange-level errors (insufficient balance, rate limits, bad API key) are currently only visible in raw freqtrade container logs (`GET /bots/{id}/logs`) — the backend doesn't parse/classify them. `Bot.total_profit` and the sum of `Trade.profit_usdt` are two independent running totals that can drift.
 
 ## Testing
 
-Full guide: `docs/testing/README.md` (structure, layers, patterns, blind spots) and `docs/testing/how-to.md` (recipes: add a test, fake the network/Docker/DB, debug). **There is no CI — run `python -m pytest` from `backend/` yourself before calling work done.**
+Full guide: `docs/testing/README.md` (structure, layers, patterns, blind spots) and `docs/testing/how-to.md` (recipes: add a test, fake the network/Docker/DB, debug). CI (see **CI & tooling** below) runs `pytest`, but still run `python -m pytest` from `backend/` yourself before calling work done — CI only fires on push.
 
 72 tests, ~5s, in `backend/tests/{unit,integration,fakes}/`. `pytest` + `pytest-asyncio`, `asyncio_mode = auto` (so `@pytest.mark.asyncio` isn't required — but it's on every async test, keep it). Unit tests are the main layer and touch neither DB nor network; `tests/integration/` is a deliberately thin layer hitting the real app via `httpx.AsyncClient(ASGITransport)` against a throwaway SQLite DB — put business logic in unit tests, not there. Note `tests/fakes/test_user_repository.py` is a reusable fake, not a test file, despite the `test_` prefix.
 
@@ -54,6 +54,17 @@ Full guide: `docs/testing/README.md` (structure, layers, patterns, blind spots) 
 
 **Behaviors deliberately locked by tests — don't "fix" them:** a `profit_usdt == 0` trade counts as a loss; `_max_drawdown` returns `None` when cumulative P&L never went positive; `Bot.total_profit` double-counts if `process_commission` runs on the same trade twice (only `trade.commission_paid` guards the actual money, and that guard is tested). The tests document these as current behavior, not as endorsements.
 
+## CI & tooling
+
+`.github/workflows/tests.yml` runs on every push, four jobs: `test` (pytest), `lint-backend` (ruff + pip-audit), `frontend` (eslint + prettier + `next build` + npm audit), `secrets-scan` (gitleaks over the whole repo). `test` and `lint-backend` are hard gates; `frontend`'s ESLint step and both jobs' dependency-audit steps run with `continue-on-error: true` — see below for why.
+
+- **Ruff** (`backend/pyproject.toml`) replaces flake8/isort/pyupgrade/bandit in one tool: `E,F,I,B,C4,UP,ASYNC,S` rule sets, `line-length = 120`, `E501` ignored (formatting handles it, Russian-text strings run long). `B008` (function call in argument default) is ignored globally — it's FastAPI's own `Depends(...)` idiom, not a bug. `tests/conftest.py` gets a per-file `E402` ignore because its `sentry_sdk.init(dsn="")` must run before the `src.config` import (see Testing traps above) — don't "fix" that ordering. When SQLAlchemy boolean columns need a `.where()` filter, use `Column.is_(True)`, not `== True` — `ruff`'s own E712 fix (bare `Column` truthiness) does not generate SQL and would silently break the query.
+- **pip-audit** checks `requirements.txt` against known CVEs. Currently flags `cryptography==49.0.0` (fix: 50.0.0 — this is what encrypts `ExchangeApiKey`, worth upgrading deliberately with a test pass, not an automated bump) and `ecdsa==0.19.2` (no fix — upstream has declared the side-channel timing issue out of scope; accepted risk, not actionable).
+- **Prettier** (`frontend/.prettierrc.json`, `singleQuote: true` to match existing code) and **eslint-plugin-security** (wired into `frontend/eslint.config.mjs` via `security.configs.recommended`) are new; `npm run format` / `npm run format:check` are new scripts.
+- **`npm run lint` is not a hard CI gate yet** — it already had 14 pre-existing errors (mostly `react-hooks/set-state-in-effect` in `auth`/`home`/`settings`/`stats`/`feedback`/`bot-creation` pages, from `eslint-config-next`'s React Compiler rules, unrelated to this tooling setup) that were never caught because lint never ran in CI before. Fixing them means touching live `useEffect`/`setState` logic in auth-adjacent pages and needs a browser test pass, not a blind autofix — flip `continue-on-error` off once they're fixed. `eslint-plugin-security`'s `detect-object-injection` rule also produced 11 warnings (not blocking) — likely mostly false positives on `obj[key]` indexing, unreviewed so far.
+- **npm audit** on the frontend is non-blocking for the same reason `cryptography` isn't auto-bumped: the flagged CVEs are in `next`/`postcss`/`sharp`, and the fix requires bumping `next` past the exact-pinned `16.2.4` (see `frontend/AGENTS.md` — a deliberately pinned non-standard preview build). `npm audit fix` (no `--force`) is safe to run any time; `--force` is not.
+- **gitleaks** (`gitleaks/gitleaks-action@v2`) scans the whole repo on every push for committed secrets — relevant here given Fernet-encrypted exchange keys, Telegram bot tokens, and YooKassa credentials.
+
 ## Commands
 
 Backend (from `backend/`):
@@ -65,6 +76,9 @@ python -m pytest                       # full test suite
 python -m pytest tests/unit/test_stats_service.py -v   # single file
 python -m pytest tests/unit/test_stats_service.py::test_max_drawdown_calculates_percent_from_peak  # single test
 python -m pytest -k commission          # by name
+ruff check .                           # lint
+ruff format .                          # format
+pip-audit -r requirements.txt          # dependency CVE scan
 ```
 See **Testing** below before writing or changing tests.
 
@@ -84,4 +98,7 @@ Frontend (from `frontend/`):
 npm run dev
 npm run build
 npm run lint
+npm run format          # prettier --write
+npm run format:check    # prettier --check, used in CI
+npm audit                # dependency CVE scan
 ```

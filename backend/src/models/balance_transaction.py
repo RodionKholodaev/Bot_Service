@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Float
+from datetime import UTC, datetime
+
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from src.database import Base
 
 
@@ -18,15 +20,12 @@ class BalanceTransaction(Base):
 
     # deposit / commission / refund
     type: Mapped[str] = mapped_column(String(30), nullable=False)
-    
+
     # привязка к сделке если тип — commission
-    trade_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("trades.id", ondelete="SET NULL"), nullable=True
-    )
-    
+    trade_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("trades.id", ondelete="SET NULL"), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )

@@ -21,7 +21,13 @@ interface Props {
 
 /** Боковая панель ассистента. Всегда смонтирована (уезжает трансформом),
  *  поэтому диалог не теряется при закрытии. */
-export const AssistantPanel = ({ open, onClose, step, getSnapshot, onApplySuggestions }: Props) => {
+export const AssistantPanel = ({
+  open,
+  onClose,
+  step,
+  getSnapshot,
+  onApplySuggestions,
+}: Props) => {
   const chat = useAssistantChat({ getSnapshot });
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -45,9 +51,15 @@ export const AssistantPanel = ({ open, onClose, step, getSnapshot, onApplySugges
   return (
     <>
       {/* Затемнение появляется только на узких экранах, где панель ложится поверх формы */}
-      <div className={`ai-backdrop ${open ? 'is-open' : ''}`} onClick={onClose} />
+      <div
+        className={`ai-backdrop ${open ? 'is-open' : ''}`}
+        onClick={onClose}
+      />
 
-      <aside className={`ai-panel ${open ? 'is-open' : ''}`} aria-hidden={!open}>
+      <aside
+        className={`ai-panel ${open ? 'is-open' : ''}`}
+        aria-hidden={!open}
+      >
         <header className="ai-panel__head">
           <div className="ai-panel__title">
             <span className="ai-panel__badge">
@@ -80,11 +92,16 @@ export const AssistantPanel = ({ open, onClose, step, getSnapshot, onApplySugges
                 <MessageBubble
                   key={message.id}
                   message={message}
-                  streaming={chat.phase === 'streaming' && message.id === lastMessage?.id}
+                  streaming={
+                    chat.phase === 'streaming' && message.id === lastMessage?.id
+                  }
                   onApplySuggestions={onApplySuggestions}
                 />
               ))}
-              <PhaseIndicator phase={chat.phase} searchQuery={chat.searchQuery} />
+              <PhaseIndicator
+                phase={chat.phase}
+                searchQuery={chat.searchQuery}
+              />
             </div>
           )}
         </div>

@@ -1,4 +1,8 @@
-import type { AssistantEvent, AssistantMessage, BotFormSnapshot } from './types';
+import type {
+  AssistantEvent,
+  AssistantMessage,
+  BotFormSnapshot,
+} from './types';
 
 /** Транспорт ассистента.
  *
@@ -6,7 +10,8 @@ import type { AssistantEvent, AssistantMessage, BotFormSnapshot } from './types'
  *  поток. EventSource не подходит — он не умеет POST и заголовок Authorization. */
 
 function authHeaders(): Record<string, string> {
-  const token = typeof window === 'undefined' ? null : localStorage.getItem('access_token');
+  const token =
+    typeof window === 'undefined' ? null : localStorage.getItem('access_token');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -14,14 +19,19 @@ function authHeaders(): Record<string, string> {
 }
 
 /** Включён ли ассистент на бэкенде (задан ли ключ AITunnel). */
-export async function fetchAssistantStatus(): Promise<{ enabled: boolean; web_search_available: boolean }> {
+export async function fetchAssistantStatus(): Promise<{
+  enabled: boolean;
+  web_search_available: boolean;
+}> {
   const res = await fetch('/api/assistant/status', { headers: authHeaders() });
   if (!res.ok) return { enabled: false, web_search_available: false };
   return res.json();
 }
 
 /** Разбирает SSE-поток в отдельные `data:`-строки. */
-async function* readSseLines(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+async function* readSseLines(
+  body: ReadableStream<Uint8Array>,
+): AsyncGenerator<string> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -57,7 +67,7 @@ export interface StreamChatParams {
 
 /** Отправляет вопрос и отдаёт события ответа по мере их прихода. */
 export async function* streamAssistantChat(
-  params: StreamChatParams
+  params: StreamChatParams,
 ): AsyncGenerator<AssistantEvent> {
   const res = await fetch('/api/assistant/chat', {
     method: 'POST',

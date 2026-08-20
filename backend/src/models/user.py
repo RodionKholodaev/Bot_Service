@@ -1,8 +1,11 @@
-from datetime import datetime, timezone
-from sqlalchemy import Integer, String, DateTime, Boolean, Float
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, DateTime, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
-from src.database import Base
+
 from src.config import settings
+from src.database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -13,16 +16,15 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     # баланс для оплаты комиссии сервиса
     service_balance: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    
+
     # доля прибыли, которую берёт сервис (0.20 = 20%)
     commission_rate: Mapped[float] = mapped_column(Float, nullable=False, default=settings.SERVICE_COMMISION)
-    
+
     # False — аккаунт заблокирован
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )

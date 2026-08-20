@@ -1,20 +1,20 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select 
-from src.core.crypto import encrypt
+
 from src.models.exchange_api_key import ExchangeApiKey
 
 
 class ApiKeysRepository:
     def __init__(self, s: AsyncSession):
         self.db = s
-    
+
     async def user_active_keys(self, user_id: int):
         result = await self.db.execute(select(ExchangeApiKey).where(ExchangeApiKey.user_id == user_id))
-        if result is None: 
+        if result is None:
             return None
         else:
             return result.scalars().all()
-        
+
     async def add_api_key(self, user_id, exchange, label, key_enc, secret_enc):
         key = ExchangeApiKey(
             user_id=user_id,
@@ -30,16 +30,14 @@ class ApiKeysRepository:
         return key
 
     async def delete_key(self, user_id, api_key_id):
-        result = await self.db.execute(select(ExchangeApiKey).where(
-            ExchangeApiKey.user_id == user_id, 
-            ExchangeApiKey.id == api_key_id
-            ))
+        result = await self.db.execute(
+            select(ExchangeApiKey).where(ExchangeApiKey.user_id == user_id, ExchangeApiKey.id == api_key_id)
+        )
         key = result.scalar_one_or_none()
         if key:
             await self.db.delete(key)
             await self.db.flush()
-        
+
     async def get_api_key_by_id(self, key_id):
         result = await self.db.execute(select(ExchangeApiKey).where(ExchangeApiKey.id == key_id))
         return result.scalar_one_or_none()
-    

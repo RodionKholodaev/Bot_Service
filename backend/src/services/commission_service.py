@@ -1,9 +1,13 @@
-from src.models.bot import Bot
-from src.models.user import User
-from src.models.trade import Trade
-from src.services.exchange_rate_service import ExchangeRateService
 import logging
+
+from src.models.bot import Bot
+from src.models.trade import Trade
+from src.models.user import User
+from src.services.exchange_rate_service import ExchangeRateService
+
 logger = logging.getLogger(__name__)
+
+
 class CommissionService:
     @staticmethod
     async def process_commission(trade: Trade, user: User, bot: Bot):
@@ -37,7 +41,8 @@ class CommissionService:
             # Курс не получен — сделку не учитываем вовсе: исключение откатит транзакцию
             # целиком (вместе с bot.total_profit выше), и следующий цикл воркера повторит
             # обработку. Поэтому флаг ставится строго после успешного расчёта.
-            if current_rate is None: raise ValueError("Не удалось получить курс USDT")
+            if current_rate is None:
+                raise ValueError("Не удалось получить курс USDT")
 
             commission_usdt = round(profit * user.commission_rate, 8)
             commission_rub = round(profit * user.commission_rate, 8) * current_rate
@@ -61,7 +66,7 @@ class CommissionService:
                     "commission_usdt": commission_usdt,
                 },
             )
-        elif profit<0:
+        elif profit < 0:
             logger.info(
                 "Bot closed unprofitable deal",
                 extra={

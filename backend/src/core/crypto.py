@@ -1,4 +1,5 @@
 from cryptography.fernet import Fernet
+
 from src.config import settings
 
 # Берём ключ из переменной окружения
@@ -7,7 +8,7 @@ _FERNET_KEY = settings.FERNET_KEY
 if not _FERNET_KEY:
     raise RuntimeError(
         "Переменная окружения FERNET_KEY не задана. "
-        "Сгенерируйте ключ: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+        'Сгенерируйте ключ: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
     )
 
 _fernet = Fernet(_FERNET_KEY.encode())
