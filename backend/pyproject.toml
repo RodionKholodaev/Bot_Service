@@ -1,0 +1,27 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+# E/F/I  — pyflakes + pycodestyle + import sort (what flake8+isort used to cover)
+# B      — flake8-bugbear, common bug-prone patterns
+# C4     — flake8-comprehensions
+# UP     — pyupgrade, modern syntax for the target Python version
+# ASYNC  — flake8-async, blocking calls in async code
+# S      — flake8-bandit, security checks (hardcoded secrets, SQL string building, eval, etc.)
+select = ["E", "F", "I", "B", "C4", "UP", "ASYNC", "S"]
+ignore = [
+    "E501", # line-too-long — handled by `ruff format`, and Russian-text strings run long
+    "B008", # FastAPI's `Depends(...)` in argument defaults is the framework's own idiom
+]
+
+[tool.ruff.lint.per-file-ignores]
+# assert / hardcoded test data are expected in tests, not a vulnerability there
+"tests/**" = ["S101", "S105", "S106"]
+# sentry_sdk.init(dsn="") must run before `from src.config import settings` imports src.main's
+# real-DSN Sentry init — see CLAUDE.md Testing section. Not an accident, don't "fix" the order.
+"tests/conftest.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
