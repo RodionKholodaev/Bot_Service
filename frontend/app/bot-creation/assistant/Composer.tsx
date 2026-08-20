@@ -13,7 +13,13 @@ interface Props {
 
 const MAX_HEIGHT = 120;
 
-export const Composer = ({ busy, webSearch, onToggleWebSearch, onSend, onStop }: Props) => {
+export const Composer = ({
+  busy,
+  webSearch,
+  onToggleWebSearch,
+  onSend,
+  onStop,
+}: Props) => {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -50,7 +56,12 @@ export const Composer = ({ busy, webSearch, onToggleWebSearch, onSend, onStop }:
         />
 
         {busy ? (
-          <button type="button" className="ai-composer__stop" onClick={onStop} title="Остановить">
+          <button
+            type="button"
+            className="ai-composer__stop"
+            onClick={onStop}
+            title="Остановить"
+          >
             <Square size={14} />
           </button>
         ) : (

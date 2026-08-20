@@ -1,6 +1,7 @@
-import httpx
 import asyncio
 import logging
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ class ExchangeRateService:
                         "Data parsing error",
                         extra={"attempt": attempt, "error": str(e)},
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.error(
                         "Request timeout",
                         extra={"attempt": attempt, "timeout": self.timeout},

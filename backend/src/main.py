@@ -1,26 +1,30 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from src.logger_config import setup_logging
-from src.core.telegram_alerts import setup_telegram_alerts
-from src.config import settings
-from src.database import Base, engine
-from src.routers import auth, bots, api_keys, user, stats, payments, assistant, feedback
-from src.services import docker_manager
-from src.core.exception_handlers import register_exception_handlers
-from src.services.polling_worker import run_polling_worker
-import asyncio
 
 # ==============
 # Настройки для GLITCHTIP (система для удобной работы с ошибками)
 import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastApiIntegration # перехватывает исключения в эндпоинтах
-from sentry_sdk.integrations.asyncio import AsyncioIntegration # ловит исключения в asyncio тасках
-from sentry_sdk.integrations.logging import ignore_logger, ignore_logger_for_sentry_logs  # позволяет не трогать конкретный логер
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from sentry_sdk.integrations.asyncio import AsyncioIntegration  # ловит исключения в asyncio тасках
+from sentry_sdk.integrations.fastapi import FastApiIntegration  # перехватывает исключения в эндпоинтах
+from sentry_sdk.integrations.logging import (  # позволяет не трогать конкретный логер
+    ignore_logger,
+    ignore_logger_for_sentry_logs,
+)
+
+from src.config import settings
+from src.core.exception_handlers import register_exception_handlers
+from src.core.telegram_alerts import setup_telegram_alerts
+from src.logger_config import setup_logging
+from src.routers import api_keys, assistant, auth, bots, feedback, payments, stats, user
+from src.services import docker_manager
+from src.services.polling_worker import run_polling_worker
+
 
 def before_send(event, hint):
-    """ Это то, что вызывается перед каждой отправкой собитыя на сервер """
+    """Это то, что вызывается перед каждой отправкой собитыя на сервер"""
     # чувствительная данные которые не стоит передавать в мониторинг
     sensitive_keys = {"api_key", "api_secret", "password", "token"}
     # очистка этих чувствительных данных
@@ -37,6 +41,7 @@ def before_send(event, hint):
             event["request"]["data"].pop(key, None)
 
     return event
+
 
 if settings.GLITCHTIP_DSN:
     # убираем лишние логи от алхимии для того чтобы не засорять мониторинг
@@ -106,6 +111,7 @@ app.include_router(stats.router)
 app.include_router(payments.router)
 app.include_router(assistant.router)
 app.include_router(feedback.router)
+
 
 @app.get("/health")
 def health():

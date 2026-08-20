@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { streamAssistantChat } from './assistantApi';
-import type { AssistantMessage, AssistantPhase, BotFormSnapshot } from './types';
+import type {
+  AssistantMessage,
+  AssistantPhase,
+  BotFormSnapshot,
+} from './types';
 
 let messageCounter = 0;
 const nextId = () => `m${++messageCounter}`;
@@ -32,24 +36,33 @@ export function useAssistantChat({ getSnapshot }: Options) {
   // Незавершённый запрос не должен пережить размонтирование страницы
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  const patchMessage = useCallback((id: string, patch: Partial<AssistantMessage>) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...patch } : m))
-    );
-  }, []);
+  const patchMessage = useCallback(
+    (id: string, patch: Partial<AssistantMessage>) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+      );
+    },
+    [],
+  );
 
   const send = useCallback(
     async (text: string) => {
       const question = text.trim();
       if (!question || abortRef.current) return;
 
-      const userMessage: AssistantMessage = { id: nextId(), role: 'user', content: question };
+      const userMessage: AssistantMessage = {
+        id: nextId(),
+        role: 'user',
+        content: question,
+      };
       const replyId = nextId();
 
-      const history = [...messagesRef.current, userMessage].map(({ role, content }) => ({
-        role,
-        content,
-      }));
+      const history = [...messagesRef.current, userMessage].map(
+        ({ role, content }) => ({
+          role,
+          content,
+        }),
+      );
 
       setMessages((prev) => [
         ...prev,
@@ -75,7 +88,9 @@ export function useAssistantChat({ getSnapshot }: Options) {
           switch (event.type) {
             case 'status':
               setPhase(event.stage === 'searching' ? 'searching' : 'thinking');
-              setSearchQuery(event.stage === 'searching' ? event.query ?? '' : '');
+              setSearchQuery(
+                event.stage === 'searching' ? (event.query ?? '') : '',
+              );
               break;
             case 'delta':
               buffer += event.text;
@@ -98,7 +113,9 @@ export function useAssistantChat({ getSnapshot }: Options) {
       } catch (err) {
         // AbortError — пользователь сам нажал «Стоп», это не ошибка
         if (!(err instanceof DOMException && err.name === 'AbortError')) {
-          patchMessage(replyId, { error: 'Соединение с ассистентом прервалось.' });
+          patchMessage(replyId, {
+            error: 'Соединение с ассистентом прервалось.',
+          });
         }
       } finally {
         abortRef.current = null;
@@ -108,13 +125,17 @@ export function useAssistantChat({ getSnapshot }: Options) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === replyId && !m.content && !m.suggestions && !m.error
-              ? { ...m, error: 'Ассистент не ответил. Попробуйте переформулировать вопрос.' }
-              : m
-          )
+              ? {
+                  ...m,
+                  error:
+                    'Ассистент не ответил. Попробуйте переформулировать вопрос.',
+                }
+              : m,
+          ),
         );
       }
     },
-    [getSnapshot, patchMessage, webSearch]
+    [getSnapshot, patchMessage, webSearch],
   );
 
   const stop = useCallback(() => {

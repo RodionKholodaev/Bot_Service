@@ -16,7 +16,8 @@
 
 import json
 import logging
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from src.config import settings
 from src.schemas.assistant import AssistantChatRequest
@@ -62,7 +63,7 @@ class AssistantService:
         try:
             # открытие клиента с нужными настройками
             async with aitunnel.build_client() as client:
-                # модель может не сразу ответить на вопрос, 
+                # модель может не сразу ответить на вопрос,
                 # у нее есть возможность попросить инструменты для работы
                 # этот паттерно называется ReAct (Reason + Act)
                 for round_index in range(MAX_TOOL_ROUNDS):
@@ -81,7 +82,7 @@ class AssistantService:
                     if not calls:
                         break
 
-                    # Если это последний раунд и нейросеть все равно просит инструмент, 
+                    # Если это последний раунд и нейросеть все равно просит инструмент,
                     # то мы выходим из цикла насильно и пишем предупреждение в логи
                     if round_index == MAX_TOOL_ROUNDS - 1:
                         logger.warning(
@@ -189,7 +190,7 @@ class AssistantService:
                 # создаем слот для инструмента
                 # если индекс уже есть в tool_calls, то просто получаем значение по этому индексу
                 # если индекста нет, то создаем знаичение по умолчанию
-                # slot это не новый объект, а ссылка на часть sink["tool_calls"], 
+                # slot это не новый объект, а ссылка на часть sink["tool_calls"],
                 # поэтому меняя его мы меняем sink["tool_calls"]
                 slot = sink["tool_calls"].setdefault(index, {"id": "", "name": "", "arguments": ""})
                 # дописываем в sink["tool_calls"] новую информацию
@@ -213,6 +214,7 @@ class AssistantService:
             }
         }
         """
+
     @staticmethod
     def _collect_tool_calls(sink: dict[str, Any]) -> list[dict[str, str]]:
         calls = sink.get("tool_calls") or {}
@@ -281,12 +283,8 @@ class AssistantService:
             messages.append({"role": "tool", "tool_call_id": call_id, "content": answer})
             return
 
-        logger.warning(
-            "Assistant called unknown tool", extra={"tool": name, "user_id": self.user_id}
-        )
-        messages.append(
-            {"role": "tool", "tool_call_id": call_id, "content": "Такого инструмента нет."}
-        )
+        logger.warning("Assistant called unknown tool", extra={"tool": name, "user_id": self.user_id})
+        messages.append({"role": "tool", "tool_call_id": call_id, "content": "Такого инструмента нет."})
 
     @staticmethod
     def _extract_query(raw_arguments: str) -> str:

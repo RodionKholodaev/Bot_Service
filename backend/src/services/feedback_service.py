@@ -6,7 +6,7 @@
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from src.core.exceptions import TooManyRequestsError
 from src.repositories.feedback_repository import FeedbackRepository
@@ -27,7 +27,7 @@ class FeedbackService:
 
         # антиспам — считаем отзывы за последний час прямо в БД,
         # без Redis и внешних библиотек
-        since = datetime.now(timezone.utc) - timedelta(hours=1)
+        since = datetime.now(UTC) - timedelta(hours=1)
         recent_count = await self.repo.count_since(current_user.id, since)
 
         if recent_count >= FEEDBACK_LIMIT_PER_HOUR:
@@ -36,8 +36,7 @@ class FeedbackService:
                 extra={"user_id": current_user.id, "recent_count": recent_count},
             )
             raise TooManyRequestsError(
-                f"Слишком много отзывов: не больше {FEEDBACK_LIMIT_PER_HOUR} в час. "
-                "Попробуйте отправить позже."
+                f"Слишком много отзывов: не больше {FEEDBACK_LIMIT_PER_HOUR} в час. Попробуйте отправить позже."
             )
 
         feedback = await self.repo.create(

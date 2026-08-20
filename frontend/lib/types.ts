@@ -1,8 +1,10 @@
-export type BotDirection = "long" | "short" | "both";
-export type StrategyPreset = "conservative" | "moderate" | "aggressive" | "custom";
-export type Indicator = "rsi" | "cci";
-export type Timeframe = "1m" | "5m" | "15m" | "30m" | "1h" | "4h";
-export type FilterCondition = "less" | "greater" | "less_equal" | "greater_equal";
+export type BotDirection = 'long' | 'short' | 'both';
+export type StrategyPreset =
+  'conservative' | 'moderate' | 'aggressive' | 'custom';
+export type Indicator = 'rsi' | 'cci';
+export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h';
+export type FilterCondition =
+  'less' | 'greater' | 'less_equal' | 'greater_equal';
 
 export interface FilterRule {
   indicator: Indicator;
@@ -23,7 +25,7 @@ export interface BotCreatePayload {
   stop_loss_enabled: boolean;
   stop_loss_percent?: number | null;
   dry_run: boolean;
-  api_key_id: number | null
+  api_key_id: number | null;
   stake_amount: number;
   tradable_balance_ratio: number;
 }

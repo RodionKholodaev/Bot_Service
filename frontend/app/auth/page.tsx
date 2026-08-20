@@ -1,5 +1,5 @@
-"use client"
-import React, { useState, useEffect, Suspense} from 'react';
+'use client';
+import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Bot, Eye, EyeOff, ArrowLeft, AlertCircle, Loader } from 'lucide-react';
 import Link from 'next/link';
@@ -8,12 +8,15 @@ import './auth.css';
 type Mode = 'login' | 'register';
 
 const AuthContent = () => {
-  const router       = useRouter();
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode]         = useState<Mode>((searchParams.get('mode') as Mode) || 'login');
+  // mode всегда читаем из URL — единственный источник правды,
+  // чтобы не держать его в синхронизируемом с эффектом стейте
+  const mode: Mode =
+    searchParams.get('mode') === 'register' ? 'register' : 'login';
   const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const [form, setForm] = useState({
     username: '',
@@ -22,14 +25,7 @@ const AuthContent = () => {
     confirmPassword: '',
   });
 
-  // Sync mode from URL query param
-  useEffect(() => {
-    const m = searchParams.get('mode') as Mode;
-    if (m === 'login' || m === 'register') setMode(m);
-  }, [searchParams]);
-
   const switchMode = (m: Mode) => {
-    setMode(m);
     setError('');
     setForm({ username: '', email: '', password: '', confirmPassword: '' });
     router.replace(`/auth?mode=${m}`, { scroll: false });
@@ -37,13 +33,15 @@ const AuthContent = () => {
 
   const validate = () => {
     if (mode === 'register') {
-      if (!form.username.trim())             return 'Введите имя пользователя';
-      if (form.username.length < 3)          return 'Имя должно быть не менее 3 символов';
+      if (!form.username.trim()) return 'Введите имя пользователя';
+      if (form.username.length < 3)
+        return 'Имя должно быть не менее 3 символов';
       if (!/\S+@\S+\.\S+/.test(form.email)) return 'Введите корректный email';
-      if (form.password.length < 8)          return 'Пароль должен быть не менее 8 символов';
+      if (form.password.length < 8)
+        return 'Пароль должен быть не менее 8 символов';
       if (form.password !== form.confirmPassword) return 'Пароли не совпадают';
     } else {
-      if (!form.email.trim())    return 'Введите email';
+      if (!form.email.trim()) return 'Введите email';
       if (!form.password.trim()) return 'Введите пароль';
     }
     return null;
@@ -54,14 +52,23 @@ const AuthContent = () => {
     setError('');
 
     const validationError = validate();
-    if (validationError) { setError(validationError); return; }
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     setLoading(true);
     try {
-      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const body = mode === 'login'
-        ? { email: form.email, password: form.password }
-        : { username: form.username, email: form.email, password: form.password };
+      const endpoint =
+        mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const body =
+        mode === 'login'
+          ? { email: form.email, password: form.password }
+          : {
+              username: form.username,
+              email: form.email,
+              password: form.password,
+            };
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -77,7 +84,7 @@ const AuthContent = () => {
         if (typeof detail === 'string') {
           setError(detail);
         } else if (Array.isArray(detail)) {
-          setError(detail.map((e: any) => e.msg).join(', '));
+          setError(detail.map((e: { msg: string }) => e.msg).join(', '));
         } else {
           setError('Что-то пошло не так');
         }
@@ -90,7 +97,6 @@ const AuthContent = () => {
       localStorage.setItem('username', data.username);
 
       router.push('/home');
-      
     } catch {
       setError('Ошибка соединения. Попробуйте ещё раз.');
     } finally {
@@ -127,7 +133,11 @@ const AuthContent = () => {
         {/* Title */}
         <div className="auth-header">
           <h1>{isRegister ? 'Создайте аккаунт' : 'Добро пожаловать'}</h1>
-          <p>{isRegister ? 'Начните торговать автоматически уже сегодня' : 'Войдите, чтобы управлять ботами'}</p>
+          <p>
+            {isRegister
+              ? 'Начните торговать автоматически уже сегодня'
+              : 'Войдите, чтобы управлять ботами'}
+          </p>
         </div>
 
         {/* Tab switcher */}
@@ -181,7 +191,9 @@ const AuthContent = () => {
             <div className="auth-pass-wrap">
               <input
                 type={showPass ? 'text' : 'password'}
-                placeholder={isRegister ? 'Минимум 8 символов' : 'Введите пароль'}
+                placeholder={
+                  isRegister ? 'Минимум 8 символов' : 'Введите пароль'
+                }
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 className="auth-input"
@@ -206,7 +218,9 @@ const AuthContent = () => {
                   type={showPass ? 'text' : 'password'}
                   placeholder="Повторите пароль"
                   value={form.confirmPassword}
-                  onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, confirmPassword: e.target.value })
+                  }
                   className="auth-input"
                   autoComplete="new-password"
                 />
@@ -227,8 +241,10 @@ const AuthContent = () => {
                 <Loader size={16} className="spin" />
                 {isRegister ? 'Создание аккаунта...' : 'Вход...'}
               </>
+            ) : isRegister ? (
+              'Создать аккаунт'
             ) : (
-              isRegister ? 'Создать аккаунт' : 'Войти'
+              'Войти'
             )}
           </button>
         </form>

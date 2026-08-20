@@ -1,6 +1,26 @@
-"use client"
+'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Bot, Wallet, DollarSign, Plus, Settings, BookOpen, MessageCircle, BarChart3, Pause, Play, AlertCircle, Zap, ChevronRight, CreditCard, Loader2, Trash2, AlertTriangle, FlaskConical } from 'lucide-react';
+import {
+  TrendingUp,
+  Bot,
+  Wallet,
+  DollarSign,
+  Plus,
+  Settings,
+  BookOpen,
+  MessageCircle,
+  BarChart3,
+  Pause,
+  Play,
+  AlertCircle,
+  Zap,
+  ChevronRight,
+  CreditCard,
+  Loader2,
+  Trash2,
+  AlertTriangle,
+  FlaskConical,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 // ── Типы под BotPublic с бэка ─────────────────────────────
@@ -45,19 +65,17 @@ const getAuthHeader = (): Record<string, string> => {
 
 const TradingBotDashboard = () => {
   const [serviceBalance, setServiceBalance] = useState<number>(0);
-  const [isAuthed, setIsAuthed] = useState(false);
+  // статистика
+  const [homeStats, setHomeStats] = useState<HomeStats | null>(null);
   const router = useRouter();
 
   // проверка того что пользователь имеет JWT
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    if (!localStorage.getItem('access_token')) {
       router.replace('/auth');
-    } else {
-      setIsAuthed(true); 
     }
   }, [router]);
-  
+
   const fetchBalance = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/users/me/balance`, {
@@ -99,15 +117,12 @@ const TradingBotDashboard = () => {
   // id ботов, по которым сейчас идёт start/stop/delete — чтобы блокировать кнопки
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  // статистика
-  const [homeStats, setHomeStats] = useState<HomeStats | null>(null);
-
 
   // Функция создания платежа:
   const handleTopUp = async () => {
     const amount = parseFloat(topUpAmount);
     if (!amount || amount < 10) return alert('Минимальная сумма — 10 ₽');
-    
+
     setTopUpLoading(true);
     try {
       const res = await fetch(`${API_BASE}/payments/create`, {
@@ -150,25 +165,28 @@ const TradingBotDashboard = () => {
     if (params.get('payment') === 'success') {
       // Ждём 3 секунды перед запросом баланса
       setTimeout(() => fetchBalance(), 3000);
-      
+
       // Убираем параметр ?payment=success из URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, []); 
-
+  }, []);
 
   useEffect(() => {
-    if (!isAuthed) return;
+    if (!localStorage.getItem('access_token')) return;
+    // Обычная загрузка данных при монтировании: setState происходит уже после
+    // await внутри каждой из функций, каскадного ререндера нет. Правило этого
+    // не различает и ругается на любой вызов функции с setState внутри.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBots();
     fetchBalance();
     fetchHomeStats();
     // авто-обновление раз в 15 секунд, чтобы видеть смену статусов
     const interval = setInterval(fetchBots, 15000);
     return () => clearInterval(interval);
-  }, [isAuthed, fetchBots, fetchBalance, fetchHomeStats]);
+  }, [fetchBots, fetchBalance, fetchHomeStats]);
 
   const markPending = (id: string, on: boolean) => {
-    setPendingIds(prev => {
+    setPendingIds((prev) => {
       const next = new Set(prev);
       on ? next.add(id) : next.delete(id);
       return next;
@@ -176,7 +194,8 @@ const TradingBotDashboard = () => {
   };
 
   const handleStartStop = async (bot: BotPublic) => {
-    const action = bot.status === 'running' || bot.status === 'starting' ? 'stop' : 'start';
+    const action =
+      bot.status === 'running' || bot.status === 'starting' ? 'stop' : 'start';
     markPending(bot.id, true);
     try {
       const res = await fetch(`${API_BASE}/bots/${bot.id}/${action}`, {
@@ -185,7 +204,7 @@ const TradingBotDashboard = () => {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const updated: BotPublic = await res.json();
-      setBots(prev => prev.map(b => (b.id === updated.id ? updated : b)));
+      setBots((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
     } catch (e) {
       console.error(e);
       // мягкий фоллбэк — просто перечитаем список
@@ -203,15 +222,18 @@ const TradingBotDashboard = () => {
         headers: { ...getAuthHeader() },
       });
       if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
-      const deletedBot = bots.find(b => b.id === botId);
-      setBots(prev => prev.filter(b => b.id !== botId));
-      setHomeStats(prev => {
+      const deletedBot = bots.find((b) => b.id === botId);
+      setBots((prev) => prev.filter((b) => b.id !== botId));
+      setHomeStats((prev) => {
         if (!prev) return prev;
-        const wasActive = deletedBot?.status === 'running' || deletedBot?.status === 'starting';
+        const wasActive =
+          deletedBot?.status === 'running' || deletedBot?.status === 'starting';
         return {
           ...prev,
           bots_total: Math.max(0, prev.bots_total - 1),
-          bots_running: wasActive ? Math.max(0, prev.bots_running - 1) : prev.bots_running,
+          bots_running: wasActive
+            ? Math.max(0, prev.bots_running - 1)
+            : prev.bots_running,
         };
       });
       // подтягиваем актуальные цифры с бэка на случай расхождения
@@ -227,7 +249,10 @@ const TradingBotDashboard = () => {
 
   // ── Производные метрики для верхних карточек ───────────
   const stats = {
-    activeBots: homeStats?.bots_running ?? bots.filter(b => b.status === 'running' || b.status === 'starting').length,
+    activeBots:
+      homeStats?.bots_running ??
+      bots.filter((b) => b.status === 'running' || b.status === 'starting')
+        .length,
     weeklyProfit: homeStats?.weekly_profit ?? 0,
     fundsUnderManagement: homeStats?.funds_under_management ?? 0,
   };
@@ -271,7 +296,9 @@ const TradingBotDashboard = () => {
             <span>CryptoBot</span>
           </div>
           <nav className="main-nav">
-            <a href="#" className="nav-item active">Главная</a>
+            <a href="#" className="nav-item active">
+              Главная
+            </a>
             {/* span внутри Link обязателен: styled-jsx не скоупит классы на React-компоненты */}
             <Link href="/stats"><span className="nav-item">Статистика</span></Link>
             <Link href="/feedback"><span className="nav-item">Обратная связь</span></Link>
@@ -279,9 +306,14 @@ const TradingBotDashboard = () => {
           </nav>
         </div>
         <div className="header-right">
-          <div className={`balance-indicator ${balanceStatus.status}`} onClick={() => setShowTopUpModal(true)}>
+          <div
+            className={`balance-indicator ${balanceStatus.status}`}
+            onClick={() => setShowTopUpModal(true)}
+          >
             <CreditCard size={16} />
-            <span className="balance-amount">{serviceBalance.toLocaleString('ru-RU')} ₽</span>
+            <span className="balance-amount">
+              {serviceBalance.toLocaleString('ru-RU')} ₽
+            </span>
           </div>
           <button className="btn-icon" onClick={() => setShowTopUpModal(true)}>
             <Plus size={20} />
@@ -296,60 +328,65 @@ const TradingBotDashboard = () => {
 
       {/* Main Content */}
       <div className="dashboard-scroll">
-      <main className="dashboard-main">
-        {/* Hero Section */}
-        <section className="home-hero-section">
-          <div className="home-hero-content">
-            <h1>Добро пожаловать в панель управления</h1>
-            <p>Ваши торговые боты работают круглосуточно</p>
-          </div>
-          <div className="home-hero-actions">
-            <Link href="/bot-creation">
-              <button className="btn-primary">
-                <Plus size={20} />
-                Создать бота
-              </button>
-            </Link>
-            {/* <button className="btn-secondary">
+        <main className="dashboard-main">
+          {/* Hero Section */}
+          <section className="home-hero-section">
+            <div className="home-hero-content">
+              <h1>Добро пожаловать в панель управления</h1>
+              <p>Ваши торговые боты работают круглосуточно</p>
+            </div>
+            <div className="home-hero-actions">
+              <Link href="/bot-creation">
+                <button className="btn-primary">
+                  <Plus size={20} />
+                  Создать бота
+                </button>
+              </Link>
+              {/* <button className="btn-secondary">
               <BookOpen size={20} />
               Как это работает?
             </button> */}
-          </div>
-        </section>
+            </div>
+          </section>
 
-        {/* Stats Grid */}
-        <section className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon active">
-              <Bot size={24} />
+          {/* Stats Grid */}
+          <section className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon active">
+                <Bot size={24} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-label">Активные боты</div>
+                <div className="stat-value">{stats.activeBots}</div>
+              </div>
             </div>
-            <div className="stat-content">
-              <div className="stat-label">Активные боты</div>
-              <div className="stat-value">{stats.activeBots}</div>
-            </div>
-          </div>
 
-          <div className="stat-card profit">
-            <div className="stat-icon profit">
-              <TrendingUp size={24} />
+            <div className="stat-card profit">
+              <div className="stat-icon profit">
+                <TrendingUp size={24} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-label">Прибыль за неделю</div>
+                <div className="stat-value profit">${stats.weeklyProfit}</div>
+              </div>
             </div>
-            <div className="stat-content">
-              <div className="stat-label">Прибыль за неделю</div>
-              <div className="stat-value profit">${stats.weeklyProfit}</div>
-            </div>
-          </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">
-              <DollarSign size={24} />
+            <div className="stat-card">
+              <div className="stat-icon">
+                <DollarSign size={24} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-label">В управлении</div>
+                <div className="stat-value">
+                  $
+                  {stats.fundsUnderManagement.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                  })}
+                </div>
+              </div>
             </div>
-            <div className="stat-content">
-              <div className="stat-label">В управлении</div>
-              <div className="stat-value">${stats.fundsUnderManagement.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-            </div>
-          </div>
 
-          {/* <div className="stat-card">
+            {/* <div className="stat-card">
             <div className="stat-icon">
               <Wallet size={24} />
             </div>
@@ -358,145 +395,167 @@ const TradingBotDashboard = () => {
               <div className="stat-value">${stats.exchangeBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
             </div>
           </div> */}
-        </section>
+          </section>
 
-        {/* Active Bots */}
-        <section className="bots-section">
-          <div className="section-header">
-            <h2>Мои боты</h2>
-            {/* <button className="btn-text" onClick={fetchBots} disabled={botsLoading}>
+          {/* Active Bots */}
+          <section className="bots-section">
+            <div className="section-header">
+              <h2>Мои боты</h2>
+              {/* <button className="btn-text" onClick={fetchBots} disabled={botsLoading}>
               Обновить <ChevronRight size={16} />
             </button> */}
-          </div>
-
-          {botsLoading && bots.length === 0 ? (
-            <div className="bots-loading">
-              <Loader2 size={32} className="spin" />
-              <span>Загружаем ботов...</span>
             </div>
-          ) : botsError ? (
-            <div className="bots-error">
-              <AlertTriangle size={20} />
-              <span>{botsError}</span>
-              <button className="btn-text" onClick={fetchBots}>Повторить</button>
-            </div>
-          ) : bots.length > 0 ? (
-            <div className="bots-list">
-              {bots.map(bot => {
-                const isPending = pendingIds.has(bot.id);
-                const isRunning = bot.status === 'running';
-                const isStarting = bot.status === 'starting';
-                const isError = bot.status === 'error';
-                const isStopped = bot.status === 'stopped' || bot.status === 'created';
 
-                const statusLabel: Record<BotStatus, string> = {
-                  running: 'Работает',
-                  starting: 'Запускается',
-                  stopped: 'Остановлен',
-                  created: 'Создан',
-                  error: 'Ошибка',
-                };
+            {botsLoading && bots.length === 0 ? (
+              <div className="bots-loading">
+                <Loader2 size={32} className="spin" />
+                <span>Загружаем ботов...</span>
+              </div>
+            ) : botsError ? (
+              <div className="bots-error">
+                <AlertTriangle size={20} />
+                <span>{botsError}</span>
+                <button className="btn-text" onClick={fetchBots}>
+                  Повторить
+                </button>
+              </div>
+            ) : bots.length > 0 ? (
+              <div className="bots-list">
+                {bots.map((bot) => {
+                  const isPending = pendingIds.has(bot.id);
+                  const isRunning = bot.status === 'running';
+                  const isStarting = bot.status === 'starting';
+                  const isError = bot.status === 'error';
+                  const isStopped =
+                    bot.status === 'stopped' || bot.status === 'created';
 
-                const profit = bot.total_profit ?? 0;
-                const profitSign = profit >= 0 ? '+' : '';
+                  const statusLabel: Record<BotStatus, string> = {
+                    running: 'Работает',
+                    starting: 'Запускается',
+                    stopped: 'Остановлен',
+                    created: 'Создан',
+                    error: 'Ошибка',
+                  };
 
-                return (
-                  <div key={bot.id} className={`bot-card status-${bot.status}`}>
-                    <div className="bot-header">
-                      <div className="bot-info">
-                        <div className={`bot-status-indicator ${bot.status}`}></div>
-                        <div className="bot-title-block">
-                          <div className="bot-title-row">
-                            <h3>{bot.name}</h3>
-                            {bot.dry_run && (
-                              <span className="badge badge-dry" title="Демо-режим, реальные сделки не совершаются">
-                                <FlaskConical size={12} />
-                                DEMO
-                              </span>
-                            )}
+                  const profit = bot.total_profit ?? 0;
+                  const profitSign = profit >= 0 ? '+' : '';
+
+                  return (
+                    <div
+                      key={bot.id}
+                      className={`bot-card status-${bot.status}`}
+                    >
+                      <div className="bot-header">
+                        <div className="bot-info">
+                          <div
+                            className={`bot-status-indicator ${bot.status}`}
+                          ></div>
+                          <div className="bot-title-block">
+                            <div className="bot-title-row">
+                              <h3>{bot.name}</h3>
+                              {bot.dry_run && (
+                                <span
+                                  className="badge badge-dry"
+                                  title="Демо-режим, реальные сделки не совершаются"
+                                >
+                                  <FlaskConical size={12} />
+                                  DEMO
+                                </span>
+                              )}
+                            </div>
+                            <p className="bot-meta">
+                              {bot.pair} • {bot.direction} • x{bot.leverage} •{' '}
+                              {bot.strategy_preset}
+                            </p>
                           </div>
-                          <p className="bot-meta">
-                            {bot.pair} • {bot.direction} • x{bot.leverage} • {bot.strategy_preset}
-                          </p>
+                        </div>
+                        <div className="bot-actions">
+                          <button
+                            className="btn-icon-small"
+                            onClick={() => handleStartStop(bot)}
+                            disabled={isPending || isStarting}
+                            title={isRunning ? 'Остановить' : 'Запустить'}
+                          >
+                            {isPending ? (
+                              <Loader2 size={16} className="spin" />
+                            ) : isRunning || isStarting ? (
+                              <Pause size={16} />
+                            ) : (
+                              <Play size={16} />
+                            )}
+                          </button>
+                          <Link href={`/bot/${bot.id}`}>
+                            <button
+                              className="btn-icon-small"
+                              title="Настройки"
+                            >
+                              <Settings size={16} />
+                            </button>
+                          </Link>
+                          <button
+                            className="btn-icon-small btn-icon-danger"
+                            onClick={() => setDeleteConfirmId(bot.id)}
+                            disabled={isPending}
+                            title="Удалить"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </div>
-                      <div className="bot-actions">
-                        <button
-                          className="btn-icon-small"
-                          onClick={() => handleStartStop(bot)}
-                          disabled={isPending || isStarting}
-                          title={isRunning ? 'Остановить' : 'Запустить'}
-                        >
-                          {isPending ? (
-                            <Loader2 size={16} className="spin" />
-                          ) : isRunning || isStarting ? (
-                            <Pause size={16} />
-                          ) : (
-                            <Play size={16} />
-                          )}
-                        </button>
+
+                      <div className={`bot-status-row status-${bot.status}`}>
+                        <span className="status-dot"></span>
+                        <span className="status-text">
+                          {statusLabel[bot.status]}
+                        </span>
+                        {isError && bot.error_message && (
+                          <span
+                            className="status-error-msg"
+                            title={bot.error_message}
+                          >
+                            — {bot.error_message}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="bot-stats">
+                        <div className="bot-stat">
+                          <span className="bot-stat-label">Прибыль</span>
+                          <span
+                            className={`bot-stat-value ${profit >= 0 ? 'profit' : 'loss'}`}
+                          >
+                            {profitSign}${profit.toFixed(2)}
+                          </span>
+                        </div>
                         <Link href={`/bot/${bot.id}`}>
-                          <button className="btn-icon-small" title="Настройки">
-                            <Settings size={16} />
+                          <button className="btn-bot-details">
+                            <BarChart3 size={16} />
+                            Подробнее
                           </button>
                         </Link>
-                        <button
-                          className="btn-icon-small btn-icon-danger"
-                          onClick={() => setDeleteConfirmId(bot.id)}
-                          disabled={isPending}
-                          title="Удалить"
-                        >
-                          <Trash2 size={16} />
-                        </button>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <Bot size={64} />
+                <h3>У вас пока нет ботов</h3>
+                <p>Создайте своего первого торгового бота за пару минут</p>
+                <Link href="/bot-creation">
+                  <button className="btn-primary">
+                    <Plus size={20} />
+                    Создать первого бота
+                  </button>
+                </Link>
+              </div>
+            )}
+          </section>
 
-                    <div className={`bot-status-row status-${bot.status}`}>
-                      <span className="status-dot"></span>
-                      <span className="status-text">{statusLabel[bot.status]}</span>
-                      {isError && bot.error_message && (
-                        <span className="status-error-msg" title={bot.error_message}>
-                          — {bot.error_message}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="bot-stats">
-                      <div className="bot-stat">
-                        <span className="bot-stat-label">Прибыль</span>
-                        <span className={`bot-stat-value ${profit >= 0 ? 'profit' : 'loss'}`}>
-                          {profitSign}${profit.toFixed(2)}
-                        </span>
-                      </div>
-                      <Link href={`/bot/${bot.id}`}>
-                        <button className="btn-bot-details">
-                          <BarChart3 size={16} />
-                          Подробнее
-                        </button>
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <Bot size={64} />
-              <h3>У вас пока нет ботов</h3>
-              <p>Создайте своего первого торгового бота за пару минут</p>
-              <Link href="/bot-creation">
-                <button className="btn-primary">
-                  <Plus size={20} />
-                  Создать первого бота
-                </button>
-              </Link>
-            </div>
-          )}
-        </section>
-
-        {/* Quick Actions */}
-        <section className="quick-actions">
-          {/* <button className="action-card">
+          {/* Quick Actions */}
+          <section className="quick-actions">
+            {/* <button className="action-card">
             <MessageCircle size={24} />
             <div>
               <h3>Поддержка</h3>
@@ -531,13 +590,17 @@ const TradingBotDashboard = () => {
       {/* Delete confirmation modal */}
       {deleteConfirmId && (
         <div className="modal-overlay" onClick={() => setDeleteConfirmId(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>Удалить бота?</h2>
             <p className="modal-description">
-              Бот будет остановлен и удалён. История сделок сохранится в статистике, но восстановить настройки нельзя.
+              Бот будет остановлен и удалён. История сделок сохранится в
+              статистике, но восстановить настройки нельзя.
             </p>
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setDeleteConfirmId(null)}>
+              <button
+                className="btn-secondary"
+                onClick={() => setDeleteConfirmId(null)}
+              >
                 Отмена
               </button>
               <button
@@ -545,7 +608,11 @@ const TradingBotDashboard = () => {
                 onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
                 disabled={pendingIds.has(deleteConfirmId)}
               >
-                {pendingIds.has(deleteConfirmId) ? <Loader2 size={16} className="spin" /> : <Trash2 size={16} />}
+                {pendingIds.has(deleteConfirmId) ? (
+                  <Loader2 size={16} className="spin" />
+                ) : (
+                  <Trash2 size={16} />
+                )}
                 Удалить
               </button>
             </div>
@@ -556,12 +623,14 @@ const TradingBotDashboard = () => {
       {/* Top-up Modal */}
       {showTopUpModal && (
         <div className="modal-overlay" onClick={() => setShowTopUpModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>Пополнить баланс</h2>
-            <p className="modal-description">Выберите сумму пополнения или введите свою</p>
-            
+            <p className="modal-description">
+              Выберите сумму пополнения или введите свою
+            </p>
+
             <div className="topup-amounts">
-              {[500, 1000, 2000, 5000].map(val => (
+              {[500, 1000, 2000, 5000].map((val) => (
                 <button
                   key={val}
                   className={`amount-btn ${topUpAmount === String(val) ? 'selected' : ''} ${val === 1000 ? 'recommended' : ''}`}
@@ -578,13 +647,16 @@ const TradingBotDashboard = () => {
                 type="number"
                 placeholder="1000"
                 value={topUpAmount}
-                onChange={e => setTopUpAmount(e.target.value)}
+                onChange={(e) => setTopUpAmount(e.target.value)}
                 min={10}
               />
             </div>
 
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setShowTopUpModal(false)}>
+              <button
+                className="btn-secondary"
+                onClick={() => setShowTopUpModal(false)}
+              >
                 Отмена
               </button>
               <button
@@ -614,7 +686,12 @@ const TradingBotDashboard = () => {
           overflow: hidden;
           background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
           color: #e4e7f0;
-          font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family:
+            'SF Pro Display',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
         }
 
         /* Balance Alert */
@@ -628,7 +705,11 @@ const TradingBotDashboard = () => {
         }
 
         .balance-alert.critical {
-          background: linear-gradient(90deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+          background: linear-gradient(
+            90deg,
+            rgba(239, 68, 68, 0.15) 0%,
+            rgba(220, 38, 38, 0.1) 100%
+          );
           border-bottom: 2px solid rgba(239, 68, 68, 0.5);
           color: #fca5a5;
         }
@@ -639,7 +720,8 @@ const TradingBotDashboard = () => {
           color: #fcd34d;
         }
 
-        .btn-alert-action, .btn-alert-action-small {
+        .btn-alert-action,
+        .btn-alert-action-small {
           margin-left: auto;
           padding: 8px 20px;
           border: none;
@@ -764,8 +846,13 @@ const TradingBotDashboard = () => {
         }
 
         @keyframes pulse-critical {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-          50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+          0%,
+          100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+          }
         }
 
         .balance-indicator:hover {
@@ -830,15 +917,25 @@ const TradingBotDashboard = () => {
           align-items: center;
           margin-bottom: 40px;
           padding: 32px;
-          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+          background: linear-gradient(
+            135deg,
+            rgba(59, 130, 246, 0.1) 0%,
+            rgba(147, 51, 234, 0.1) 100%
+          );
           border-radius: 20px;
           border: 1px solid rgba(96, 165, 250, 0.2);
           animation: fadeIn 0.6s ease-out;
         }
 
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .home-hero-content h1 {
@@ -861,7 +958,8 @@ const TradingBotDashboard = () => {
           gap: 12px;
         }
 
-        .btn-primary, .btn-secondary {
+        .btn-primary,
+        .btn-secondary {
           display: flex;
           align-items: center;
           gap: 8px;
@@ -916,14 +1014,28 @@ const TradingBotDashboard = () => {
           animation-fill-mode: both;
         }
 
-        .stat-card:nth-child(1) { animation-delay: 0.1s; }
-        .stat-card:nth-child(2) { animation-delay: 0.2s; }
-        .stat-card:nth-child(3) { animation-delay: 0.3s; }
-        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+        .stat-card:nth-child(1) {
+          animation-delay: 0.1s;
+        }
+        .stat-card:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+        .stat-card:nth-child(3) {
+          animation-delay: 0.3s;
+        }
+        .stat-card:nth-child(4) {
+          animation-delay: 0.4s;
+        }
 
         @keyframes slideUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .stat-card:hover {
@@ -933,7 +1045,11 @@ const TradingBotDashboard = () => {
         }
 
         .stat-card.profit {
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
+          background: linear-gradient(
+            135deg,
+            rgba(16, 185, 129, 0.1) 0%,
+            rgba(5, 150, 105, 0.05) 100%
+          );
           border-color: rgba(16, 185, 129, 0.2);
         }
 
@@ -1061,8 +1177,13 @@ const TradingBotDashboard = () => {
         }
 
         @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
 
         .bot-info h3 {
@@ -1144,7 +1265,7 @@ const TradingBotDashboard = () => {
         .empty-state {
           display: flex;
           flex-direction: column;
-          align-items: center;        /* центрирует всё по горизонтали */
+          align-items: center; /* центрирует всё по горизонтали */
           padding: 80px 40px;
           background: rgba(26, 31, 53, 0.6);
           border: 2px dashed rgba(255, 255, 255, 0.1);
@@ -1365,8 +1486,12 @@ const TradingBotDashboard = () => {
         }
 
         @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         /* Bot status indicator (по новым статусам) */
@@ -1390,8 +1515,13 @@ const TradingBotDashboard = () => {
         }
 
         @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
 
         /* Bot card подсветка по статусу */
@@ -1451,22 +1581,34 @@ const TradingBotDashboard = () => {
           flex-shrink: 0;
         }
 
-        .bot-status-row.status-running { color: #6ee7b7; }
+        .bot-status-row.status-running {
+          color: #6ee7b7;
+        }
         .bot-status-row.status-running .status-dot {
           background: #10b981;
           box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
         }
-        .bot-status-row.status-starting { color: #fcd34d; }
-        .bot-status-row.status-starting .status-dot { background: #fbbf24; }
+        .bot-status-row.status-starting {
+          color: #fcd34d;
+        }
+        .bot-status-row.status-starting .status-dot {
+          background: #fbbf24;
+        }
         .bot-status-row.status-stopped,
-        .bot-status-row.status-created { color: #9ca3af; }
+        .bot-status-row.status-created {
+          color: #9ca3af;
+        }
         .bot-status-row.status-stopped .status-dot,
-        .bot-status-row.status-created .status-dot { background: #6b7280; }
+        .bot-status-row.status-created .status-dot {
+          background: #6b7280;
+        }
         .bot-status-row.status-error {
           color: #fca5a5;
           background: rgba(239, 68, 68, 0.08);
         }
-        .bot-status-row.status-error .status-dot { background: #ef4444; }
+        .bot-status-row.status-error .status-dot {
+          background: #ef4444;
+        }
 
         .status-error-msg {
           color: #fca5a5;

@@ -13,6 +13,7 @@
 ## Оглавление
 
 - [Быстрый старт](#быстрый-старт)
+- [Линт, форматирование и security-проверки](#линт-форматирование-и-security-проверки)
 - [Что здесь вообще тестируется](#что-здесь-вообще-тестируется)
 - [Структура](#структура)
 - [Два слоя тестов](#два-слоя-тестов)
@@ -51,7 +52,71 @@ asyncio_mode = auto    # async-тесты не требуют декоратор
 поймёт, что корутину надо выполнить. В проекте декоратор всё равно ставят: так по
 сигнатуре сразу видно, что тест асинхронный. **Держитесь этого соглашения.**
 
-CI есть — тесты прогоняются на каждый push в любую ветку
+CI есть (`.github/workflows/tests.yml`) — на каждый push четыре джобы: `test` (то, что
+выше), `lint-backend`, `frontend`, `secrets-scan`. Подробности — в следующем разделе.
+
+---
+
+## Линт, форматирование и security-проверки
+
+Отдельно от `pytest`, но гоняется в тех же CI-джобах. Не дублирует Pylance/pyright —
+это про стиль, автоформатирование и security-паттерны, которые редактор не проверяет.
+
+### Backend
+
+```bash
+pip install -r requirements.txt       # ruff и pip-audit — обычные записи в этом же файле
+ruff check .                          # лint: стиль, импорты, security (bandit-правила)
+ruff check . --fix                    # то же, с автофиксом того, что чинится безопасно
+ruff format .                         # форматирование (пробелы, кавычки, переносы)
+ruff format --check .                 # как в CI: ничего не трогает, только проверяет
+pip-audit -r requirements.txt         # известные CVE в зависимостях
+```
+
+Конфиг — `backend/pyproject.toml`. Правила: `E,F,I,B,C4,UP,ASYNC,S`
+(pyflakes+pycodestyle, isort, bugbear, comprehensions, pyupgrade, blocking-в-async,
+bandit-security). `B008` выключен намеренно — это идиома FastAPI `Depends(...)` в
+дефолтном аргументе, не баг. `tests/conftest.py` — с игнором `E402`: там `sentry_sdk.init`
+обязан идти до импорта `src.config`, см. [ловушку выше](#conftestpy--общая-обвязка).
+
+Если `pip-audit` находит уязвимость — это не повод чинить прямо руками: обновление
+зависимости (особенно `cryptography`, она шифрует ключи бирж) нужно делать осознанно,
+с прогоном полного теста после.
+
+### Frontend
+
+```bash
+npm run lint            # eslint (eslint-config-next + eslint-plugin-security)
+npm run format           # prettier --write
+npm run format:check     # prettier --check, как в CI
+npm audit                 # известные CVE в зависимостях
+npm audit fix              # безопасный автофикс (без --force!)
+```
+
+Конфиги — `frontend/eslint.config.mjs`, `frontend/.prettierrc.json`. `eslint-plugin-security`
+подключён через `security.configs.recommended` — ловит паттерны вроде небезопасного
+`RegExp`, `eval`, `child_process` с непроверенным вводом. `detect-object-injection`
+(`obj[key]`) шумный и даёт много ложных срабатываний — не гонитесь за нулём warning'ов
+по нему не глядя.
+
+`npm audit fix --force` **не запускайте вслепую**: у проекта жёстко запинена нестандартная
+версия `next` (см. `frontend/AGENTS.md`), и `--force` может её сломать.
+
+### secrets-scan (gitleaks)
+
+Отдельная CI-джоба сканирует весь репозиторий на закоммиченные секреты (API-ключи бирж,
+токены) на каждый push. Локально не запускается — только в CI.
+
+### Что сейчас не hard gate и почему
+
+- `pip-audit` и `npm audit` в CI не падают на найденных CVE — апгрейд `cryptography`/`next`
+  должен быть осознанным решением разработчика, а не автоматикой.
+
+`npm run lint` теперь **hard gate** (0 ошибок). Несколько эффектов загрузки данных помечены
+точечным `eslint-disable-next-line react-hooks/set-state-in-effect` с объяснением: правило
+ругается на любой вызов функции, внутри которой есть `setState`, даже когда тот происходит
+уже после `await` и каскадного ререндера не вызывает. Не снимайте эти комментарии пачкой
+и не добавляйте новые без такого же обоснования.
 
 ---
 

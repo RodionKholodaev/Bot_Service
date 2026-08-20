@@ -38,7 +38,7 @@ interface ApiKeyOption {
 export function applySuggestionsToForm(
   form: BotFormValues,
   suggestions: Suggestion[],
-  firstApiKey?: ApiKeyOption
+  firstApiKey?: ApiKeyOption,
 ): BotFormValues {
   let next: BotFormValues = { ...form };
 
@@ -53,7 +53,11 @@ export function applySuggestionsToForm(
         break;
 
       case 'stopLoss':
-        next = { ...next, stopLoss: String(suggestion.value), useStopLoss: true };
+        next = {
+          ...next,
+          stopLoss: String(suggestion.value),
+          useStopLoss: true,
+        };
         break;
 
       case 'useStopLoss':
@@ -65,8 +69,10 @@ export function applySuggestionsToForm(
         next = {
           ...next,
           dryRun,
-          selectedApiKeyId: dryRun ? '' : firstApiKey?.id ?? '',
-          exchange: dryRun ? 'binance' : firstApiKey?.exchange ?? next.exchange,
+          selectedApiKeyId: dryRun ? '' : (firstApiKey?.id ?? ''),
+          exchange: dryRun
+            ? 'binance'
+            : (firstApiKey?.exchange ?? next.exchange),
         };
         break;
       }
@@ -88,7 +94,7 @@ export function applySuggestionsToForm(
 export function toSnapshot(
   form: BotFormValues,
   step: number,
-  hasApiKeys: boolean
+  hasApiKeys: boolean,
 ): BotFormSnapshot {
   return {
     step,

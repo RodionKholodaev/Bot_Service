@@ -20,7 +20,11 @@ const hostOf = (url: string) => {
   }
 };
 
-export const MessageBubble = ({ message, streaming, onApplySuggestions }: Props) => {
+export const MessageBubble = ({
+  message,
+  streaming,
+  onApplySuggestions,
+}: Props) => {
   if (message.role === 'user') {
     return (
       <div className="ai-msg ai-msg--user">
@@ -40,7 +44,10 @@ export const MessageBubble = ({ message, streaming, onApplySuggestions }: Props)
         {streaming && <span className="ai-caret" />}
 
         {message.suggestions && message.suggestions.length > 0 && (
-          <SuggestionCard suggestions={message.suggestions} onApply={onApplySuggestions} />
+          <SuggestionCard
+            suggestions={message.suggestions}
+            onApply={onApplySuggestions}
+          />
         )}
 
         {message.sources && message.sources.length > 0 && (

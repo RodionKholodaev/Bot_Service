@@ -45,7 +45,9 @@ export const SuggestionCard = ({ suggestions, onApply }: Props) => {
             <div key={suggestion.field} className="ai-suggestion">
               <div className="ai-suggestion__row">
                 <span className="ai-suggestion__label">{meta.label}</span>
-                <span className="ai-suggestion__value">{meta.format(suggestion.value)}</span>
+                <span className="ai-suggestion__value">
+                  {meta.format(suggestion.value)}
+                </span>
                 <button
                   type="button"
                   className={`ai-suggestion__apply ${isApplied ? 'is-applied' : ''}`}
@@ -56,17 +58,23 @@ export const SuggestionCard = ({ suggestions, onApply }: Props) => {
                 </button>
               </div>
 
-              {suggestion.field === 'filters' && Array.isArray(suggestion.value) && (
-                <div className="ai-suggestion__rules">
-                  {(suggestion.value as FilterRule[]).map((rule, i) => (
-                    <span key={i} className={`ai-rule ai-rule--${rule.indicator}`}>
-                      {formatFilterRule(rule)}
-                    </span>
-                  ))}
-                </div>
-              )}
+              {suggestion.field === 'filters' &&
+                Array.isArray(suggestion.value) && (
+                  <div className="ai-suggestion__rules">
+                    {(suggestion.value as FilterRule[]).map((rule, i) => (
+                      <span
+                        key={i}
+                        className={`ai-rule ai-rule--${rule.indicator}`}
+                      >
+                        {formatFilterRule(rule)}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
-              {suggestion.reason && <p className="ai-suggestion__reason">{suggestion.reason}</p>}
+              {suggestion.reason && (
+                <p className="ai-suggestion__reason">{suggestion.reason}</p>
+              )}
             </div>
           );
         })}

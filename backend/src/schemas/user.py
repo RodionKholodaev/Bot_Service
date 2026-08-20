@@ -14,10 +14,9 @@ class LoginRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    token_type: str = "bearer"
+    token_type: str = "bearer"  # noqa: S105 — OAuth2 token type constant, not a secret
     user_id: int
     username: str
-
 
 
 class UserPublic(BaseModel):

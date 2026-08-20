@@ -1,6 +1,7 @@
-import logging
-from fastapi import Request
 import ipaddress as ip
+import logging
+
+from fastapi import Request
 
 logger = logging.getLogger(__name__)
 

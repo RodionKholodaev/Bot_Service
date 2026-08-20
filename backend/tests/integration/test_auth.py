@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_register_success(client):
     payload = {
@@ -117,9 +118,7 @@ async def test_me_success(client):
 
     response = await client.get(
         "/auth/me",
-        headers={
-            "Authorization": f"Bearer {token}"
-        },
+        headers={"Authorization": f"Bearer {token}"},
     )
 
     assert response.status_code == 200

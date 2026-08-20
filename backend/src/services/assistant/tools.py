@@ -118,6 +118,7 @@ WEB_SEARCH_TOOL: dict[str, Any] = {
     },
 }
 
+
 # вставки иформации о инструментах
 def build_tools(web_search_enabled: bool) -> list[dict[str, Any]]:
     tools = [SUGGEST_SETTINGS_TOOL]
@@ -127,6 +128,7 @@ def build_tools(web_search_enabled: bool) -> list[dict[str, Any]]:
 
 
 # ── Валидация предложений ────────────────────────────────────────────────
+
 
 # аккуратное преобразование в число
 def _as_number(value: Any) -> float | None:

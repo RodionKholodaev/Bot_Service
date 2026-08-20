@@ -1,6 +1,16 @@
-"use client"
+'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Zap, Settings, CreditCard, MessageSquare, Send, CheckCircle2, AlertCircle, Loader2, Star } from 'lucide-react';
+import {
+  Zap,
+  Settings,
+  CreditCard,
+  MessageSquare,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Star,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -17,10 +27,10 @@ const getAuthHeader = (): Record<string, string> => {
 type TopicKey = 'idea' | 'bug' | 'ux' | 'other';
 
 const TOPICS: { key: TopicKey; label: string; emoji: string }[] = [
-  { key: 'idea',  label: 'Идея / предложение',   emoji: '💡' },
-  { key: 'bug',   label: 'Нашёл(-а) баг',        emoji: '🐛' },
-  { key: 'ux',    label: 'Неудобно пользоваться', emoji: '🤔' },
-  { key: 'other', label: 'Другое',                emoji: '💬' },
+  { key: 'idea', label: 'Идея / предложение', emoji: '💡' },
+  { key: 'bug', label: 'Нашёл(-а) баг', emoji: '🐛' },
+  { key: 'ux', label: 'Неудобно пользоваться', emoji: '🤔' },
+  { key: 'other', label: 'Другое', emoji: '💬' },
 ];
 
 const MESSAGE_MAX = 2000;
@@ -28,7 +38,6 @@ const MESSAGE_MIN = 10;
 
 const FeedbackPage = () => {
   const router = useRouter();
-  const [isAuthed, setIsAuthed] = useState(false);
 
   const [topic, setTopic] = useState<TopicKey | null>(null);
   const [message, setMessage] = useState('');
@@ -36,18 +45,17 @@ const FeedbackPage = () => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
 
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle');
   const [errorText, setErrorText] = useState('');
 
   const [serviceBalance, setServiceBalance] = useState<number>(0);
 
   // проверка того что пользователь имеет JWT
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    if (!localStorage.getItem('access_token')) {
       router.replace('/auth');
-    } else {
-      setIsAuthed(true);
     }
   }, [router]);
 
@@ -66,9 +74,13 @@ const FeedbackPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!isAuthed) return;
+    if (!localStorage.getItem('access_token')) return;
+    // Обычная загрузка данных при монтировании: setState происходит уже после
+    // await внутри fetchBalance, каскадного ререндера нет. Правило этого
+    // не различает и ругается на любой вызов функции с setState внутри.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBalance();
-  }, [isAuthed, fetchBalance]);
+  }, [fetchBalance]);
 
   // тот же светофор баланса, что и на главной
   const getBalanceStatus = (balance: number) => {
@@ -79,7 +91,8 @@ const FeedbackPage = () => {
   const balanceStatus = getBalanceStatus(serviceBalance);
 
   const trimmed = message.trim();
-  const canSubmit = topic !== null && trimmed.length >= MESSAGE_MIN && status !== 'loading';
+  const canSubmit =
+    topic !== null && trimmed.length >= MESSAGE_MIN && status !== 'loading';
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -102,7 +115,9 @@ const FeedbackPage = () => {
       }
       setStatus('success');
     } catch (e) {
-      setErrorText(e instanceof Error ? e.message : 'Не удалось отправить отзыв');
+      setErrorText(
+        e instanceof Error ? e.message : 'Не удалось отправить отзыв',
+      );
       setStatus('error');
     }
   };
@@ -135,7 +150,9 @@ const FeedbackPage = () => {
         <div className="header-right">
           <div className={`balance-indicator ${balanceStatus}`}>
             <CreditCard size={16} />
-            <span className="balance-amount">{serviceBalance.toLocaleString('ru-RU')} ₽</span>
+            <span className="balance-amount">
+              {serviceBalance.toLocaleString('ru-RU')} ₽
+            </span>
           </div>
           <Link href="/settings">
             <button className="btn-icon">
@@ -151,13 +168,16 @@ const FeedbackPage = () => {
           {/* Hero */}
           <section className="feedback-hero">
             <span className="hero-badge">
-              <span className="hero-badge-icon"><MessageSquare size={14} /></span>
+              <span className="hero-badge-icon">
+                <MessageSquare size={14} />
+              </span>
               Обратная связь
             </span>
             <h1>Нам важно ваше мнение</h1>
             <p>
-              Мы правда рады любым предложениям и конструктивной критике — они помогают делать
-              CryptoBot лучше. Расскажите, что понравилось, что стоит поправить, или чего не хватает.
+              Мы правда рады любым предложениям и конструктивной критике — они
+              помогают делать CryptoBot лучше. Расскажите, что понравилось, что
+              стоит поправить, или чего не хватает.
             </p>
           </section>
 
@@ -169,13 +189,18 @@ const FeedbackPage = () => {
                   <CheckCircle2 size={56} />
                 </div>
                 <h2>Спасибо! Сообщение отправлено</h2>
-                <p>Мы читаем каждый отзыв и стараемся отвечать в течение 1–2 дней.</p>
+                <p>
+                  Мы читаем каждый отзыв и стараемся отвечать в течение 1–2
+                  дней.
+                </p>
                 <div className="success-actions">
                   <button className="btn-secondary" onClick={resetForm}>
                     Написать ещё
                   </button>
                   <Link href="/home">
-                    <button className="btn-primary">Вернуться на главную</button>
+                    <button className="btn-primary">
+                      Вернуться на главную
+                    </button>
                   </Link>
                 </div>
               </div>
@@ -185,7 +210,7 @@ const FeedbackPage = () => {
                 <div className="field">
                   <label className="field-label">Тема обращения</label>
                   <div className="topic-row">
-                    {TOPICS.map(t => (
+                    {TOPICS.map((t) => (
                       <button
                         key={t.key}
                         type="button"
@@ -201,14 +226,16 @@ const FeedbackPage = () => {
 
                 {/* Сообщение */}
                 <div className="field">
-                  <label className="field-label" htmlFor="fb-message">Ваше сообщение</label>
+                  <label className="field-label" htmlFor="fb-message">
+                    Ваше сообщение
+                  </label>
                   <textarea
                     id="fb-message"
                     className="field-textarea"
                     placeholder="Опишите идею, проблему или что угодно ещё — мы читаем каждое сообщение"
                     value={message}
                     maxLength={MESSAGE_MAX}
-                    onChange={e => setMessage(e.target.value)}
+                    onChange={(e) => setMessage(e.target.value)}
                   />
                   <div className="field-footer">
                     <span className="field-hint">
@@ -216,7 +243,9 @@ const FeedbackPage = () => {
                         ? `Ещё хотя бы ${MESSAGE_MIN - trimmed.length} символов`
                         : ''}
                     </span>
-                    <span className="char-count">{message.length} / {MESSAGE_MAX}</span>
+                    <span className="char-count">
+                      {message.length} / {MESSAGE_MAX}
+                    </span>
                   </div>
                 </div>
 
@@ -224,7 +253,8 @@ const FeedbackPage = () => {
                 <div className="field-grid">
                   <div className="field">
                     <label className="field-label" htmlFor="fb-email">
-                      Email <span className="field-optional">(необязательно)</span>
+                      Email{' '}
+                      <span className="field-optional">(необязательно)</span>
                     </label>
                     <input
                       id="fb-email"
@@ -232,22 +262,25 @@ const FeedbackPage = () => {
                       type="email"
                       placeholder="you@example.com"
                       value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      onChange={(e) => setEmail(e.target.value)}
                     />
                     <div className="field-footer">
-                      <span className="field-hint">Оставьте, если хотите получить ответ</span>
+                      <span className="field-hint">
+                        Оставьте, если хотите получить ответ
+                      </span>
                     </div>
                   </div>
 
                   <div className="field">
                     <label className="field-label">
-                      Насколько вам нравится сервис? <span className="field-optional">(необязательно)</span>
+                      Насколько вам нравится сервис?{' '}
+                      <span className="field-optional">(необязательно)</span>
                     </label>
                     <div
                       className="stars"
                       onMouseLeave={() => setHoverRating(0)}
                     >
-                      {[1, 2, 3, 4, 5].map(n => {
+                      {[1, 2, 3, 4, 5].map((n) => {
                         const shown = hoverRating || rating;
                         const active = n <= shown;
                         return (
@@ -267,7 +300,9 @@ const FeedbackPage = () => {
                           </button>
                         );
                       })}
-                      <span className="stars-value">{rating > 0 ? `${rating} / 5` : ''}</span>
+                      <span className="stars-value">
+                        {rating > 0 ? `${rating} / 5` : ''}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -275,7 +310,9 @@ const FeedbackPage = () => {
                 {/* Ошибка */}
                 {status === 'error' && (
                   <div className="form-error">
-                    <span className="error-icon"><AlertCircle size={16} /></span>
+                    <span className="error-icon">
+                      <AlertCircle size={16} />
+                    </span>
                     <span>{errorText}</span>
                   </div>
                 )}
@@ -288,7 +325,9 @@ const FeedbackPage = () => {
                 >
                   {status === 'loading' ? (
                     <>
-                      <span className="spin"><Loader2 size={18} /></span>
+                      <span className="spin">
+                        <Loader2 size={18} />
+                      </span>
                       Отправляем...
                     </>
                   ) : (
@@ -304,7 +343,11 @@ const FeedbackPage = () => {
 
           <p className="feedback-footnote">
             Срочный вопрос по боту или деньгам?{' '}
-            <a href="https://t.me/cryptobot_support" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://t.me/cryptobot_support"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Напишите в поддержку
             </a>
           </p>
@@ -325,7 +368,12 @@ const FeedbackPage = () => {
           overflow: hidden;
           background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
           color: #e4e7f0;
-          font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family:
+            'SF Pro Display',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
         }
 
         /* ── Header (как на главной) ─────────────── */
@@ -478,8 +526,14 @@ const FeedbackPage = () => {
         }
 
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .hero-badge {
@@ -520,7 +574,8 @@ const FeedbackPage = () => {
         }
 
         /* ── Buttons ─────────────────────────────── */
-        .btn-primary, .btn-secondary {
+        .btn-primary,
+        .btn-secondary {
           display: flex;
           align-items: center;
           gap: 8px;
@@ -576,8 +631,14 @@ const FeedbackPage = () => {
         }
 
         @keyframes slideUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         /* ── Fields ──────────────────────────────── */
@@ -617,7 +678,8 @@ const FeedbackPage = () => {
           margin-left: auto;
         }
 
-        .field-input, .field-textarea {
+        .field-input,
+        .field-textarea {
           width: 100%;
           padding: 14px 16px;
           background: rgba(255, 255, 255, 0.04);
@@ -635,11 +697,13 @@ const FeedbackPage = () => {
           resize: vertical;
         }
 
-        .field-input::placeholder, .field-textarea::placeholder {
+        .field-input::placeholder,
+        .field-textarea::placeholder {
           color: #4b5563;
         }
 
-        .field-input:focus, .field-textarea:focus {
+        .field-input:focus,
+        .field-textarea:focus {
           outline: none;
           border-color: rgba(96, 165, 250, 0.5);
           background: rgba(96, 165, 250, 0.04);
@@ -754,8 +818,12 @@ const FeedbackPage = () => {
         }
 
         @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         /* ── Success ─────────────────────────────── */
@@ -783,8 +851,14 @@ const FeedbackPage = () => {
         }
 
         @keyframes popIn {
-          from { transform: scale(0.5); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
+          from {
+            transform: scale(0.5);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
 
         .success-state h2 {

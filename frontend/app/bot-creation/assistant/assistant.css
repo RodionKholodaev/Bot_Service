@@ -63,7 +63,9 @@
   align-items: center;
   gap: 10px;
   transform: translateY(-50%);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .ai-launcher.is-hidden {
@@ -81,7 +83,11 @@
   border: 1px solid rgba(96, 165, 250, 0.28);
   border-right: none;
   border-radius: 14px 0 0 14px;
-  background: linear-gradient(180deg, rgba(32, 44, 76, 0.95) 0%, rgba(20, 28, 50, 0.95) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(32, 44, 76, 0.95) 0%,
+    rgba(20, 28, 50, 0.95) 100%
+  );
   color: #93c5fd;
   cursor: pointer;
   box-shadow: -6px 0 24px rgba(0, 0, 0, 0.35);
@@ -91,7 +97,11 @@
 .ai-launcher__tab:hover {
   color: #fff;
   border-color: rgba(96, 165, 250, 0.6);
-  background: linear-gradient(180deg, rgba(45, 61, 102, 0.98) 0%, rgba(28, 39, 68, 0.98) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(45, 61, 102, 0.98) 0%,
+    rgba(28, 39, 68, 0.98) 100%
+  );
   box-shadow: -6px 0 28px rgba(59, 130, 246, 0.25);
 }
 
@@ -272,7 +282,11 @@
   height: 44px;
   margin-bottom: 14px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.25) 0%, rgba(139, 92, 246, 0.2) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(96, 165, 250, 0.25) 0%,
+    rgba(139, 92, 246, 0.2) 100%
+  );
   color: #93c5fd;
   box-shadow: 0 0 24px rgba(96, 165, 250, 0.18);
 }
@@ -394,7 +408,7 @@
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.08);
   color: #93c5fd;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 12px;
 }
 
@@ -525,7 +539,7 @@
 .ai-rule {
   padding: 3px 7px;
   border-radius: 6px;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 11px;
 }
 
@@ -768,31 +782,59 @@
 /* ── Анимации ──────────────────────────────────────────────────────────── */
 
 @keyframes ai-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes ai-msg-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes ai-hint-in {
-  from { opacity: 0; transform: translateX(12px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes ai-blink {
-  50% { opacity: 0; }
+  50% {
+    opacity: 0;
+  }
 }
 
 @keyframes ai-bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
-  30% { transform: translateY(-3px); opacity: 1; }
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
 }
 
 @keyframes ai-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Узкие экраны ──────────────────────────────────────────────────────── */

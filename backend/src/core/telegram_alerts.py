@@ -113,9 +113,7 @@ def setup_telegram_alerts(bot_token: str | None, chat_id: str | None) -> None:
     logger = logging.getLogger(__name__)
 
     if not bot_token or not chat_id:
-        logger.warning(
-            "Telegram alerts disabled: TELEGRAM_ALERT_BOT_TOKEN or TELEGRAM_ALERT_CHAT_ID is not set"
-        )
+        logger.warning("Telegram alerts disabled: TELEGRAM_ALERT_BOT_TOKEN or TELEGRAM_ALERT_CHAT_ID is not set")
         return
 
     logging.getLogger().addHandler(TelegramAlertHandler(bot_token, chat_id))

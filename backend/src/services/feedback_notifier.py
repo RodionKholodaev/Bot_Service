@@ -39,9 +39,7 @@ TOPIC_LABELS = {
 
 def feedback_notifications_enabled() -> bool:
     """Уведомления включены, только если в .env заданы и токен, и chat_id."""
-    return bool(
-        settings.TELEGRAM_FEEDBACK_BOT_TOKEN and settings.TELEGRAM_FEEDBACK_CHAT_ID
-    )
+    return bool(settings.TELEGRAM_FEEDBACK_BOT_TOKEN and settings.TELEGRAM_FEEDBACK_CHAT_ID)
 
 
 def _build_message(feedback, user) -> str:

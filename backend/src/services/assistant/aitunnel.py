@@ -7,7 +7,8 @@ POST /chat/completions: и стриминг (SSE), и tool calling в форма
 
 import json
 import logging
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 import httpx
 
@@ -84,9 +85,7 @@ async def stream_chat_completion(
         payload["tool_choice"] = "auto"
 
     try:
-        async with client.stream(
-            "POST", _url("/chat/completions"), headers=_headers(), json=payload
-        ) as response:
+        async with client.stream("POST", _url("/chat/completions"), headers=_headers(), json=payload) as response:
             if response.status_code >= 400:
                 body = (await response.aread()).decode("utf-8", errors="replace")
                 raise AITunnelError(f"AITunnel returned {response.status_code}: {body[:500]}")

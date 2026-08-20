@@ -3,9 +3,6 @@
 import json
 import logging
 from pathlib import Path
-from src.core.crypto import decrypt
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.repositories.api_keys_repository import ApiKeysRepository
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +40,8 @@ async def generate_config(
         },
     )
 
-    with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
+    # Small local template read on the rare bot-creation path — not worth asyncio.to_thread.
+    with open(TEMPLATE_PATH, encoding="utf-8") as f:  # noqa: ASYNC230
         config = json.load(f)
 
     config["stake_amount"] = stake_amount

@@ -1,14 +1,38 @@
-"use client"
+'use client';
 import React, { useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bot, Key, TrendingUp, TrendingDown, Settings, AlertCircle, Info, ChevronRight, ArrowLeft, Check, Target, Shield, Loader2, DollarSign } from 'lucide-react';
+import {
+  Bot,
+  Key,
+  TrendingUp,
+  TrendingDown,
+  Settings,
+  AlertCircle,
+  Info,
+  ChevronRight,
+  ArrowLeft,
+  Check,
+  Target,
+  Shield,
+  Loader2,
+  DollarSign,
+} from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
-import type { BotCreatePayload, FilterRule, Indicator, Timeframe } from '@/lib/types';
+import type {
+  BotCreatePayload,
+  FilterRule,
+  Indicator,
+  Timeframe,
+} from '@/lib/types';
 import { AssistantLauncher } from './assistant/AssistantLauncher';
 import { AssistantPanel } from './assistant/AssistantPanel';
 import { fetchAssistantStatus } from './assistant/assistantApi';
-import { applySuggestionsToForm, toSnapshot, type BotFormValues } from './assistant/applySuggestions';
+import {
+  applySuggestionsToForm,
+  toSnapshot,
+  type BotFormValues,
+} from './assistant/applySuggestions';
 import { firstStepOf } from './assistant/fieldMeta';
 import type { Suggestion } from './assistant/types';
 import './create-bot.css';
@@ -33,7 +57,7 @@ const CustomSelect = ({
 }) => {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
-  const label = options.find(o => o.value === value)?.label ?? value;
+  const label = options.find((o) => o.value === value)?.label ?? value;
 
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -46,16 +70,30 @@ const CustomSelect = ({
   }, []);
 
   return (
-    <div ref={ref} className="custom-select filter-select" onClick={() => setOpen(o => !o)}>
+    <div
+      ref={ref}
+      className="custom-select filter-select"
+      onClick={() => setOpen((o) => !o)}
+    >
       <span>{label}</span>
-      <ChevronRight size={14} style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: '0.2s' }} />
+      <ChevronRight
+        size={14}
+        style={{
+          transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+          transition: '0.2s',
+        }}
+      />
       {open && (
         <div className="custom-select-dropdown">
-          {options.map(opt => (
+          {options.map((opt) => (
             <div
               key={opt.value}
               className={`custom-select-option ${opt.value === value ? 'active' : ''}`}
-              onClick={(e) => { e.stopPropagation(); onChange(opt.value); setOpen(false); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange(opt.value);
+                setOpen(false);
+              }}
             >
               {opt.label}
             </div>
@@ -73,8 +111,8 @@ const CreateBotPage = () => {
     // Шаг 1: Биржа, API ключ, депозит
     selectedApiKeyId: '',
     exchange: 'binance',
-    stakeAmount: '100',           // USDT — сколько USDT выделено боту
-    balanceRatio: '20',           // % от депозита на каждую сделку
+    stakeAmount: '100', // USDT — сколько USDT выделено боту
+    balanceRatio: '20', // % от депозита на каждую сделку
 
     // Шаг 2: Торговая пара и плечо
     tradingPair: '',
@@ -99,10 +137,11 @@ const CreateBotPage = () => {
   const [apiKeysLoading, setApiKeysLoading] = useState(true);
   const [apiKeysError, setApiKeysError] = useState<string | null>(null);
 
-  const [showIndicatorTooltip, setShowIndicatorTooltip] = useState<string | null>(null);
+  const [showIndicatorTooltip, setShowIndicatorTooltip] = useState<
+    string | null
+  >(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isAuthed, setIsAuthed] = useState(false);
 
   // ИИ-помощник: панель справа. assistantEnabled приходит с бэкенда —
   // если ключ AITunnel не настроен, ничего не показываем.
@@ -111,18 +150,15 @@ const CreateBotPage = () => {
 
   // проверка того что пользователь имеет JWT
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    if (!localStorage.getItem('access_token')) {
       router.replace('/auth');
-    } else {
-      setIsAuthed(true); // ← добавь
     }
   }, [router]);
 
   // Загружаем API-ключи при маунте — без автовыбора,
   // чтобы не засорять selectedApiKeyId в dry-run режиме.
   useEffect(() => {
-    if (!isAuthed) return;
+    if (!localStorage.getItem('access_token')) return;
     const loadApiKeys = async () => {
       setApiKeysLoading(true);
       setApiKeysError(null);
@@ -132,20 +168,22 @@ const CreateBotPage = () => {
         // Автовыбор только если уже стоит боевой режим
         // (по умолчанию dryRun=true, поэтому здесь ключ НЕ выбираем)
       } catch (err) {
-        setApiKeysError('Не удалось загрузить API-ключи. Добавьте их в настройках');
+        setApiKeysError(
+          'Не удалось загрузить API-ключи. Добавьте их в настройках',
+        );
       } finally {
         setApiKeysLoading(false);
       }
     };
     loadApiKeys();
-  }, [isAuthed]);
+  }, []);
 
   useEffect(() => {
-    if (!isAuthed) return;
+    if (!localStorage.getItem('access_token')) return;
     fetchAssistantStatus()
-      .then(status => setAssistantEnabled(status.enabled))
+      .then((status) => setAssistantEnabled(status.enabled))
       .catch(() => setAssistantEnabled(false));
-  }, [isAuthed]);
+  }, []);
 
   // Ассистент читает форму в момент отправки вопроса, а не при рендере
   const getAssistantSnapshot = useCallback(
@@ -154,20 +192,33 @@ const CreateBotPage = () => {
   );
 
   // Пользователь нажал «Применить» в ответе ассистента
-  const handleApplySuggestions = useCallback((suggestions: Suggestion[]) => {
-    setFormData(prev => applySuggestionsToForm(prev, suggestions, apiKeys[0]));
-    setSubmitError(null);
-    // Переводим на шаг, где изменённое поле видно — иначе непонятно, что произошло
-    setCurrentStep(firstStepOf(suggestions));
-  }, [apiKeys]);
+  const handleApplySuggestions = useCallback(
+    (suggestions: Suggestion[]) => {
+      setFormData((prev) =>
+        applySuggestionsToForm(prev, suggestions, apiKeys[0]),
+      );
+      setSubmitError(null);
+      // Переводим на шаг, где изменённое поле видно — иначе непонятно, что произошло
+      setCurrentStep(firstStepOf(suggestions));
+    },
+    [apiKeys],
+  );
 
   useEffect(() => {
     if (formData.strategyPreset !== 'custom') {
       const presetData = strategyPresets[formData.strategyPreset];
       if (presetData) {
         const direction = formData.algorithm as 'long' | 'short';
-        const newFilters = direction === 'long' ? presetData.longFilters : presetData.shortFilters;
-        setFormData(prev => ({
+        const newFilters =
+          direction === 'long'
+            ? presetData.longFilters
+            : presetData.shortFilters;
+        // Эффект нарочно: фильтры пресета пересобираются не только по клику
+        // (для этого есть handlePresetSelect), но и когда strategyPreset меняет
+        // ИИ-ассистент — см. applySuggestionsToForm. Перенести в обработчики
+        // нельзя, не потеряв этот путь.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFormData((prev) => ({
           ...prev,
           filters: newFilters,
           takeProfit: presetData.takeProfit,
@@ -178,17 +229,20 @@ const CreateBotPage = () => {
     }
   }, [formData.algorithm, formData.strategyPreset]);
 
-  const strategyPresets: Record<string, {
-    name: string;
-    description: string;
-    icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
-    color: string;
-    longFilters: FilterRule[];
-    shortFilters: FilterRule[];
-    takeProfit: string;
-    stopLoss: string;
-    useStopLoss: boolean;
-  }> = {
+  const strategyPresets: Record<
+    string,
+    {
+      name: string;
+      description: string;
+      icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+      color: string;
+      longFilters: FilterRule[];
+      shortFilters: FilterRule[];
+      takeProfit: string;
+      stopLoss: string;
+      useStopLoss: boolean;
+    }
+  > = {
     conservative: {
       name: 'Консервативный',
       description: 'Минимальный риск, небольшая прибыль',
@@ -271,17 +325,24 @@ const CreateBotPage = () => {
   };
 
   const popularPairs = [
-    'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT',
-    'XRP/USDT', 'ADA/USDT', 'DOGE/USDT', 'AVAX/USDT',
+    'BTC/USDT',
+    'ETH/USDT',
+    'BNB/USDT',
+    'SOL/USDT',
+    'XRP/USDT',
+    'ADA/USDT',
+    'DOGE/USDT',
+    'AVAX/USDT',
   ];
 
   const handlePresetSelect = (preset: string) => {
     const presetData = strategyPresets[preset];
     const direction = formData.algorithm as 'long' | 'short';
-    const filters = direction === 'long' ? presetData.longFilters : presetData.shortFilters;
+    const filters =
+      direction === 'long' ? presetData.longFilters : presetData.shortFilters;
     setFormData({
       ...formData,
-      strategyPreset: preset,           
+      strategyPreset: preset,
       filters: filters,
       takeProfit: presetData.takeProfit,
       stopLoss: presetData.stopLoss,
@@ -291,8 +352,8 @@ const CreateBotPage = () => {
 
   // Когда меняется выбранный ключ — синхронизируем exchange
   const handleApiKeyChange = (keyId: string) => {
-    const found = apiKeys.find(k => k.id === keyId);
-    setFormData(prev => ({
+    const found = apiKeys.find((k) => k.id === keyId);
+    setFormData((prev) => ({
       ...prev,
       selectedApiKeyId: keyId,
       exchange: found ? found.exchange : prev.exchange,
@@ -303,7 +364,7 @@ const CreateBotPage = () => {
   // dry-run → очищаем ключ; боевой → подставляем первый доступный ключ
   const handleDryRunToggle = (isDryRun: boolean) => {
     if (isDryRun) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         dryRun: true,
         selectedApiKeyId: '',
@@ -311,7 +372,7 @@ const CreateBotPage = () => {
       }));
     } else {
       const firstKey = apiKeys[0];
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         dryRun: false,
         selectedApiKeyId: firstKey?.id ?? '',
@@ -352,10 +413,14 @@ const CreateBotPage = () => {
     if (!formData.tradingPair.trim()) return 'Выберите торговую пару';
     if (!formData.takeProfit || Number(formData.takeProfit) <= 0)
       return 'Укажите Take Profit больше 0';
-    if (formData.useStopLoss && (!formData.stopLoss || Number(formData.stopLoss) <= 0))
+    if (
+      formData.useStopLoss &&
+      (!formData.stopLoss || Number(formData.stopLoss) <= 0)
+    )
       return 'Укажите Stop Loss больше 0';
     if (formData.strategyPreset === 'custom') {
-      if (formData.filters.length === 0) return 'Добавьте хотя бы один индикатор';
+      if (formData.filters.length === 0)
+        return 'Добавьте хотя бы один индикатор';
     }
     return null;
   };
@@ -369,12 +434,12 @@ const CreateBotPage = () => {
     setSubmitError(null);
 
     const direction = formData.algorithm as 'long' | 'short';
-  
+
     console.log('🔴 DEBUG stopLoss:', {
       stopLossRaw: formData.stopLoss,
       stopLossNumber: Number(formData.stopLoss),
       useStopLoss: formData.useStopLoss,
-      takeProfit: formData.takeProfit
+      takeProfit: formData.takeProfit,
     });
 
     const payload: BotCreatePayload = {
@@ -385,12 +450,15 @@ const CreateBotPage = () => {
       strategy_preset: 'custom',
       take_profit_percent: Number(formData.takeProfit),
       stop_loss_enabled: formData.useStopLoss,
-      stop_loss_percent: formData.useStopLoss ? Number(formData.stopLoss) : null,
+      stop_loss_percent: formData.useStopLoss
+        ? Number(formData.stopLoss)
+        : null,
       dry_run: formData.dryRun,
       // FIX: api_key_id отправляется только в боевом режиме
-      api_key_id: (!formData.dryRun && formData.selectedApiKeyId)
-        ? Number(formData.selectedApiKeyId)
-        : null,
+      api_key_id:
+        !formData.dryRun && formData.selectedApiKeyId
+          ? Number(formData.selectedApiKeyId)
+          : null,
       stake_amount: Number(formData.stakeAmount),
       tradable_balance_ratio: Number(formData.balanceRatio) / 100,
     };
@@ -401,7 +469,7 @@ const CreateBotPage = () => {
     if (direction === 'short') {
       payload.entry_filters_short = formData.filters;
     }
-    
+
     console.log('Настройки бота:', JSON.stringify(payload, null, 2));
 
     setSubmitting(true);
@@ -444,7 +512,7 @@ const CreateBotPage = () => {
   );
 
   const renderStep1 = () => {
-    const selectedKey = apiKeys.find(k => k.id === formData.selectedApiKeyId);
+    const selectedKey = apiKeys.find((k) => k.id === formData.selectedApiKeyId);
     const stakeNum = Number(formData.stakeAmount) || 0;
     const ratioNum = Number(formData.balanceRatio) || 0;
     const perTradeUsdt = stakeNum * (ratioNum / 100);
@@ -467,7 +535,9 @@ const CreateBotPage = () => {
               onClick={() => handleDryRunToggle(true)}
             >
               🧪 Dry Run
-              <span className="mode-desc">Тестовый режим — без реальных денег</span>
+              <span className="mode-desc">
+                Тестовый режим — без реальных денег
+              </span>
             </button>
             <button
               type="button"
@@ -567,7 +637,9 @@ const CreateBotPage = () => {
               min="1"
               step="10"
               value={formData.stakeAmount}
-              onChange={(e) => setFormData({ ...formData, stakeAmount: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, stakeAmount: e.target.value })
+              }
               placeholder="100"
               className="form-input"
             />
@@ -599,14 +671,20 @@ const CreateBotPage = () => {
               max="100"
               step="5"
               value={formData.balanceRatio}
-              onChange={(e) => setFormData(prev => ({ ...prev, balanceRatio: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  balanceRatio: e.target.value,
+                }))
+              }
               className="leverage-slider"
             />
             <div className="leverage-value">{formData.balanceRatio}%</div>
           </div>
           {showIndicatorTooltip === 'ratio' && (
             <div className="tooltip">
-              Какую долю депозита бот использует в каждой сделке. Меньше % — меньше риск.
+              Какую долю депозита бот использует в каждой сделке. Меньше % —
+              меньше риск.
             </div>
           )}
         </div>
@@ -626,7 +704,6 @@ const CreateBotPage = () => {
             </div>
           </div>
         )}
-
       </div>
     );
   };
@@ -645,7 +722,10 @@ const CreateBotPage = () => {
           type="text"
           value={formData.tradingPair}
           onChange={(e) =>
-            setFormData({ ...formData, tradingPair: e.target.value.toUpperCase() })
+            setFormData({
+              ...formData,
+              tradingPair: e.target.value.toUpperCase(),
+            })
           }
           placeholder="Например: BTC/USDT"
           className="form-input"
@@ -680,20 +760,25 @@ const CreateBotPage = () => {
             min="1"
             max="20"
             value={formData.leverage}
-            onChange={(e) => setFormData({ ...formData, leverage: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, leverage: e.target.value })
+            }
             className="leverage-slider"
           />
           <div className="leverage-value">x{formData.leverage}</div>
         </div>
         {showIndicatorTooltip === 'leverage' && (
           <div className="tooltip">
-            Плечо увеличивает потенциальную прибыль и риск. Новичкам рекомендуется x1-x3
+            Плечо увеличивает потенциальную прибыль и риск. Новичкам
+            рекомендуется x1-x3
           </div>
         )}
         {parseInt(formData.leverage) > 5 && (
           <div className="warning-banner">
             <AlertCircle size={16} />
-            <span>Высокое плечо увеличивает риск ликвидации. Будьте осторожны!</span>
+            <span>
+              Высокое плечо увеличивает риск ликвидации. Будьте осторожны!
+            </span>
           </div>
         )}
       </div>
@@ -742,7 +827,11 @@ const CreateBotPage = () => {
               key={key}
               className={`preset-card ${formData.strategyPreset === key ? 'active' : ''}`}
               onClick={() => handlePresetSelect(key)}
-              style={formData.strategyPreset === key ? { borderColor: preset.color } : {}}
+              style={
+                formData.strategyPreset === key
+                  ? { borderColor: preset.color }
+                  : {}
+              }
             >
               <Icon size={24} style={{ color: preset.color }} />
               <strong>{preset.name}</strong>
@@ -799,7 +888,10 @@ const CreateBotPage = () => {
               value={filter.condition}
               onChange={(val) => {
                 const updated = [...formData.filters];
-                updated[idx] = { ...updated[idx], condition: val as FilterRule['condition'] };
+                updated[idx] = {
+                  ...updated[idx],
+                  condition: val as FilterRule['condition'],
+                };
                 setFormData({ ...formData, filters: updated });
               }}
               options={[
@@ -813,7 +905,10 @@ const CreateBotPage = () => {
               value={filter.value}
               onChange={(e) => {
                 const updated = [...formData.filters];
-                updated[idx] = { ...updated[idx], value: Number(e.target.value) };
+                updated[idx] = {
+                  ...updated[idx],
+                  value: Number(e.target.value),
+                };
                 setFormData({ ...formData, filters: updated });
               }}
               className="form-input filter-input"
@@ -841,7 +936,12 @@ const CreateBotPage = () => {
               ...formData,
               filters: [
                 ...formData.filters,
-                { indicator: 'rsi' as Indicator, timeframe: '5m' as Timeframe, condition: 'less', value: 30 },
+                {
+                  indicator: 'rsi' as Indicator,
+                  timeframe: '5m' as Timeframe,
+                  condition: 'less',
+                  value: 30,
+                },
               ],
             })
           }
@@ -855,7 +955,7 @@ const CreateBotPage = () => {
   const renderStep4 = () => {
     // FIX: selectedKey ищем только если не dry-run
     const selectedKey = !formData.dryRun
-      ? apiKeys.find(k => k.id === formData.selectedApiKeyId)
+      ? apiKeys.find((k) => k.id === formData.selectedApiKeyId)
       : undefined;
 
     return (
@@ -863,7 +963,10 @@ const CreateBotPage = () => {
         <div className="step-header">
           <Target size={32} className="step-icon" />
           <h2>Имя и выход из сделки</h2>
-          <p>Дайте боту имя и настройте условия фиксации прибыли и ограничения убытков</p>
+          <p>
+            Дайте боту имя и настройте условия фиксации прибыли и ограничения
+            убытков
+          </p>
         </div>
 
         <div className="form-group">
@@ -871,7 +974,9 @@ const CreateBotPage = () => {
           <input
             type="text"
             value={formData.botName}
-            onChange={(e) => setFormData({ ...formData, botName: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, botName: e.target.value })
+            }
             placeholder="Например: BTC скальпер"
             maxLength={100}
             className="form-input"
@@ -893,7 +998,9 @@ const CreateBotPage = () => {
             type="number"
             step="0.1"
             value={formData.takeProfit}
-            onChange={(e) => setFormData({ ...formData, takeProfit: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, takeProfit: e.target.value })
+            }
             placeholder="2.0"
             className="form-input"
           />
@@ -909,7 +1016,9 @@ const CreateBotPage = () => {
             <input
               type="checkbox"
               checked={formData.useStopLoss}
-              onChange={(e) => setFormData({ ...formData, useStopLoss: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, useStopLoss: e.target.checked })
+              }
             />
             <span>Использовать Stop Loss</span>
             <span
@@ -935,7 +1044,9 @@ const CreateBotPage = () => {
                 type="number"
                 step="0.1"
                 value={formData.stopLoss}
-                onChange={(e) => setFormData({ ...formData, stopLoss: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, stopLoss: e.target.value })
+                }
                 placeholder="1.5"
                 className="form-input"
               />
@@ -946,7 +1057,9 @@ const CreateBotPage = () => {
                 <input
                   type="checkbox"
                   checked={formData.trailingStop}
-                  onChange={(e) => setFormData({ ...formData, trailingStop: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, trailingStop: e.target.checked })
+                  }
                 />
                 <span>Трейлинг стоп</span>
                 <span
@@ -959,7 +1072,8 @@ const CreateBotPage = () => {
               </label>
               {showIndicatorTooltip === 'trailing' && (
                 <div className="tooltip">
-                  Стоп-лосс будет следовать за ценой, сохраняя заданное расстояние
+                  Стоп-лосс будет следовать за ценой, сохраняя заданное
+                  расстояние
                 </div>
               )}
             </div>
@@ -992,7 +1106,14 @@ const CreateBotPage = () => {
           </div>
           <div className="summary-row">
             <span>Размер сделки:</span>
-            <strong>{formData.balanceRatio}% ({(Number(formData.stakeAmount) * Number(formData.balanceRatio) / 100).toFixed(2)} USDT)</strong>
+            <strong>
+              {formData.balanceRatio}% (
+              {(
+                (Number(formData.stakeAmount) * Number(formData.balanceRatio)) /
+                100
+              ).toFixed(2)}{' '}
+              USDT)
+            </strong>
           </div>
           <div className="summary-row">
             <span>Пара:</span>
@@ -1004,7 +1125,9 @@ const CreateBotPage = () => {
           </div>
           <div className="summary-row">
             <span>Направление:</span>
-            <strong>{formData.algorithm === 'long' ? '📈 Лонг' : '📉 Шорт'}</strong>
+            <strong>
+              {formData.algorithm === 'long' ? '📈 Лонг' : '📉 Шорт'}
+            </strong>
           </div>
           <div className="summary-row">
             <span>Стратегия:</span>
@@ -1030,72 +1153,77 @@ const CreateBotPage = () => {
   };
 
   return (
-    <div className={`create-bot-page ${assistantEnabled && assistantOpen ? 'assistant-open' : ''}`}>
+    <div
+      className={`create-bot-page ${assistantEnabled && assistantOpen ? 'assistant-open' : ''}`}
+    >
       <div className="create-bot-scroll">
-      <div className="page-header">
-        <button className="back-btn" onClick={() => window.history.back()}>
-          <ArrowLeft size={20} />
-          Назад
-        </button>
-        <div className="page-title">
-          <Bot size={28} />
-          <h1>Создание торгового бота</h1>
-        </div>
-      </div>
-
-      <div className="create-bot-container">
-        {renderStepIndicator()}
-
-        <div className="form-container">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-          {currentStep === 4 && renderStep4()}
-
-          {submitError && (
-            <div className="warning-banner" style={{ marginTop: 16 }}>
-              <AlertCircle size={16} />
-              <span>{submitError}</span>
-            </div>
-          )}
-
-          <div className="form-actions">
-            {currentStep > 1 && (
-              <button
-                className="btn-secondary"
-                onClick={handleBack}
-                disabled={submitting}
-              >
-                Назад
-              </button>
-            )}
-            {currentStep < 4 ? (
-              <button
-                className="btn-primary"
-                onClick={handleNext}
-                disabled={currentStep === 1 && apiKeysLoading}
-              >
-                Далее
-                <ChevronRight size={20} />
-              </button>
-            ) : (
-              <button
-                className="btn-primary"
-                onClick={handleSubmit}
-                disabled={submitting}
-              >
-                <Bot size={20} />
-                {submitting ? 'Создаём бота...' : 'Создать бота'}
-              </button>
-            )}
+        <div className="page-header">
+          <button className="back-btn" onClick={() => window.history.back()}>
+            <ArrowLeft size={20} />
+            Назад
+          </button>
+          <div className="page-title">
+            <Bot size={28} />
+            <h1>Создание торгового бота</h1>
           </div>
         </div>
-      </div>
+
+        <div className="create-bot-container">
+          {renderStepIndicator()}
+
+          <div className="form-container">
+            {currentStep === 1 && renderStep1()}
+            {currentStep === 2 && renderStep2()}
+            {currentStep === 3 && renderStep3()}
+            {currentStep === 4 && renderStep4()}
+
+            {submitError && (
+              <div className="warning-banner" style={{ marginTop: 16 }}>
+                <AlertCircle size={16} />
+                <span>{submitError}</span>
+              </div>
+            )}
+
+            <div className="form-actions">
+              {currentStep > 1 && (
+                <button
+                  className="btn-secondary"
+                  onClick={handleBack}
+                  disabled={submitting}
+                >
+                  Назад
+                </button>
+              )}
+              {currentStep < 4 ? (
+                <button
+                  className="btn-primary"
+                  onClick={handleNext}
+                  disabled={currentStep === 1 && apiKeysLoading}
+                >
+                  Далее
+                  <ChevronRight size={20} />
+                </button>
+              ) : (
+                <button
+                  className="btn-primary"
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                >
+                  <Bot size={20} />
+                  {submitting ? 'Создаём бота...' : 'Создать бота'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {assistantEnabled && (
         <>
-          <AssistantLauncher open={assistantOpen} onOpen={() => setAssistantOpen(true)} />
+          <AssistantLauncher
+            open={assistantOpen}
+            onOpen={() => setAssistantOpen(true)}
+          />
           <AssistantPanel
             open={assistantOpen}
             onClose={() => setAssistantOpen(false)}

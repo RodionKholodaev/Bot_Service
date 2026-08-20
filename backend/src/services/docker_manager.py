@@ -12,7 +12,7 @@ import platform
 from pathlib import Path
 
 import docker
-from docker.errors import APIError, NotFound, ImageNotFound
+from docker.errors import APIError, ImageNotFound, NotFound
 from docker.models.containers import Container
 
 from src.config import settings
@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 # Внутри контейнера freqtrade всегда слушает 8080 (так задано в шаблоне config).
 # Снаружи мы пробрасываем этот порт на уникальный bot.api_port.
 INTERNAL_API_PORT = 8080
+
+
 def set_bot_permissions(bot_data_dir: Path) -> None:
     """
     Делает владельцем папки бота пользователя UID=1000 (ftuser в контейнере).
@@ -89,6 +91,7 @@ def set_bot_permissions(bot_data_dir: Path) -> None:
         )
         raise
 
+
 def get_client() -> docker.DockerClient:
     """Получает Docker-клиент. На Windows работает с Docker Desktop из коробки."""
     return docker.from_env()
@@ -123,13 +126,9 @@ def ensure_image(image: str = settings.FREQTRADE_IMAGE) -> None:
     try:
         client.images.get(image)
     except ImageNotFound:
-        logger.info(
-            "Image wasn't found locally, pulling it from the registry",
-            extra={
-                "image": image
-            }
-        )
+        logger.info("Image wasn't found locally, pulling it from the registry", extra={"image": image})
         client.images.pull(image)
+
 
 def run_bot_container(
     container_name: str,
@@ -233,11 +232,16 @@ def run_bot_container(
             },
             command=[
                 "trade",
-                "--config", "/freqtrade/user_data_mount/config.json",
-                "--strategy", "MultiFilterStrategy",
-                "--strategy-path", "/freqtrade/user_data_mount/user_data/strategies",
-                "--datadir", "/freqtrade/user_data_mount/user_data/data",
-                "--db-url", "sqlite:////freqtrade/user_data_mount/user_data/tradesv3.sqlite",
+                "--config",
+                "/freqtrade/user_data_mount/config.json",
+                "--strategy",
+                "MultiFilterStrategy",
+                "--strategy-path",
+                "/freqtrade/user_data_mount/user_data/strategies",
+                "--datadir",
+                "/freqtrade/user_data_mount/user_data/data",
+                "--db-url",
+                "sqlite:////freqtrade/user_data_mount/user_data/tradesv3.sqlite",
             ],
             restart_policy={"Name": "on-failure", "MaximumRetryCount": 5},
             mem_limit="512m",
@@ -283,47 +287,25 @@ def stop_container(container_id: str) -> None:
             },
         )
     except NotFound:
-        logger.warning(
-            "Container wasn't found during stop, continue",
-            extra={
-                "container_id": container_id
-            }
-        )
+        logger.warning("Container wasn't found during stop, continue", extra={"container_id": container_id})
 
 
 def remove_container(container_id: str) -> None:
     client = get_client()
-    logger.info(
-        "Starting to remove container",
-        extra={
-            "container_id": container_id
-        }
-    )
+    logger.info("Starting to remove container", extra={"container_id": container_id})
     try:
         c = client.containers.get(container_id)
         try:
             c.stop(timeout=5)
         except APIError:
-            logger.error(
-                "Couldn't contact to the container",
-                extra={
-                    "container_id": container_id
-                }
-            )
+            logger.error("Couldn't contact to the container", extra={"container_id": container_id})
         c.remove(force=True)
         logger.info(
             "Container was successfully removed",
-            extra={
-                "container_id": container_id
-            },
+            extra={"container_id": container_id},
         )
     except NotFound:
-        logger.warning(
-            "Container has already been removed",
-            extra={
-                "container_id": container_id
-            }
-        )
+        logger.warning("Container has already been removed", extra={"container_id": container_id})
 
 
 def get_container_status(container_id: str) -> str | None:
@@ -336,13 +318,7 @@ def get_container_status(container_id: str) -> str | None:
         c = client.containers.get(container_id)
         return c.status
     except NotFound as e:
-        logger.warning(
-            "Couldn't find the container",
-            extra={
-                "container_id": container_id,
-                "error": str(e)
-            }
-        )
+        logger.warning("Couldn't find the container", extra={"container_id": container_id, "error": str(e)})
 
 
 def get_container_logs(container_id: str, tail: int = 200) -> str:
@@ -351,13 +327,7 @@ def get_container_logs(container_id: str, tail: int = 200) -> str:
     try:
         c = client.containers.get(container_id)
         return c.logs(tail=tail).decode("utf-8", errors="replace")
-    
+
     except NotFound as e:
-        logger.warning(
-            "Couldn't find the container",
-            extra={
-                "container_id": container_id,
-                "error": str(e)
-            }
-        )
+        logger.warning("Couldn't find the container", extra={"container_id": container_id, "error": str(e)})
         return ""

@@ -11,9 +11,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-TEMPLATE_PATH = (
-    Path(__file__).resolve().parent.parent / "templates" / "multifilter_strategy.template"
-)
+TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "templates" / "multifilter_strategy.template"
 
 TF_ORDER = ["1m", "5m", "15m", "30m", "1h", "4h"]
 
@@ -59,7 +57,7 @@ def generate_strategy_file(
         },
     )
 
-    with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
+    with open(TEMPLATE_PATH, encoding="utf-8") as f:
         template = f.read()
 
     # take_profit ключи приходят как строки ("0", "30") — это требование freqtrade

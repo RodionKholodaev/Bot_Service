@@ -1,19 +1,24 @@
+import logging
+import shutil
 from pathlib import Path
+
 from src.config import settings
 from src.models.bot import Bot
 from src.services.freqtrade_config import generate_config, write_config
 from src.services.freqtrade_strategy import generate_strategy_file, write_strategy_file
-import shutil
-import logging
+
 logger = logging.getLogger(__name__)
+
+
 class BotFileManager:
-    
     @staticmethod
     def _bot_dir(bot_id: str) -> Path:
         return settings.BOTS_DATA_DIR / bot_id
 
     @staticmethod
-    async def materialize_bot_files(bot: Bot, user_id: int, api_key, api_secret, iternal_api_port, jwt_secret, ws_token) -> None:
+    async def materialize_bot_files(
+        bot: Bot, user_id: int, api_key, api_secret, iternal_api_port, jwt_secret, ws_token
+    ) -> None:
         # создаем папку для бота
         bot_dir = BotFileManager._bot_dir(bot.id)
         bot_dir.mkdir(parents=True, exist_ok=True)
@@ -32,9 +37,9 @@ class BotFileManager:
             dry_run=bot.dry_run,
             exchange_key=api_key,
             exchange_secret=api_secret,
-            stake_amount = bot.stake_amount,
+            stake_amount=bot.stake_amount,
             tradable_balance_ratio=bot.tradable_balance_ratio,
-            user_id = user_id
+            user_id=user_id,
         )
 
         # записываем его в файл

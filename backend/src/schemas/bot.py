@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Literal
+
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -41,30 +42,24 @@ class BotCreate(BaseModel):
     stake_amount: float
     tradable_balance_ratio: float
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_filters_by_direction(self):
         """Проверка наличия фильтров в зависимости от направления"""
         if self.direction in ("long", "both") and not self.entry_filters_long:
-            raise ValueError(
-                "Для направления long/both нужны entry_filters_long"
-            )
-        
+            raise ValueError("Для направления long/both нужны entry_filters_long")
+
         if self.direction in ("short", "both") and not self.entry_filters_short:
-            raise ValueError(
-                "Для направления short/both нужны entry_filters_short"
-            )
+            raise ValueError("Для направления short/both нужны entry_filters_short")
         return self
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_stop_loss(self):
         """Проверка stop loss параметров"""
         if self.stop_loss_enabled and self.stop_loss_percent is None:
-            raise ValueError(
-                "Если stop_loss_enabled=true, нужен stop_loss_percent"
-            )
+            raise ValueError("Если stop_loss_enabled=true, нужен stop_loss_percent")
         return self
-    
-    @model_validator(mode='after')
+
+    @model_validator(mode="after")
     def validate_custom_strategy_filters(self):
         """Для custom стратегии проверяем, что фильтры не пустые"""
         if self.strategy_preset == "custom":
@@ -73,6 +68,7 @@ class BotCreate(BaseModel):
             if self.direction in ("short", "both") and not self.entry_filters_short:
                 raise ValueError("Для custom стратегии и направления short/both нужны entry_filters_short")
         return self
+
 
 # ── Что отдаём фронту ─────────────────────────────────────
 class BotPublic(BaseModel):

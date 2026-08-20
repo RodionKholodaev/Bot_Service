@@ -33,14 +33,23 @@ export const AssistantLauncher = ({ open, onOpen }: Props) => {
   };
 
   return (
-    <div className={`ai-launcher ${open ? 'is-hidden' : ''}`} aria-hidden={open}>
+    <div
+      className={`ai-launcher ${open ? 'is-hidden' : ''}`}
+      aria-hidden={open}
+    >
       {showHint && (
         <div className="ai-launcher__hint">
-          <button type="button" className="ai-launcher__hint-close" onClick={dismissHint}>
+          <button
+            type="button"
+            className="ai-launcher__hint-close"
+            onClick={dismissHint}
+          >
             <X size={12} />
           </button>
           <strong>Не знаете, что выбрать?</strong>
-          <span>ИИ-помощник видит вашу форму и подскажет конкретные значения.</span>
+          <span>
+            ИИ-помощник видит вашу форму и подскажет конкретные значения.
+          </span>
         </div>
       )}
 
