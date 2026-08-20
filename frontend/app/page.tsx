@@ -71,6 +71,8 @@ const LandingPage = () => {
           <div className="nav-links">
             <a href="#features">Возможности</a>
             <a href="#how">Как это работает</a>
+            {/* Гайды открыты без регистрации — специально даём на них ссылку с лендинга */}
+            <Link href="/guides">Обучение</Link>
           </div>
           <div className="nav-actions">
             <Link href="/auth?mode=login" className="nav-btn-ghost">Войти</Link>
