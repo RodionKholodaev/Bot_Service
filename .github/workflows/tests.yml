@@ -63,8 +63,13 @@ jobs:
       - name: Ruff format check
         run: ruff format --check .
 
+      # ecdsa — PYSEC-2026-1325 (Minerva, timing-атака на P-256). Исключён осознанно:
+      # фикса не существует и не появится — апстрим объявил side-channel вне своей
+      # зоны ответственности, поле "Fix Versions" в отчёте пустое. Пакет приезжает
+      # транзитивно из python-jose, а JWT подписываются HS256 (src/config.py), то есть
+      # уязвимый код не выполняется вообще. Без этого игнора шаг красный всегда.
       - name: pip-audit (known CVEs in dependencies)
-        run: pip-audit -r requirements.txt
+        run: pip-audit -r requirements.txt --ignore-vuln PYSEC-2026-1325
 
   # eslint/prettier/сборка фронта — раньше вообще не проверялись в CI
   frontend:
