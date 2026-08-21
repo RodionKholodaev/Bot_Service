@@ -84,7 +84,9 @@ export async function* streamAssistantChat(
     let detail = 'Ассистент недоступен. Попробуйте позже.';
     try {
       const payload = await res.json();
-      if (payload?.detail) detail = String(payload.detail);
+      // У доменных ошибок detail — строка, а у 422 от FastAPI — массив объектов,
+      // который String() показал бы пользователю как «[object Object]».
+      if (typeof payload?.detail === 'string') detail = payload.detail;
     } catch {
       /* тело не JSON — оставляем текст по умолчанию */
     }

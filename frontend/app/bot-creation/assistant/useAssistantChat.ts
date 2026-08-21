@@ -57,12 +57,13 @@ export function useAssistantChat({ getSnapshot }: Options) {
       };
       const replyId = nextId();
 
-      const history = [...messagesRef.current, userMessage].map(
-        ({ role, content }) => ({
-          role,
-          content,
-        }),
-      );
+      // Ответ, оборвавшийся ошибкой, остаётся с пустым content. Такие пузыри
+      // нельзя слать обратно: ChatMessage на бэкенде требует min_length=1,
+      // и весь следующий запрос упал бы на валидации (422) — диалог был бы
+      // сломан до «Начать заново».
+      const history = [...messagesRef.current, userMessage]
+        .filter(({ content }) => content.trim())
+        .map(({ role, content }) => ({ role, content }));
 
       setMessages((prev) => [
         ...prev,
