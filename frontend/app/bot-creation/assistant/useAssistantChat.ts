@@ -105,7 +105,10 @@ export function useAssistantChat({ getSnapshot }: Options) {
               patchMessage(replyId, { sources: event.items });
               break;
             case 'error':
-              patchMessage(replyId, { error: event.message });
+              patchMessage(replyId, {
+                error: event.message,
+                errorKind: event.kind ?? 'generic',
+              });
               break;
             case 'done':
               break;

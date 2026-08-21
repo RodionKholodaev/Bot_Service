@@ -151,6 +151,7 @@ backend/tests/
 ├── integration/
 │   └── test_auth.py                   # HTTP-тесты ручек /auth через реальное приложение
 └── unit/
+    ├── test_assistant_rate_limit.py   # лимит запросов к ИИ-ассистенту
     ├── test_assistant_suggestions.py  # валидация предложений ИИ-ассистента
     ├── test_auth_service.py           # регистрация и вход
     ├── test_comission_service.py      # расчёт и списание комиссии сервиса

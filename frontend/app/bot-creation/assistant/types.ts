@@ -25,6 +25,10 @@ export interface Suggestion {
 
 export type AssistantPhase = 'idle' | 'thinking' | 'searching' | 'streaming';
 
+/** Упёрлись в лимит запросов (429) — это норма, а не поломка,
+ *  и показывается спокойнее обычной ошибки. */
+export type AssistantErrorKind = 'rate_limit' | 'generic';
+
 export interface AssistantMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -33,6 +37,7 @@ export interface AssistantMessage {
   sources?: string[];
   /** Заполняется, если ответ оборвался ошибкой. */
   error?: string;
+  errorKind?: AssistantErrorKind;
 }
 
 /** События SSE-потока из POST /api/assistant/chat. */
@@ -41,7 +46,7 @@ export type AssistantEvent =
   | { type: 'delta'; text: string }
   | { type: 'suggestions'; items: Suggestion[] }
   | { type: 'sources'; items: string[] }
-  | { type: 'error'; message: string }
+  | { type: 'error'; message: string; kind?: AssistantErrorKind }
   | { type: 'done' };
 
 /** Снимок мастера создания бота — то, что ассистент «видит» на экране.

@@ -24,8 +24,6 @@ settings.TELEGRAM_FEEDBACK_CHAT_ID = None
 from sqlalchemy import delete
 
 from src.database import Base, get_db
-from src.models.feedback import Feedback
-from src.models.user import User
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db"  # адрес тестовой бд
 
@@ -110,6 +108,6 @@ async def clear_database():
     # reversed(sorted_tables) — порядок от зависимых к родительским (trades -> bots -> users),
     # иначе удаление users упёрлось бы во внешние ключи.
     async with TestingSessionLocal() as session:
-        await session.execute(delete(Feedback))
-        await session.execute(delete(User))
+        for table in reversed(Base.metadata.sorted_tables):
+            await session.execute(delete(table))
         await session.commit()

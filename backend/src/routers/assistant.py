@@ -7,11 +7,12 @@ from collections.abc import AsyncIterator
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
-from src.core.dependencies import get_current_user
+from src.core.dependencies import get_assistant_request_repo, get_current_user
 from src.core.exceptions import BadRequestError
 from src.models.user import User
+from src.repositories.assistant_request_repository import AssistantRequestRepository
 from src.schemas.assistant import AssistantChatRequest, AssistantStatus
-from src.services.assistant import AssistantService, assistant_enabled
+from src.services.assistant import AssistantRateLimiter, AssistantService, assistant_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ async def status(current_user: User = Depends(get_current_user)) -> AssistantSta
 async def chat(
     request: AssistantChatRequest,
     current_user: User = Depends(get_current_user),
+    rate_limit_repo: AssistantRequestRepository = Depends(get_assistant_request_repo),
 ) -> StreamingResponse:
     """Ответ ассистента одним SSE-потоком. (Server-Sent Events - протокол для стриминга поверх HTTP)
 
@@ -37,6 +39,11 @@ async def chat(
     # проверка, есть ли на сервере ключ для доступа к нейросети
     if not assistant_enabled():
         raise BadRequestError("ИИ-ассистент не настроен на сервере")
+
+    # Лимит проверяем здесь, а не внутри stream(). Как только StreamingResponse
+    # начал отдавать тело, статус ответа уже ушёл клиенту, и превратить ошибку
+    # в честный 429 через core/exception_handlers.py будет невозможно.
+    await AssistantRateLimiter(rate_limit_repo).check_and_register(current_user)
 
     service = AssistantService(user_id=current_user.id)
 

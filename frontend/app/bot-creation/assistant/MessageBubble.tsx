@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, Link2, Sparkles } from 'lucide-react';
+import { AlertCircle, Clock, Link2, Sparkles } from 'lucide-react';
 import { Markdown } from './Markdown';
 import { SuggestionCard } from './SuggestionCard';
 import type { AssistantMessage, Suggestion } from './types';
@@ -61,12 +61,21 @@ export const MessageBubble = ({
           </div>
         )}
 
-        {message.error && (
-          <div className="ai-msg__error">
-            <AlertCircle size={14} />
-            <span>{message.error}</span>
-          </div>
-        )}
+        {message.error &&
+          (() => {
+            // Лимит запросов — не сбой: показываем спокойным янтарным
+            // с часами вместо тревожного красного с восклицательным знаком.
+            const limited = message.errorKind === 'rate_limit';
+            const Icon = limited ? Clock : AlertCircle;
+            return (
+              <div
+                className={`ai-msg__error ${limited ? 'ai-msg__error--limit' : ''}`}
+              >
+                <Icon size={14} />
+                <span>{message.error}</span>
+              </div>
+            );
+          })()}
       </div>
     </div>
   );

@@ -90,7 +90,11 @@ export async function* streamAssistantChat(
     } catch {
       /* тело не JSON — оставляем текст по умолчанию */
     }
-    yield { type: 'error', message: detail };
+    yield {
+      type: 'error',
+      message: detail,
+      kind: res.status === 429 ? 'rate_limit' : 'generic',
+    };
     yield { type: 'done' };
     return;
   }
