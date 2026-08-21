@@ -41,9 +41,13 @@ export interface BotPublic {
   entry_filters_short: FilterRule[];
   take_profit: Record<string, number>;
   stop_loss: number;
+  stake_amount: number;
+  tradable_balance_ratio: number;
+  api_key_id: number | null;
   dry_run: boolean;
   status: string;
   error_message: string | null;
   api_port: number;
   created_at: string;
+  total_profit?: number;
 }

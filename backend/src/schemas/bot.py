@@ -84,6 +84,11 @@ class BotPublic(BaseModel):
     take_profit: dict
     stop_loss: float
 
+    # Что пользователь задал на шаге «Биржа и депозит» — нужно странице параметров бота
+    stake_amount: float
+    tradable_balance_ratio: float
+    api_key_id: int | None = None
+
     dry_run: bool
     status: str
     error_message: str | None
