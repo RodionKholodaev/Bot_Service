@@ -121,7 +121,7 @@ export default async function GuideArticlePage({
             <strong>Остались вопросы?</strong> Напишите нам — ответим в течение
             2–4 часов в рабочее время.
           </p>
-          <Link href="/support" className="gd-btn-primary">
+          <Link href="/feedback" className="gd-btn-primary">
             <MessageCircle size={17} />В поддержку
           </Link>
         </section>

@@ -352,7 +352,7 @@ const FeedbackPage = () => {
           <p className="feedback-footnote">
             Срочный вопрос по боту или деньгам?{' '}
             <a
-              href="https://t.me/cryptobot_support"
+              href="https://t.me/Rodion137"
               target="_blank"
               rel="noopener noreferrer"
             >

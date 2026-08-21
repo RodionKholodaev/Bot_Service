@@ -181,7 +181,7 @@ export const GuidesHub = () => {
           </p>
         </div>
         <div className="gd-help-actions">
-          <Link href="/support" className="gd-btn-primary">
+          <Link href="/feedback" className="gd-btn-primary">
             <MessageCircle size={17} />
             Написать в поддержку
           </Link>

@@ -156,7 +156,7 @@ export const KomissiyaIBalans = () => (
       <p>
         Это последняя статья основного маршрута. Если остались вопросы —
         загляните в <Link href="/guides/chastye-voprosy">«Частые вопросы»</Link>{' '}
-        или напишите в <Link href="/support">поддержку</Link>.
+        или напишите в <Link href="/feedback">поддержку</Link>.
       </p>
     </Callout>
   </>
