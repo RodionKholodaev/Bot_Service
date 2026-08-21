@@ -154,15 +154,17 @@ const Card = ({
   tone,
   title,
   subtitle,
+  className = '',
   children,
 }: {
   icon: React.ReactNode;
   tone: 'green' | 'red' | 'blue' | 'amber' | 'violet';
   title: string;
   subtitle?: string;
+  className?: string;
   children: React.ReactNode;
 }) => (
-  <section className="bs-card">
+  <section className={`bs-card ${className}`.trim()}>
     <div className="bs-card-head">
       <div className={`bs-card-icon ${tone}`}>{icon}</div>
       <div>
@@ -371,7 +373,13 @@ const BotSettingsPage: React.FC = () => {
           {bot.status === 'error' && bot.error_message && (
             <div className="bs-alert">
               <AlertTriangle size={18} />
-              <span>{bot.error_message}</span>
+              <div className="bs-alert-body">
+                <span className="bs-alert-title">Бот остановлен с ошибкой</span>
+                {/* Текст приходит из докера/биржи «как есть» и бывает
+                    длинным — прячем его в скроллящийся блок, чтобы он не
+                    растягивал страницу. */}
+                <code className="bs-alert-text">{bot.error_message}</code>
+              </div>
             </div>
           )}
 
@@ -469,6 +477,23 @@ const BotSettingsPage: React.FC = () => {
                 value={formatUsd(perTradeLeveraged)}
                 hint="сумма сделки × плечо"
               />
+              {/* Из чего состоит позиция: свои деньги против заёмных у биржи */}
+              <div className="bs-scale">
+                <div className="bs-scale-bar">
+                  <div
+                    className="bs-scale-seg own"
+                    style={{ width: `${100 / bot.leverage}%` }}
+                  />
+                  <div className="bs-scale-seg borrowed" />
+                </div>
+                <div className="bs-scale-legend">
+                  <span className="bs-blue">свои {formatUsd(perTrade)}</span>
+                  <span className="bs-scale-entry plain">x{bot.leverage}</span>
+                  <span className="bs-muted">
+                    заёмные {formatUsd(perTradeLeveraged - perTrade)}
+                  </span>
+                </div>
+              </div>
             </Card>
 
             {/* 3. Выход из сделки */}
@@ -507,19 +532,31 @@ const BotSettingsPage: React.FC = () => {
                 }
                 hint="во сколько раз цель больше допустимого убытка"
               />
-              {sl === null && (
-                <div className="bs-note">
-                  <Shield size={15} />
-                  <span>
-                    Stop Loss выключен — позиция удерживается до достижения Take
-                    Profit.
+              <div className="bs-scale">
+                <div className="bs-scale-bar">
+                  {sl !== null && (
+                    <div
+                      className="bs-scale-seg loss"
+                      style={{ width: `${(sl / (sl + (tp ?? 0))) * 100}%` }}
+                    />
+                  )}
+                  <div className="bs-scale-seg profit" />
+                </div>
+                <div className="bs-scale-legend">
+                  <span className="bs-red">
+                    {sl !== null ? `−${sl.toFixed(2)} %` : 'без ограничения'}
+                  </span>
+                  <span className="bs-scale-entry">вход</span>
+                  <span className="bs-green">
+                    {tp !== null ? `+${tp.toFixed(2)} %` : '—'}
                   </span>
                 </div>
-              )}
+              </div>
             </Card>
 
             {/* 4. Служебное */}
             <Card
+              className="bs-card-state"
               icon={<Activity size={20} />}
               tone="amber"
               title="Состояние бота"
@@ -544,68 +581,65 @@ const BotSettingsPage: React.FC = () => {
                 accent={(bot.total_profit ?? 0) >= 0 ? 'green' : 'red'}
               />
               <ParamRow label="Создан" value={formatDateTime(bot.created_at)} />
+            </Card>
+
+            {/* 5. Стратегия — справа от «Состояния бота», под шагами 2 и 4 */}
+            <Card
+              className="bs-card-strategy"
+              icon={<Shield size={20} />}
+              tone="blue"
+              title="Стратегия входа"
+              subtitle="Шаг 3 при создании"
+            >
               <ParamRow
-                label="Идентификатор"
-                value={<code className="bs-code">{bot.id}</code>}
+                label="Набор условий"
+                value={PRESET_LABEL[bot.strategy_preset] ?? bot.strategy_preset}
+                hint={PRESET_HINT[bot.strategy_preset]}
               />
+
+              <div className="bs-note">
+                <Info size={15} />
+                <span>
+                  Бот открывает сделку, только когда выполнены{' '}
+                  <strong>все</strong> условия одновременно.
+                </span>
+              </div>
+
+              {longFilters.length > 0 && (
+                <div className="bs-filters-block">
+                  <div className="bs-filters-title green">
+                    <TrendingUp size={15} />
+                    Вход в лонг · {longFilters.length}{' '}
+                    {longFilters.length === 1 ? 'условие' : 'условий'}
+                  </div>
+                  <div className="bs-filters">
+                    {longFilters.map((rule, i) => (
+                      <FilterChip key={`long-${i}`} rule={rule} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {shortFilters.length > 0 && (
+                <div className="bs-filters-block">
+                  <div className="bs-filters-title red">
+                    <TrendingDown size={15} />
+                    Вход в шорт · {shortFilters.length}{' '}
+                    {shortFilters.length === 1 ? 'условие' : 'условий'}
+                  </div>
+                  <div className="bs-filters">
+                    {shortFilters.map((rule, i) => (
+                      <FilterChip key={`short-${i}`} rule={rule} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {longFilters.length === 0 && shortFilters.length === 0 && (
+                <div className="bs-empty">Условия входа не заданы</div>
+              )}
             </Card>
           </div>
-
-          {/* ===== СТРАТЕГИЯ (широкая карточка) ===== */}
-          <Card
-            icon={<Shield size={20} />}
-            tone="blue"
-            title="Стратегия входа"
-            subtitle="Шаг 3 при создании"
-          >
-            <ParamRow
-              label="Набор условий"
-              value={PRESET_LABEL[bot.strategy_preset] ?? bot.strategy_preset}
-              hint={PRESET_HINT[bot.strategy_preset]}
-            />
-
-            <div className="bs-note">
-              <Info size={15} />
-              <span>
-                Бот открывает сделку, только когда выполнены{' '}
-                <strong>все</strong> условия одновременно.
-              </span>
-            </div>
-
-            {longFilters.length > 0 && (
-              <div className="bs-filters-block">
-                <div className="bs-filters-title green">
-                  <TrendingUp size={15} />
-                  Вход в лонг · {longFilters.length}{' '}
-                  {longFilters.length === 1 ? 'условие' : 'условий'}
-                </div>
-                <div className="bs-filters">
-                  {longFilters.map((rule, i) => (
-                    <FilterChip key={`long-${i}`} rule={rule} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {shortFilters.length > 0 && (
-              <div className="bs-filters-block">
-                <div className="bs-filters-title red">
-                  <TrendingDown size={15} />
-                  Вход в шорт · {shortFilters.length}{' '}
-                  {shortFilters.length === 1 ? 'условие' : 'условий'}
-                </div>
-                <div className="bs-filters">
-                  {shortFilters.map((rule, i) => (
-                    <FilterChip key={`short-${i}`} rule={rule} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {longFilters.length === 0 && shortFilters.length === 0 && (
-              <div className="bs-empty">Условия входа не заданы</div>
-            )}
-          </Card>
 
           <p className="bs-footnote">
             Параметры бота нельзя изменить после создания. Чтобы торговать по

@@ -393,9 +393,9 @@
 /* ===== ALERT ===== */
 .bs-alert {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
   border-radius: 14px;
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.25);
@@ -403,15 +403,72 @@
   font-size: 14px;
 }
 
+.bs-alert > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.bs-alert-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.bs-alert-title {
+  display: block;
+  font-weight: 600;
+  color: #f87171;
+  margin-bottom: 8px;
+}
+
+.bs-alert-text {
+  display: block;
+  max-height: 84px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  color: #9ca3af;
+  font-family:
+    'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.35) transparent;
+}
+
+.bs-alert-text::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bs-alert-text::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.35);
+  border-radius: 4px;
+}
+
 /* ===== GRID + CARDS ===== */
+/* Раскладка задана явно, а не auto-fit: карточки идут в порядке шагов мастера
+   и «Стратегия входа» занимает вторую строку справа — под шагами 2 и 4, рядом
+   с «Состоянием бота». Иначе в центре оставалась дыра. */
 .bs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
-  align-items: start;
+}
+
+.bs-card-strategy {
+  grid-column: 2 / -1;
+}
+
+/* Карточка состояния короче стратегии — не растягиваем её, иначе три строки
+   разъезжаются по высоте соседа. */
+.bs-card-state {
+  align-self: start;
 }
 
 .bs-card {
+  display: flex;
+  flex-direction: column;
   background: rgba(26, 31, 53, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 16px;
@@ -439,6 +496,9 @@
 }
 .bs-grid .bs-card:nth-child(4) {
   animation-delay: 0.2s;
+}
+.bs-grid .bs-card:nth-child(5) {
+  animation-delay: 0.25s;
 }
 
 .bs-card-head {
@@ -499,8 +559,16 @@
 }
 
 .bs-card-body {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  /* карточки в строке выравниваются по самой высокой — лишнюю высоту
+     раздаём между строками параметров, а не оставляем дырой снизу */
+  justify-content: space-between;
+}
+
+.bs-card-strategy .bs-card-body {
+  justify-content: flex-start;
 }
 
 /* ===== PARAM ROWS ===== */
@@ -571,16 +639,67 @@
   color: #60a5fa;
 }
 
-.bs-code {
-  font-family:
-    'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+/* ===== ШКАЛА TP / SL ===== */
+.bs-scale {
+  margin-top: 18px;
+}
+
+.bs-scale-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.bs-scale-seg {
+  height: 100%;
+}
+
+.bs-scale-seg.loss {
+  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+  flex-shrink: 0;
+}
+
+/* прибыльная часть забирает остаток: так шкала честно показывает, во сколько
+   раз цель больше допустимого убытка */
+.bs-scale-seg.profit {
+  flex: 1;
+  background: linear-gradient(90deg, #34d399 0%, #10b981 100%);
+}
+
+.bs-scale-seg.own {
+  background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%);
+  flex-shrink: 0;
+  min-width: 4px;
+}
+
+.bs-scale-seg.borrowed {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.bs-scale-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
   font-size: 12px;
-  font-weight: 500;
-  color: #9ca3af;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 7px;
-  padding: 3px 8px;
+  font-weight: 600;
+}
+
+.bs-scale-entry {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* «x15» — не подпись, а значение: uppercase превратил бы его в «X15» */
+.bs-scale-entry.plain {
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 /* ===== NOTE ===== */
@@ -747,9 +866,29 @@
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 900px) {
+/* Две колонки: шаги 1-2 сверху, состояние и шаг 4 ниже, стратегия — во всю
+   ширину под ними. */
+@media (max-width: 1080px) {
+  .bs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bs-card-strategy {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
   .bs-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bs-card-strategy {
+    grid-column: auto;
+  }
+
+  .bs-card-state {
+    align-self: stretch;
   }
 }
 
