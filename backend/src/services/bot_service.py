@@ -128,7 +128,10 @@ class BotService:
             current_user.id,
             exchange_key,
             exchange_secret,
-            api_port,
+            # Порт ВНУТРИ контейнера, а не выданный боту api_port: докер пробрасывает
+            # INTERNAL_API_PORT наружу на bot.api_port, и listen_port в config.json
+            # должен совпадать с внутренней стороной этого маппинга.
+            docker_manager.INTERNAL_API_PORT,
             jwt_secret=secrets.token_hex(32),
             ws_token=secrets.token_urlsafe(24),
         )
