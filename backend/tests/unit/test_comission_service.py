@@ -363,3 +363,30 @@ async def test_missing_exchange_rate_raises(set_usdt_rate):
     # памяти остаётся «грязным». В проде это чинит db.rollback() в polling_worker,
     # но при прямом вызове сервиса про это нужно помнить.
     assert bot.total_profit == 50.0
+
+
+# ──────────────────────────────────────────────
+# Порог сервисного баланса комиссию не ограничивает
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_commission_pushes_balance_below_minimum_and_into_minus(set_usdt_rate):
+    # Arrange
+    # settings.MIN_SERVICE_BALANCE_RUB — порог, а не пол: комиссия за закрытую сделку
+    # списывается полностью, даже если после неё баланс уходит ниже порога и в минус.
+    # Клампить нельзя — недосписанная комиссия потерялась бы навсегда, разойдясь с
+    # trade.commission_rub и bot.total_commission_paid_rub. Ниже порога пользователя
+    # останавливает balance_guard (см. test_balance_guard.py), а долг гасит пополнение.
+    trade = make_trade(profit_usdt=100.0)
+    user = make_user(service_balance=50.0)
+    bot = make_bot()
+    set_usdt_rate(90.0)
+
+    # Act
+    await CommissionService.process_commission(trade, user, bot)
+
+    # Assert
+    assert user.service_balance == -850.0  # 50 - 100 * 0.1 * 90
+    assert trade.commission_rub == 900.0  # в сделке записана вся комиссия, не «сколько было»
+    assert bot.total_commission_paid_rub == 900.0

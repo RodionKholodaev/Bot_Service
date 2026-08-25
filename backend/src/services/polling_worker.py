@@ -25,6 +25,7 @@ from src.models.user import User
 from src.repositories.bot_repository import BotRepository
 from src.repositories.trade_repository import TradeRepository
 from src.services import docker_manager
+from src.services.balance_guard import stop_bots_of_low_balance_users
 from src.services.commission_service import CommissionService
 
 logger = logging.getLogger(__name__)
@@ -454,6 +455,14 @@ async def run_polling_worker() -> None:
                             "Active bots fetched",
                             extra={"bots_count": len(running_bots)},
                         )
+
+                        # Проверяем сервисный баланс владельцев до опроса ботов и
+                        # убираем из цикла тех, кого только что остановили: ping в уже
+                        # убитый контейнер не пройдёт, и через MAX_PING_MISSES штатно
+                        # выключенный бот уехал бы в "error" с критическим алертом.
+                        # Проверка здесь, а не в _async_bot_trades: баланс мог упасть и
+                        # не через комиссию, а сделка — закрыться прошлым циклом.
+                        running_bots = await stop_bots_of_low_balance_users(db, running_bots)
 
                         # чистим счётчики ботов, которых больше нет в работе (остановлены
                         # пользователем, удалены или уже переведены в error)

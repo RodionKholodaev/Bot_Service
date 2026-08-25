@@ -20,6 +20,7 @@ import {
   Calculator,
 } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
+import { MIN_SERVICE_BALANCE_RUB } from '@/lib/constants';
 import type {
   BotCreatePayload,
   FilterRule,
@@ -151,6 +152,11 @@ const CreateBotPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Сервисный баланс: ниже порога бэкенд не даст создать боевого бота (402), см.
+  // backend/src/services/balance_guard.py. null — ещё не загрузили; пока не знаем,
+  // ничего не блокируем.
+  const [serviceBalance, setServiceBalance] = useState<number | null>(null);
+
   // ИИ-помощник: панель справа. assistantEnabled приходит с бэкенда —
   // если ключ AITunnel не настроен, ничего не показываем.
   const [assistantEnabled, setAssistantEnabled] = useState(false);
@@ -188,10 +194,24 @@ const CreateBotPage = () => {
 
   useEffect(() => {
     if (!localStorage.getItem('access_token')) return;
+    apiFetch<{ service_balance: number }>('/users/me/balance')
+      .then((data) => setServiceBalance(data.service_balance))
+      .catch(() => setServiceBalance(null));
+  }, []);
+
+  useEffect(() => {
+    if (!localStorage.getItem('access_token')) return;
     fetchAssistantStatus()
       .then((status) => setAssistantEnabled(status.enabled))
       .catch(() => setAssistantEnabled(false));
   }, []);
+
+  // Боевого бота при таком балансе создать нельзя; dry-run порог не ограничивает —
+  // за него комиссия не берётся.
+  const liveBotBlocked =
+    serviceBalance !== null &&
+    serviceBalance < MIN_SERVICE_BALANCE_RUB &&
+    !formData.dryRun;
 
   // Ассистент читает форму в момент отправки вопроса, а не при рендере
   const getAssistantSnapshot = useCallback(
@@ -560,6 +580,15 @@ const CreateBotPage = () => {
             <div className="warning-banner" style={{ marginTop: 8 }}>
               <AlertCircle size={16} />
               <span>Внимание: бот будет торговать реальными средствами</span>
+            </div>
+          )}
+          {liveBotBlocked && (
+            <div className="warning-banner" style={{ marginTop: 8 }}>
+              <AlertCircle size={16} />
+              <span>
+                Баланс сервиса ниже {MIN_SERVICE_BALANCE_RUB} ₽ — боевого бота
+                создать нельзя. Пополните баланс или выберите тестовый режим.
+              </span>
             </div>
           )}
         </div>
@@ -1299,7 +1328,12 @@ const CreateBotPage = () => {
                 <button
                   className="btn-primary"
                   onClick={handleSubmit}
-                  disabled={submitting}
+                  disabled={submitting || liveBotBlocked}
+                  title={
+                    liveBotBlocked
+                      ? `Пополните баланс до ${MIN_SERVICE_BALANCE_RUB} ₽, чтобы создать боевого бота`
+                      : undefined
+                  }
                 >
                   <Bot size={20} />
                   {submitting ? 'Создаём бота...' : 'Создать бота'}

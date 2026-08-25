@@ -67,7 +67,9 @@ class BotRepository:
         await self.db.refresh(bot)
         return bot
 
-    async def add_error_message(self, error: str, bot: Bot):
+    async def add_error_message(self, error: str | None, bot: Bot):
+        """None — стереть прошлую ошибку: успешный старт не должен оставлять под ботом
+        надпись от предыдущего отказа."""
         bot.error_message = error
         await self.db.flush()
         await self.db.refresh(bot)

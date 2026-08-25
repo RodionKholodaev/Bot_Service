@@ -8,13 +8,14 @@ import sentry_sdk
 
 from src.config import settings
 from src.core.crypto import decrypt
-from src.core.exceptions import BadRequestError, NotFoundError
+from src.core.exceptions import BadRequestError, NotFoundError, PaymentRequiredError
 from src.models.bot import Bot
 from src.models.user import User
 from src.repositories.api_keys_repository import ApiKeysRepository
 from src.repositories.bot_repository import BotRepository
 from src.schemas.bot import BotCreate
 from src.services import docker_manager, freqtrade_client
+from src.services.balance_guard import cannot_create_message, cannot_start_message, is_balance_sufficient
 from src.services.bot_file_manager import BotFileManager
 from src.services.strategy_presets import resolve_filters
 
@@ -65,6 +66,20 @@ class BotService:
         """
         Создаем папку бота, делаем запись в бд
         """
+        # Боевой бот работает за комиссию с сервисного баланса, поэтому ниже порога
+        # новые боты не создаются. Dry-run не трогаем: за него комиссия не берётся.
+        # Проверка стоит первой — нет смысла занимать порт и писать строку в БД.
+        if not body.dry_run and not is_balance_sufficient(current_user):
+            logger.warning(
+                "Bot creation rejected: service balance below minimum",
+                extra={
+                    "user_id": current_user.id,
+                    "service_balance": current_user.service_balance,
+                    "min_balance": settings.MIN_SERVICE_BALANCE_RUB,
+                },
+            )
+            raise PaymentRequiredError(cannot_create_message())
+
         bot_id = str(uuid.uuid4())
         sentry_sdk.set_tag("bot_id", bot_id)
         sentry_sdk.set_tag("user_id", str(current_user.id))
@@ -186,6 +201,23 @@ class BotService:
                 "bot_name": bot.name,
             },
         )
+        # Тот же порог, что и при создании: /bots/{id}/start дёргается и по боту,
+        # который воркер уже остановил из-за баланса. Проверка — до перевода статуса
+        # в "starting", иначе отбитый бот залипнет в этом статусе.
+        if not bot.dry_run:
+            owner = await self.bot_repo.get_user(bot.user_id)
+            if owner is not None and not is_balance_sufficient(owner):
+                logger.warning(
+                    "Bot start rejected: service balance below minimum",
+                    extra={
+                        "bot_id": bot.id,
+                        "user_id": bot.user_id,
+                        "service_balance": owner.service_balance,
+                        "min_balance": settings.MIN_SERVICE_BALANCE_RUB,
+                    },
+                )
+                raise PaymentRequiredError(cannot_start_message())
+
         # получаем папку с настройками бота
         bot_dir = BotService._bot_dir(bot.id)
         if not (bot_dir / "config.json").exists():
@@ -230,6 +262,9 @@ class BotService:
             # меняем данные о статусе и контейнере в бд
             await self.bot_repo.change_container_id(container.id, bot)
             await self.bot_repo.change_bot_status("running", bot)
+            # Гасим текст прошлого отказа (например, остановки из-за баланса) — иначе
+            # у работающего бота на /home так и висит старое сообщение.
+            await self.bot_repo.add_error_message(None, bot)
             logger.info(
                 "Bot status changed",
                 extra={

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { MIN_SERVICE_BALANCE_RUB } from '@/lib/constants';
 // ── Типы под BotPublic с бэка ─────────────────────────────
 type BotStatus = 'created' | 'starting' | 'running' | 'stopped' | 'error';
 
@@ -103,6 +104,11 @@ const TradingBotDashboard = () => {
       console.error('Не удалось загрузить статистику:', e);
     }
   }, []);
+
+  // Ниже порога сервис останавливает боевых ботов и не даёт создавать новых
+  // (см. backend/src/services/balance_guard.py). Здесь это только предупреждение
+  // и погашенные кнопки — отказ всё равно выносит бэкенд, 402-м ответом.
+  const lowBalance = serviceBalance < MIN_SERVICE_BALANCE_RUB;
 
   const [showTopUpModal, setShowTopUpModal] = useState(false);
 
@@ -209,6 +215,9 @@ const TradingBotDashboard = () => {
       console.error(e);
       // мягкий фоллбэк — просто перечитаем список
       fetchBots();
+      // и баланс: одна из причин отказа — что он ушёл ниже порога, пока страница
+      // была открыта. Перечитав его, показываем баннер вместо молчаливой ошибки.
+      fetchBalance();
     } finally {
       markPending(bot.id, false);
     }
@@ -342,18 +351,46 @@ const TradingBotDashboard = () => {
               <p>Ваши торговые боты работают круглосуточно</p>
             </div>
             <div className="home-hero-actions">
-              <Link href="/bot-creation">
-                <button className="btn-primary">
+              {lowBalance ? (
+                <button
+                  className="btn-primary"
+                  disabled
+                  title={`Пополните баланс до ${MIN_SERVICE_BALANCE_RUB} ₽, чтобы создать бота`}
+                >
                   <Plus size={20} />
                   Создать бота
                 </button>
-              </Link>
+              ) : (
+                <Link href="/bot-creation">
+                  <button className="btn-primary">
+                    <Plus size={20} />
+                    Создать бота
+                  </button>
+                </Link>
+              )}
               {/* <button className="btn-secondary">
               <BookOpen size={20} />
               Как это работает?
             </button> */}
             </div>
           </section>
+
+          {lowBalance && (
+            <section className="low-balance-banner">
+              <AlertTriangle size={20} />
+              <span>
+                Баланс сервиса ниже {MIN_SERVICE_BALANCE_RUB} ₽ — боевые боты
+                остановлены, а новых создать нельзя. Демо-боты продолжают
+                работать.
+              </span>
+              <button
+                className="btn-text"
+                onClick={() => setShowTopUpModal(true)}
+              >
+                Пополнить
+              </button>
+            </section>
+          )}
 
           {/* Stats Grid */}
           <section className="stats-grid">
@@ -431,7 +468,6 @@ const TradingBotDashboard = () => {
                   const isPending = pendingIds.has(bot.id);
                   const isRunning = bot.status === 'running';
                   const isStarting = bot.status === 'starting';
-                  const isError = bot.status === 'error';
                   const isStopped =
                     bot.status === 'stopped' || bot.status === 'created';
 
@@ -442,6 +478,11 @@ const TradingBotDashboard = () => {
                     created: 'Создан',
                     error: 'Ошибка',
                   };
+
+                  // Остановить можно всегда, запустить — нет: боевого бота
+                  // бэкенд при таком балансе всё равно отобьёт.
+                  const startBlocked =
+                    lowBalance && !bot.dry_run && !isRunning && !isStarting;
 
                   const profit = bot.total_profit ?? 0;
                   const profitSign = profit >= 0 ? '+' : '';
@@ -479,8 +520,14 @@ const TradingBotDashboard = () => {
                           <button
                             className="btn-icon-small"
                             onClick={() => handleStartStop(bot)}
-                            disabled={isPending || isStarting}
-                            title={isRunning ? 'Остановить' : 'Запустить'}
+                            disabled={isPending || isStarting || startBlocked}
+                            title={
+                              startBlocked
+                                ? `Пополните баланс до ${MIN_SERVICE_BALANCE_RUB} ₽, чтобы запустить бота`
+                                : isRunning
+                                  ? 'Остановить'
+                                  : 'Запустить'
+                            }
                           >
                             {isPending ? (
                               <Loader2 size={16} className="spin" />
@@ -514,7 +561,10 @@ const TradingBotDashboard = () => {
                         <span className="status-text">
                           {statusLabel[bot.status]}
                         </span>
-                        {isError && bot.error_message && (
+                        {/* Не только при status="error": сервис останавливает бота
+                            из-за баланса штатно, статусом "stopped", и причину
+                            пользователь должен увидеть там же. */}
+                        {bot.error_message && !isRunning && !isStarting && (
                           <span
                             className="status-error-msg"
                             title={bot.error_message}
