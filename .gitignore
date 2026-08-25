@@ -55,3 +55,6 @@ app.log
 backend/logs/*.log
 # Playwright MCP (профиль браузера и скриншоты)
 .playwright-mcp/
+
+
+snap.db

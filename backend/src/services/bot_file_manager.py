@@ -37,8 +37,10 @@ class BotFileManager:
             dry_run=bot.dry_run,
             exchange_key=api_key,
             exchange_secret=api_secret,
-            stake_amount=bot.stake_amount,
-            tradable_balance_ratio=bot.tradable_balance_ratio,
+            # Колонки названы по старой (неверной) трактовке: stake_amount хранит весь
+            # депозит бота, tradable_balance_ratio — долю депозита на одну сделку.
+            deposit=bot.stake_amount,
+            stake_ratio=bot.tradable_balance_ratio,
             user_id=user_id,
         )
 

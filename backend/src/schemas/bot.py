@@ -39,8 +39,12 @@ class BotCreate(BaseModel):
     dry_run: bool = True
 
     api_key_id: int | None
-    stake_amount: float
-    tradable_balance_ratio: float
+    # Депозит бота целиком. Границы обязательны: без них 0 или отрицательный депозит
+    # доезжал до конфига freqtrade, и бот молча не открывал ни одной сделки.
+    stake_amount: float = Field(..., gt=0)
+    # Доля депозита на одну сделку: 0.2 = 20%. Больше 1 быть не может — сделка не может
+    # быть больше депозита, из которого её открывают.
+    tradable_balance_ratio: float = Field(..., gt=0, le=1)
 
     @model_validator(mode="after")
     def validate_filters_by_direction(self):

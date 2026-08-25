@@ -107,6 +107,10 @@ async def test_commission_calculated_correctly_for_profitable_trade(set_usdt_rat
     assert user.service_balance == 4100.0  # 5000 - 900
     assert bot.total_commission_paid_usdt == 10.0
     assert bot.total_commission_paid_rub == 900.0
+    # Курс, по которому посчитаны рубли, обязан осесть в сделке: ExchangeRateService
+    # отдаёт текущий курс, и без этой записи подтвердить списание задним числом нечем.
+    # Все 1722 сделки на сервере лежат с NULL в этой колонке — тест держит починку.
+    assert trade.exchange_rate_rub_usdt == 90.0
 
 
 # ──────────────────────────────────────────────
@@ -134,6 +138,8 @@ async def test_loss_trade_charges_no_commission(set_usdt_rate):
     assert user.service_balance == 5000.0
     assert bot.total_commission_paid_usdt == 0.0
     assert bot.total_commission_paid_rub == 0.0
+    # Курса тоже нет: по убыточной сделке его не запрашивали и списания не было
+    assert trade.exchange_rate_rub_usdt is None
 
 
 @pytest.mark.asyncio

@@ -22,6 +22,10 @@ class Bot(Base):
     leverage: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     direction: Mapped[str] = mapped_column(String(10), nullable=False)  # long / short / both
 
+    # Имена достались от первой (неверной) трактовки и не совпадают со смыслом:
+    # stake_amount — весь депозит бота, tradable_balance_ratio — доля депозита на одну
+    # сделку (0.2 = 20%). В конфиг freqtrade они уезжают как available_capital/
+    # dry_run_wallet и stake_amount = депозит * доля, см. freqtrade_config.generate_config.
     tradable_balance_ratio: Mapped[float]
     stake_amount: Mapped[float]
 

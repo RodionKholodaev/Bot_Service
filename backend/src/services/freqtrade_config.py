@@ -18,8 +18,8 @@ async def generate_config(
     api_password: str,
     exchange_key: str,
     exchange_secret: str,
-    stake_amount: float,
-    tradable_balance_ratio: float,
+    deposit: float,
+    stake_ratio: float,
     user_id: int,
     dry_run: bool = True,
 ) -> dict:
@@ -29,6 +29,18 @@ async def generate_config(
     api_port_inside_container — порт, который freqtrade слушает ВНУТРИ контейнера.
     Снаружи мы пробросим его на bot.api_port из БД через docker port mapping.
     Внутри пусть всегда будет 8080 (как в шаблоне) — это просто удобство.
+
+    deposit — весь капитал бота (Bot.stake_amount), stake_ratio — доля депозита на одну
+    сделку (Bot.tradable_balance_ratio, 0.2 = 20%). Имена в БД остались от прежней
+    трактовки, здесь они переименованы по смыслу.
+
+    Раскладка по ключам freqtrade — единственное место, где это соответствие задаётся:
+      - stake_amount     — размер ОДНОЙ сделки, отсюда deposit * stake_ratio;
+      - dry_run_wallet   — кошелёк симуляции, равен депозиту (иначе бот торгует
+                           дефолтной тысячей и может «потерять» больше депозита);
+      - available_capital — сколько боту разрешено взять с реального счёта: без него
+                           в live-режиме бот считал бы своим весь баланс биржи.
+    available_capital перекрывает tradable_balance_ratio, поэтому второго в конфиге нет.
     """
     logger.info(
         "Generating bot config",
@@ -37,6 +49,8 @@ async def generate_config(
             "user_id": user_id,
             "dry_run": dry_run,
             "api_port": api_port_inside_container,
+            "deposit": deposit,
+            "stake_ratio": stake_ratio,
         },
     )
 
@@ -44,8 +58,9 @@ async def generate_config(
     with open(TEMPLATE_PATH, encoding="utf-8") as f:  # noqa: ASYNC230
         config = json.load(f)
 
-    config["stake_amount"] = stake_amount
-    config["tradable_balance_ratio"] = tradable_balance_ratio
+    config["stake_amount"] = round(deposit * stake_ratio, 8)
+    config["dry_run_wallet"] = deposit
+    config["available_capital"] = deposit
     config["exchange"]["pair_whitelist"] = [pair]
     config["dry_run"] = dry_run
     config["exchange"]["key"] = exchange_key

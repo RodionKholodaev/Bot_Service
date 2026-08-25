@@ -49,6 +49,10 @@ class CommissionService:
 
             trade.commission_usdt = commission_usdt
             trade.commission_rub = commission_rub
+            # Курс фиксируем в самой сделке: списание в рублях иначе нечем подтвердить —
+            # ExchangeRateService отдаёт текущий курс, и задним числом уже не узнать,
+            # по какому именно посчитаны эти commission_rub.
+            trade.exchange_rate_rub_usdt = current_rate
 
             # Списываем с сервисного баланса пользователя
             user.service_balance = round(user.service_balance - commission_rub, 8)
