@@ -45,11 +45,18 @@ def make_user(*, commission_rate: float = 0.1, service_balance: float = 5000.0) 
 
 
 def make_bot(**overrides) -> Bot:
-    """Бот с обнулёнными накопительными полями — их и проверяют тесты."""
+    """Бот с обнулёнными накопительными полями — их и проверяют тесты.
+
+    dry_run=False задан явно: комиссия берётся только с боевых ботов, а колоночный
+    default=True на несохранённом объекте не применяется — там лежал бы None. Тест
+    про списание проходил бы, но по случайности (None ложен), и перестал бы что-либо
+    доказывать.
+    """
     defaults = {
         "total_profit": 0.0,
         "total_commission_paid_usdt": 0.0,
         "total_commission_paid_rub": 0.0,
+        "dry_run": False,
     }
     defaults.update(overrides)
     return Bot(**defaults)
@@ -63,6 +70,13 @@ class FakeExchangeRateService:
 
     async def get_usdt_rub(self):
         return self._rate
+
+
+class ExplodingExchangeRateService:
+    """Fake, падающий при любом обращении: им проверяется, что за курсом не ходили."""
+
+    async def get_usdt_rub(self):
+        raise AssertionError("ExchangeRateService не должен вызываться для dry-run бота")
 
 
 @pytest.fixture
@@ -181,6 +195,92 @@ async def test_none_profit_is_treated_as_zero(set_usdt_rate):
     # ноль — не прибыль, комиссии нет; но сделка всё равно учтена
     assert trade.commission_paid is True
     assert user.service_balance == 5000.0
+
+
+# ──────────────────────────────────────────────
+# Тестовый режим (dry_run) — денег нет, комиссии тоже
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_dry_run_bot_pays_no_commission(set_usdt_rate):
+    # Arrange
+    # Бот в симуляции: сделки виртуальные, на бирже не открыто ничего. Прибыль по ним
+    # такая же виртуальная, и списывать за неё реальные рубли с баланса нельзя.
+    # На сервере так утекло 10 341 ₽ — баланс ушёл в минус за прибыль, которой не было.
+    trade = make_trade(profit_usdt=100.0)
+    user = make_user()
+    bot = make_bot(dry_run=True)
+    set_usdt_rate(90.0)
+
+    # Act
+    await CommissionService.process_commission(trade, user, bot)
+
+    # Assert: баланс и счётчики комиссии не тронуты
+    assert user.service_balance == 5000.0
+    # `not`, а не `== 0.0`: колоночный default=0.0 применяет реальный INSERT, а у
+    # объекта в памяти поле так и остаётся None. Проверяем, что его не заполняли.
+    assert not trade.commission_usdt
+    assert not trade.commission_rub
+    assert trade.exchange_rate_rub_usdt is None
+    assert bot.total_commission_paid_usdt == 0.0
+    assert bot.total_commission_paid_rub == 0.0
+
+
+@pytest.mark.asyncio
+async def test_dry_run_trade_is_still_accounted(set_usdt_rate):
+    # Arrange
+    trade = make_trade(profit_usdt=100.0)
+    user = make_user()
+    bot = make_bot(dry_run=True)
+    set_usdt_rate(90.0)
+
+    # Act
+    await CommissionService.process_commission(trade, user, bot)
+
+    # Assert
+    # Профит бота считается и в симуляции — на нём держится вся статистика.
+    assert bot.total_profit == 100.0
+    # И флаг «сделка учтена» ставится тоже: без него воркер увидел бы её незачтённой
+    # на следующем же цикле и прибавил бы профит второй раз.
+    assert trade.commission_paid is True
+
+
+@pytest.mark.asyncio
+async def test_dry_run_bot_does_not_request_exchange_rate(monkeypatch):
+    # Arrange
+    # Курс нужен только для рублёвого списания. Для dry-run бота его запрос — это
+    # лишний поход в сеть на каждой прибыльной сделке, а недоступный курс ещё и
+    # ронял бы синхронизацию сделок (ValueError откатывает всю транзакцию воркера).
+    monkeypatch.setattr(
+        "src.services.commission_service.ExchangeRateService",
+        ExplodingExchangeRateService,
+    )
+    trade = make_trade(profit_usdt=100.0)
+    user = make_user()
+    bot = make_bot(dry_run=True)
+
+    # Act / Assert: фейк бросит AssertionError, если за курсом всё-таки сходили
+    await CommissionService.process_commission(trade, user, bot)
+    assert trade.commission_paid is True
+
+
+@pytest.mark.asyncio
+async def test_live_bot_still_pays_commission(set_usdt_rate):
+    # Arrange
+    # Обратная сторона проверки выше: боевой бот платит как платил. Иначе правку
+    # «не брать в dry_run» легко расширить на всё подряд и молча лишить сервис выручки.
+    trade = make_trade(profit_usdt=100.0)
+    user = make_user()
+    bot = make_bot(dry_run=False)
+    set_usdt_rate(90.0)
+
+    # Act
+    await CommissionService.process_commission(trade, user, bot)
+
+    # Assert
+    assert user.service_balance == 4100.0  # 5000 - 100 * 0.1 * 90
+    assert bot.total_commission_paid_rub == 900.0
 
 
 # ──────────────────────────────────────────────

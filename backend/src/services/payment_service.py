@@ -208,7 +208,7 @@ class PaymentService:
             )
             raise ForbiddenError()
 
-        amount = float(yk_payment.amount.value)
+        amount = float(yk_payment.amount.value) #type: ignore
 
         # Расхождение с суммой, на которую платёж создавался, — аномалия: либо
         # частичная оплата, либо кто-то трогал платёж мимо нас. Начисляем то, что

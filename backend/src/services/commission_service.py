@@ -34,8 +34,21 @@ class CommissionService:
         # Обновляем накопленный профит бота
         bot.total_profit = round(bot.total_profit + profit, 8)
 
-        # Комиссия — только с прибыльных сделок
-        if profit > 0:
+        # Комиссия — только с прибыльных сделок и только у боевых ботов. В dry_run
+        # прибыли не существует: сделки виртуальные, денег на бирже нет, и брать за них
+        # реальные рубли нельзя. Проверка стоит до запроса курса — иначе тестовый бот
+        # ещё и ходил бы в сеть на каждой прибыльной сделке, а недоступный курс ронял
+        # бы синхронизацию сделок исключением ниже.
+        if profit > 0 and bot.dry_run:
+            logger.info(
+                "Dry-run bot closed profitable deal, commission not charged",
+                extra={
+                    "bot_id": bot.id,
+                    "trade_id": trade.freqtrade_trade_id,
+                    "profit": profit,
+                },
+            )
+        elif profit > 0:
             rate_service = ExchangeRateService()
             current_rate = await rate_service.get_usdt_rub()
             # Курс не получен — сделку не учитываем вовсе: исключение откатит транзакцию
