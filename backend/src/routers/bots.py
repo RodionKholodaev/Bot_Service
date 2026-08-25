@@ -104,7 +104,7 @@ async def freqtrade_status(
     api_keys_repo=Depends(get_api_key_repo),
 ):
     bot = await BotService(bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
-    data = BotService.freqtrade_status(bot)
+    data = await BotService.freqtrade_status(bot)
 
     return data
 
@@ -122,4 +122,4 @@ async def get_logs(
 ):
     bot = await BotService(bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
 
-    return BotService.get_logs(bot, tail)
+    return await BotService.get_logs(bot, tail)
