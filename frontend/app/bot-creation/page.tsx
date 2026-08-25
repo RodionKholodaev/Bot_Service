@@ -17,6 +17,7 @@ import {
   Shield,
   Loader2,
   DollarSign,
+  Calculator,
 } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
 import type {
@@ -34,6 +35,11 @@ import {
   type BotFormValues,
 } from './assistant/applySuggestions';
 import { firstStepOf } from './assistant/fieldMeta';
+import {
+  computeTradeMath,
+  collectTradeWarnings,
+  parsePositiveNumber,
+} from './tradeMath';
 import type { Suggestion } from './assistant/types';
 import './create-bot.css';
 import './assistant/assistant.css';
@@ -125,7 +131,10 @@ const CreateBotPage = () => {
 
     // Шаг 4: Имя + выход из сделки
     botName: '',
-    takeProfit: '2',
+    // Проценты — движение цены. Прежние дефолты (TP 2 / SL 1.5) читались как доли маржи
+    // и при плече x3 значили 0.67% и 0.5% хода цены; в новой трактовке те же цифры дали
+    // бы втрое большие цели, поэтому числа пересмотрены.
+    takeProfit: '1',
     stopLoss: '',
     useStopLoss: false,
     dryRun: true,
@@ -957,6 +966,25 @@ const CreateBotPage = () => {
       ? apiKeys.find((k) => k.id === formData.selectedApiKeyId)
       : undefined;
 
+    // Что настройки значат на самом деле. Считается прямо при рендере: любая правка
+    // take profit, стопа или плеча перерисовывает шаг и пересчитывает эти числа сама,
+    // без состояния и без эффекта.
+    const tradeMargin =
+      (Number(formData.stakeAmount) * Number(formData.balanceRatio)) / 100;
+    const tradeSettings = {
+      takeProfitPercent: parsePositiveNumber(formData.takeProfit) ?? 0,
+      stopLossPercent: formData.useStopLoss
+        ? parsePositiveNumber(formData.stopLoss)
+        : null,
+      leverage: Number(formData.leverage),
+      marginUsdt:
+        Number.isFinite(tradeMargin) && tradeMargin > 0 ? tradeMargin : 0,
+    };
+    const tradeMath = computeTradeMath(tradeSettings);
+    const tradeWarnings = tradeMath
+      ? collectTradeWarnings(tradeMath, tradeSettings)
+      : [];
+
     return (
       <div className="step-content">
         <div className="step-header">
@@ -984,7 +1012,7 @@ const CreateBotPage = () => {
 
         <div className="form-group">
           <label>
-            Take Profit (%)
+            Take Profit — движение цены (%)
             <span
               className="tooltip-trigger"
               onMouseEnter={() => setShowIndicatorTooltip('tp')}
@@ -1000,12 +1028,14 @@ const CreateBotPage = () => {
             onChange={(e) =>
               setFormData({ ...formData, takeProfit: e.target.value })
             }
-            placeholder="2.0"
+            placeholder="1.0"
             className="form-input"
           />
           {showIndicatorTooltip === 'tp' && (
             <div className="tooltip">
-              Процент прибыли, при котором бот автоматически закроет сделку
+              На сколько процентов должна пройти цена, чтобы бот закрыл сделку в
+              плюс. Плечо на эту величину не влияет — оно умножает результат, а
+              не приближает цель.
             </div>
           )}
         </div>
@@ -1030,14 +1060,15 @@ const CreateBotPage = () => {
           </label>
           {showIndicatorTooltip === 'sl' && (
             <div className="tooltip">
-              Автоматическое закрытие сделки при достижении определённого убытка
+              Закрывает сделку, когда цена прошла заданный процент против вас.
+              Без стопа позиция держится до ликвидации.
             </div>
           )}
         </div>
 
         {formData.useStopLoss && (
           <div className="form-group">
-            <label>Stop Loss (%)</label>
+            <label>Stop Loss — движение цены (%)</label>
             <input
               type="number"
               step="0.1"
@@ -1045,11 +1076,101 @@ const CreateBotPage = () => {
               onChange={(e) =>
                 setFormData({ ...formData, stopLoss: e.target.value })
               }
-              placeholder="1.5"
+              placeholder="0.5"
               className="form-input"
             />
           </div>
         )}
+
+        <div className="reality-card">
+          <h3>
+            <Calculator size={16} />
+            Что это значит на самом деле
+          </h3>
+
+          {tradeMath ? (
+            <>
+              <div className="summary-row">
+                <span>Прибыль по take profit:</span>
+                <strong className="profit-text">
+                  +{tradeMath.profitMarginPercent.toFixed(1)}% депозита сделки
+                  {tradeSettings.marginUsdt > 0 &&
+                    ` (+${tradeMath.profitUsdt.toFixed(2)} USDT)`}
+                </strong>
+              </div>
+
+              <div className="summary-row">
+                <span>
+                  {tradeMath.hasStopLoss
+                    ? 'Убыток по стопу:'
+                    : 'Убыток без стопа:'}
+                </span>
+                <strong className="loss-text">
+                  −{tradeMath.lossMarginPercent.toFixed(1)}% депозита сделки
+                  {tradeSettings.marginUsdt > 0 &&
+                    ` (−${tradeMath.lossUsdt.toFixed(2)} USDT)`}
+                </strong>
+              </div>
+
+              <div className="summary-row">
+                <span>Комиссия биржи за круг:</span>
+                <strong>
+                  {tradeMath.feePricePercent}% цены (
+                  {tradeMath.feeMarginPercent.toFixed(2)}% депозита сделки)
+                </strong>
+              </div>
+
+              <div className="summary-row">
+                <span>Движение цены до take profit:</span>
+                <strong>
+                  {tradeMath.effectiveTakeProfitPricePercent.toFixed(2)}%
+                </strong>
+              </div>
+
+              {tradeMath.hasStopLoss && (
+                <div className="summary-row">
+                  <span>Стоп с учётом комиссии:</span>
+                  <strong>
+                    {tradeMath.effectiveStopPricePercent.toFixed(2)}% движения
+                    цены
+                  </strong>
+                </div>
+              )}
+
+              <div className="summary-row">
+                <span>Нужный винрейт, чтобы выйти в ноль:</span>
+                <strong>{Math.round(tradeMath.requiredWinrate)} из 100</strong>
+              </div>
+
+              {tradeSettings.leverage > 1 && (
+                <div className="summary-row">
+                  <span>Ликвидация примерно при:</span>
+                  <strong>
+                    {tradeMath.liquidationPricePercent.toFixed(1)}% движения
+                    цены
+                  </strong>
+                </div>
+              )}
+
+              <p className="reality-note">
+                Плечо x{formData.leverage} не приближает take profit: цене всё
+                равно нужно пройти {tradeSettings.takeProfitPercent}%. Оно
+                умножает и прибыль, и убыток — и приближает ликвидацию.
+              </p>
+            </>
+          ) : (
+            <p className="reality-note">
+              Укажите take profit, чтобы увидеть расчёт.
+            </p>
+          )}
+        </div>
+
+        {tradeWarnings.map((warning) => (
+          <div key={warning.id} className="warning-banner">
+            <AlertCircle size={16} />
+            <span>{warning.text}</span>
+          </div>
+        ))}
 
         <div className="summary-card">
           <h3>Итоговые настройки</h3>
@@ -1109,12 +1230,12 @@ const CreateBotPage = () => {
             </strong>
           </div>
           <div className="summary-row">
-            <span>Take Profit:</span>
+            <span>Take Profit (движение цены):</span>
             <strong className="profit-text">{formData.takeProfit}%</strong>
           </div>
           {formData.useStopLoss && (
             <div className="summary-row">
-              <span>Stop Loss:</span>
+              <span>Stop Loss (движение цены):</span>
               <strong className="loss-text">{formData.stopLoss}%</strong>
             </div>
           )}

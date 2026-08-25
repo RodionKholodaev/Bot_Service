@@ -1,3 +1,5 @@
+import logging
+
 import pytest_asyncio
 import sentry_sdk
 from httpx import ASGITransport, AsyncClient
@@ -14,12 +16,24 @@ from src.main import app
 # на код это не влияет, sentry_sdk просто становится no-op.
 sentry_sdk.init(dsn="")
 from src.config import settings
+from src.core.telegram_alerts import TelegramAlertHandler
 
 # Если в .env заданы TELEGRAM_FEEDBACK_*, интеграционные тесты слали бы настоящие
 # сообщения в чат разработчика на каждый созданный отзыв. Гасим канал на время тестов —
 # те тесты, которым нужна включённая отправка, включают её сами через monkeypatch.
 settings.TELEGRAM_FEEDBACK_BOT_TOKEN = None
 settings.TELEGRAM_FEEDBACK_CHAT_ID = None
+
+# То же самое для канала алертов, но снимать приходится сам хендлер, а не настройки:
+# setup_logging() вызывается на импорте src.main — то есть строкой выше, — и к этому
+# моменту TelegramAlertHandler уже висит на root-логгере. Обнуление TELEGRAM_ALERT_* его
+# бы не сняло. Без этого тесты здоровья бота (они специально доводят бота до отказа и
+# логируют critical) слали разработчику настоящие алерты про несуществующего "bot-1";
+# видно это было через раз только из-за дедупа в 5 минут внутри самого хендлера.
+_root_logger = logging.getLogger()
+for _handler in list(_root_logger.handlers):
+    if isinstance(_handler, TelegramAlertHandler):
+        _root_logger.removeHandler(_handler)
 
 from sqlalchemy import delete
 

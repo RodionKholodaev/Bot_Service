@@ -28,10 +28,11 @@ class BotCreate(BaseModel):
     entry_filters_long: list[FilterRule] | None = None
     entry_filters_short: list[FilterRule] | None = None
 
-    # Take profit — одно число в процентах от цены (например 4 = +4%)
+    # Take profit — движение ЦЕНЫ в процентах (например 1.5 = цена прошла +1.5%).
+    # Не доля маржи: плечо на эту величину не влияет, оно только умножает результат.
     take_profit_percent: float = Field(..., gt=0, le=100)
 
-    # Stop loss
+    # Stop loss — тоже движение цены в процентах
     stop_loss_enabled: bool = True
     stop_loss_percent: float | None = Field(default=None, gt=0, le=100)
     # если stop_loss_enabled=False — поле игнорируется
@@ -61,6 +62,20 @@ class BotCreate(BaseModel):
         """Проверка stop loss параметров"""
         if self.stop_loss_enabled and self.stop_loss_percent is None:
             raise ValueError("Если stop_loss_enabled=true, нужен stop_loss_percent")
+
+        # Проценты пользователя — движение цены; freqtrade меряет стоп в долях маржи, и
+        # переводит их плечо (см. BotService._build_stoploss). Стоп в 100% маржи и дальше
+        # даёт stoploss <= -1, а такой стоп бессмыслен: позиции уже нет, её ликвидировали.
+        # Без этой проверки бот создавался бы, а контейнер падал при старте.
+        if self.stop_loss_enabled and self.stop_loss_percent is not None:
+            margin_share = self.stop_loss_percent * self.leverage
+            if margin_share >= 100:
+                max_percent = round(100 / self.leverage, 2)
+                raise ValueError(
+                    f"Стоп-лосс {self.stop_loss_percent}% при плече x{self.leverage} "
+                    f"съедает всю маржу — позиция будет ликвидирована раньше. "
+                    f"Максимум для этого плеча — {max_percent}% движения цены"
+                )
         return self
 
     @model_validator(mode="after")

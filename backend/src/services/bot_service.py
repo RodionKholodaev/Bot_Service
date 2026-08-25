@@ -26,20 +26,36 @@ class BotService:
         self.bot_repo: BotRepository = bot_repo
         self.api_keys_repo: ApiKeysRepository = api_keys_repo
 
-    @staticmethod
-    def _build_take_profit(percent: float) -> dict:
-        """Превращает 4 (процентов) в minimal_roi {"0": 0.04}."""
-        return {"0": round(percent / 100.0, 6)}
+    # Процент, заданный пользователем, — это движение ЦЕНЫ, и плечо на него не влияет:
+    # «take profit 1.5%» значит «цена прошла 1.5%», при любом плече. freqtrade же меряет
+    # и minimal_roi, и stoploss в долях МАРЖИ, а маржа в leverage раз меньше позиции.
+    # Поэтому здесь и только здесь процент цены умножается на плечо.
+    #
+    # Раньше умножения не было, и «1.5%» уезжало в freqtrade как 1.5% маржи — при x10
+    # это 0.15% движения цены, в десять раз ближе, чем ожидал пользователь, и внутри
+    # спреда. Заодно плечо переставало быть просто множителем результата: оно молча
+    # меняло и цель, и стоп.
 
     @staticmethod
-    def _build_stoploss(enabled: bool, percent: float | None) -> float:
+    def _build_take_profit(percent: float, leverage: int) -> dict:
+        """Превращает 1.5 (процентов движения цены) при плече 10 в minimal_roi {"0": 0.15}."""
+        return {"0": round(percent / 100.0 * leverage, 6)}
+
+    @staticmethod
+    def _build_stoploss(enabled: bool, percent: float | None, leverage: int) -> float:
         """
-        Возвращает stoploss в формате freqtrade (отрицательное число от цены).
-        Если SL выключен — кладём -0.99 (фактически отключено).
+        Возвращает stoploss в формате freqtrade — отрицательная доля маржи.
+
+        percent — движение цены в процентах, как его задал пользователь; на долю маржи
+        его переводит плечо. Если SL выключен — кладём -0.99: позиция держится почти до
+        полной потери маржи, то есть фактически до ликвидации.
+
+        Верхнюю границу (percent * leverage < 100) проверяет схема BotCreate: стоп в целую
+        маржу или дальше — это stoploss <= -1, такого freqtrade не принимает.
         """
         if not enabled or percent is None:
             return -0.99
-        return -round(percent / 100.0, 6)
+        return -round(percent / 100.0 * leverage, 6)
 
     @staticmethod
     def _bot_dir(bot_id: str) -> Path:
@@ -63,9 +79,9 @@ class BotService:
             custom_long=[f.model_dump() for f in body.entry_filters_long] if body.entry_filters_long else None,
             custom_short=[f.model_dump() for f in body.entry_filters_short] if body.entry_filters_short else None,
         )
-        # преобразуем стопы в нужный формат
-        take_profit = BotService._build_take_profit(body.take_profit_percent)
-        stop_loss = BotService._build_stoploss(body.stop_loss_enabled, body.stop_loss_percent)
+        # преобразуем стопы в нужный формат: проценты движения цены -> доли маржи
+        take_profit = BotService._build_take_profit(body.take_profit_percent, body.leverage)
+        stop_loss = BotService._build_stoploss(body.stop_loss_enabled, body.stop_loss_percent, body.leverage)
 
         # Ключ ищем строго среди ключей текущего пользователя: api_key_id приходит из
         # тела запроса, и выборка «по одному id» позволяла запустить бота на чужом

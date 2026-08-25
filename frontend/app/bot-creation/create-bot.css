@@ -605,6 +605,32 @@
   font-size: 14px;
 }
 
+/* Карточка «что это значит на самом деле» — расчёт по TP/SL/плечу.
+   Отделена от .summary-card цветом: там перечисление настроек, здесь их следствия. */
+.reality-card {
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.reality-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: #f59e0b;
+}
+
+.reality-note {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #9ca3af;
+}
+
 .profit-text {
   color: #10b981;
 }
