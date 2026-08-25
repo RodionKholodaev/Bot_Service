@@ -67,6 +67,29 @@ class BotService:
         take_profit = BotService._build_take_profit(body.take_profit_percent)
         stop_loss = BotService._build_stoploss(body.stop_loss_enabled, body.stop_loss_percent)
 
+        # Ключ ищем строго среди ключей текущего пользователя: api_key_id приходит из
+        # тела запроса, и выборка «по одному id» позволяла запустить бота на чужом
+        # биржевом ключе. Проверка стоит до create(): нет смысла занимать порт и
+        # писать строку бота, если запрос всё равно будет отбит.
+        api_key = None
+        if body.api_key_id is not None:
+            api_key = await self.api_keys_repo.get_api_key_by_id(body.api_key_id, current_user.id)
+            if api_key is None:
+                logger.warning(
+                    "Bot creation rejected: API key not found for this user",
+                    extra={"user_id": current_user.id, "api_key_id": body.api_key_id},
+                )
+                # 404, а не 403: по коду ответа нельзя отличить чужой ключ от несуществующего
+                raise NotFoundError("API-ключ не найден")
+        else:
+            logger.info(
+                "Bot work with dry-run",
+                extra={"user_id": current_user.id},
+            )
+
+        exchange_key = decrypt(api_key.api_key_encrypted) if api_key else ""
+        exchange_secret = decrypt(api_key.api_secret_encrypted) if api_key else ""
+
         api_username = "freqtrader"
         # пароль для api
         api_password = secrets.token_urlsafe(16)
@@ -105,22 +128,6 @@ class BotService:
                 "bot_name": bot.name,
             },
         )
-
-        # получаем ключи из бд
-        api_key = None
-        if bot.api_key_id:
-            api_key = await self.api_keys_repo.get_api_key_by_id(bot.api_key_id)
-        else:
-            logger.info(
-                "Bot work with dry-run",
-                extra={
-                    "bot_id": bot.id,
-                    "user_id": bot.user_id,
-                },
-            )
-
-        exchange_key = decrypt(api_key.api_key_encrypted) if api_key else ""
-        exchange_secret = decrypt(api_key.api_secret_encrypted) if api_key else ""
 
         # создаем файлы в bots_data
         await BotFileManager.materialize_bot_files(

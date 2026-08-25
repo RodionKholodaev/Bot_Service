@@ -1,3 +1,4 @@
+import asyncio
 import ipaddress
 import logging
 
@@ -89,14 +90,17 @@ class PaymentService:
         )
 
     async def process_payment_webhook(self, request: Request):
-        client_ip = get_ip(request)  # type: ignore
+        client_ip = get_ip(request)
 
         logger.info(
             "Processing payment webhook",
             extra={"client_ip": str(client_ip)},
         )
 
-        if not any(client_ip in network for network in YOOKASSA_IPS):
+        # Первый барьер. Не единственный: подписи у вебхуков ЮKassa нет, а сам
+        # заголовок с адресом приходит от клиента, поэтому ниже статус платежа
+        # ещё и перепроверяется прямым запросом в ЮKassa.
+        if client_ip is None or not any(client_ip in network for network in YOOKASSA_IPS):
             logger.warning(
                 "Webhook rejected: IP not in YooKassa whitelist",
                 extra={"client_ip": str(client_ip)},
@@ -105,7 +109,7 @@ class PaymentService:
 
         body = await request.json()
         event: str = body.get("event", "")
-        obj: dict = body.get("object", {})
+        obj: dict = body.get("object", {}) or {}
 
         logger.debug(
             "Webhook payload received",
@@ -119,14 +123,14 @@ class PaymentService:
             )
             return {"status": "ignored"}
 
-        payment_id: str = obj["id"]
-        amount: float = float(obj["amount"]["value"])
-        user_id: int = int(obj["metadata"]["user_id"])
-
-        logger.info(
-            "Processing successful payment",
-            extra={"payment_id": payment_id, "amount": amount, "user_id": user_id},
-        )
+        # Из тела берём ТОЛЬКО идентификатор платежа. Сумма и получатель раньше
+        # тоже читались отсюда — то есть любой, кто дотянулся до этой ручки,
+        # начислял себе произвольный баланс. Теперь это данные из нашей БД и из
+        # ответа самой ЮKassa.
+        payment_id = obj.get("id")
+        if not isinstance(payment_id, str) or not payment_id:
+            logger.warning("Webhook rejected: no payment id in payload")
+            raise ForbiddenError()
 
         db_payment = await self.payment_repo.get_payment_by_id(payment_id)
 
@@ -143,6 +147,15 @@ class PaymentService:
                 extra={"payment_id": payment_id},
             )
             return {"status": "already_processed"}
+
+        amount = await self._confirm_payment(payment_id, db_payment)
+
+        user_id: int = db_payment.user_id
+
+        logger.info(
+            "Processing successful payment",
+            extra={"payment_id": payment_id, "amount": amount, "user_id": user_id},
+        )
 
         db_payment.status = "succeeded"
 
@@ -167,3 +180,47 @@ class PaymentService:
         )
 
         return {"status": "ok"}
+
+    @staticmethod
+    async def _confirm_payment(payment_id: str, db_payment) -> float:
+        """Спрашивает ЮKassa, оплачен ли платёж, и возвращает оплаченную сумму.
+
+        Это и есть настоящая проверка подлинности вебхука: подписи у ЮKassa нет,
+        а IP-фильтр держится на правильной настройке прокси. Ответ на GET
+        /payments/{id} подделать нельзя — он идёт по HTTPS с нашим shop_id.
+
+        Ошибка сети/API не глушится: без подтверждения баланс не пополняем, а
+        ЮKassa повторит вебхук (до нескольких раз в течение суток).
+        """
+        _configure_yookassa()
+
+        # SDK синхронный, а мы в единственном event loop — иначе на время запроса
+        # встали бы все остальные запросы приложения.
+        yk_payment = await asyncio.to_thread(YKPayment.find_one, payment_id)
+
+        status = getattr(yk_payment, "status", None)
+        paid = getattr(yk_payment, "paid", False)
+
+        if status != "succeeded" or not paid:
+            logger.warning(
+                "Webhook rejected: YooKassa does not confirm the payment",
+                extra={"payment_id": payment_id, "yookassa_status": status, "paid": paid},
+            )
+            raise ForbiddenError()
+
+        amount = float(yk_payment.amount.value)
+
+        # Расхождение с суммой, на которую платёж создавался, — аномалия: либо
+        # частичная оплата, либо кто-то трогал платёж мимо нас. Начисляем то, что
+        # реально оплачено, но об этом нужно узнать.
+        if abs(amount - db_payment.amount) > 0.01:
+            logger.critical(
+                "Paid amount differs from the created payment",
+                extra={
+                    "payment_id": payment_id,
+                    "expected_amount": db_payment.amount,
+                    "paid_amount": amount,
+                },
+            )
+
+        return amount

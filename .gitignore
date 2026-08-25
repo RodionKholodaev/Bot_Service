@@ -53,3 +53,5 @@ test.db
 CODE_REVIEW.md
 app.log
 backend/logs/*.log
+# Playwright MCP (профиль браузера и скриншоты)
+.playwright-mcp/

@@ -67,4 +67,12 @@ async def get_current_user(
             detail="Пользователь не найден",
         )
 
+    # Без этой проверки поле User.is_active было чисто декоративным: у заблокированного
+    # пользователя оставался рабочий токен, а значит и боты, и оплата, и всё остальное.
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Аккаунт заблокирован",
+        )
+
     return user

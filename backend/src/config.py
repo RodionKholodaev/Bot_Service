@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
+
+    # Срок жизни access-токена. Токен — единственный способ авторизации (refresh-токенов
+    # нет), поэтому неделя: короче — пользователь логинится слишком часто, дольше —
+    # утёкший из localStorage токен живёт почти вечно.
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
     FERNET_KEY: str
     GLITCHTIP_DSN: str
     SERVICE_COMMISION: float
@@ -38,6 +43,13 @@ class Settings(BaseSettings):
     # Хост, по которому бэкенд (запущенный с хоста) ходит в API ботов.
     # Поскольку контейнеры пробрасывают порт на хост — это localhost.
     BOT_API_HOST: str = "127.0.0.1"
+
+    # Интерфейс хоста, на который docker пробрасывает порт бота. По умолчанию только
+    # loopback: REST API freqtrade умеет останавливать торговлю и закрывать позиции,
+    # и на 0.0.0.0 весь диапазон BOT_API_PORT_RANGE торчал в интернет за одним
+    # basic-auth (а /ping там и вовсе без авторизации). Менять только если бэкенд
+    # ходит в ботов не с этого же хоста.
+    BOT_API_BIND_HOST: str = "127.0.0.1"
 
     YOOKASSA_SHOP_ID: str
     YOOKASSA_SECRET_KEY: str

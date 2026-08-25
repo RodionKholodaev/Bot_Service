@@ -38,6 +38,17 @@ class ApiKeysRepository:
             await self.db.delete(key)
             await self.db.flush()
 
-    async def get_api_key_by_id(self, key_id):
-        result = await self.db.execute(select(ExchangeApiKey).where(ExchangeApiKey.id == key_id))
+    async def get_api_key_by_id(self, key_id, user_id):
+        """Ключ по id, но только среди ключей этого пользователя.
+
+        user_id — обязательный аргумент, а не фильтр «по желанию вызывающего»:
+        id ключа приходит из тела запроса на создание бота, и выборка по одному
+        только id позволяла запустить контейнер на чужом биржевом ключе.
+        """
+        result = await self.db.execute(
+            select(ExchangeApiKey).where(
+                ExchangeApiKey.id == key_id,
+                ExchangeApiKey.user_id == user_id,
+            )
+        )
         return result.scalar_one_or_none()

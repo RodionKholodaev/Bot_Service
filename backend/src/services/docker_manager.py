@@ -153,6 +153,7 @@ def run_bot_container(
             "image": image,
             "network": network_name,
             "api_port": api_port_external,
+            "api_bind_host": settings.BOT_API_BIND_HOST,
             "bot_directory": str(bot_data_dir),
         },
     )
@@ -221,8 +222,10 @@ def run_bot_container(
             name=container_name,
             detach=True,
             network=network_name,
+            # (host_ip, host_port), а не просто порт: голый порт docker биндит на
+            # 0.0.0.0, то есть публикует API бота на всех интерфейсах сервера.
             ports={
-                f"{INTERNAL_API_PORT}/tcp": api_port_external,
+                f"{INTERNAL_API_PORT}/tcp": (settings.BOT_API_BIND_HOST, api_port_external),
             },
             volumes={
                 host_dir: {
