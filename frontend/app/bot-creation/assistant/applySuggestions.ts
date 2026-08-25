@@ -17,7 +17,6 @@ export interface BotFormValues {
   takeProfit: string;
   stopLoss: string;
   useStopLoss: boolean;
-  trailingStop: boolean;
   dryRun: boolean;
 }
 

@@ -128,7 +128,6 @@ const CreateBotPage = () => {
     takeProfit: '2',
     stopLoss: '',
     useStopLoss: false,
-    trailingStop: false,
     dryRun: true,
   });
 
@@ -1037,47 +1036,19 @@ const CreateBotPage = () => {
         </div>
 
         {formData.useStopLoss && (
-          <>
-            <div className="form-group">
-              <label>Stop Loss (%)</label>
-              <input
-                type="number"
-                step="0.1"
-                value={formData.stopLoss}
-                onChange={(e) =>
-                  setFormData({ ...formData, stopLoss: e.target.value })
-                }
-                placeholder="1.5"
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={formData.trailingStop}
-                  onChange={(e) =>
-                    setFormData({ ...formData, trailingStop: e.target.checked })
-                  }
-                />
-                <span>Трейлинг стоп</span>
-                <span
-                  className="tooltip-trigger"
-                  onMouseEnter={() => setShowIndicatorTooltip('trailing')}
-                  onMouseLeave={() => setShowIndicatorTooltip(null)}
-                >
-                  <Info size={14} />
-                </span>
-              </label>
-              {showIndicatorTooltip === 'trailing' && (
-                <div className="tooltip">
-                  Стоп-лосс будет следовать за ценой, сохраняя заданное
-                  расстояние
-                </div>
-              )}
-            </div>
-          </>
+          <div className="form-group">
+            <label>Stop Loss (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={formData.stopLoss}
+              onChange={(e) =>
+                setFormData({ ...formData, stopLoss: e.target.value })
+              }
+              placeholder="1.5"
+              className="form-input"
+            />
+          </div>
         )}
 
         <div className="summary-card">
