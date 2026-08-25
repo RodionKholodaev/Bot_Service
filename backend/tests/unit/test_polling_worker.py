@@ -353,7 +353,14 @@ def make_user(*, commission_rate: float = 0.1, service_balance: float = 5000.0) 
     return User(id=1, commission_rate=commission_rate, service_balance=service_balance)
 
 
-def make_known_trade(*, freqtrade_trade_id: int = 1, close_time=None) -> Trade:
+def make_known_trade(
+    *,
+    freqtrade_trade_id: int = 1,
+    close_time=None,
+    close_rate: float | None = None,
+    profit_usdt: float | None = None,
+    commission_paid: bool = False,
+) -> Trade:
     """Сделка, уже лежащая в нашей таблице. close_time=None — ещё открыта."""
     return Trade(
         id=1,
@@ -363,10 +370,29 @@ def make_known_trade(*, freqtrade_trade_id: int = 1, close_time=None) -> Trade:
         pair="BTC/USDT",
         direction="long",
         open_rate=100.0,
+        close_rate=close_rate,
         amount=1.0,
         leverage=5,
-        commission_paid=False,
+        profit_usdt=profit_usdt,
+        commission_paid=commission_paid,
         close_time=close_time,
+    )
+
+
+def make_recorded_trade(*, freqtrade_trade_id: int = 1) -> Trade:
+    """Закрытая сделка, которую воркер уже полностью записал и учёл.
+
+    Отдельная фабрика, потому что «закрыта» — это не одно только close_time: у
+    полностью записанной сделки есть цена закрытия, результат и отметка об учёте.
+    Сделка с close_time, но пустым close_rate — это НЕ закрытая сделка, а
+    недозаписанная, и воркер обязан вернуться к ней на следующем цикле.
+    """
+    return make_known_trade(
+        freqtrade_trade_id=freqtrade_trade_id,
+        close_time="уже закрыта",
+        close_rate=110.0,
+        profit_usdt=10.0,
+        commission_paid=True,
     )
 
 
@@ -374,8 +400,11 @@ def make_raw_trade(
     *,
     trade_id: int = 1,
     is_open: bool = False,
-    profit_abs: float = 10.0,
-    profit_ratio: float = 0.05,
+    close_rate: float | None = 110.0,
+    profit_abs: float | None = 10.0,
+    profit_ratio: float | None = 0.05,
+    exit_reason: str | None = "roi",
+    close_date: str | None = "2026-01-01T12:00:00+00:00",
     is_short: bool = False,
 ) -> dict:
     """Сделка в том виде, в каком её отдаёт /api/v1/trades у freqtrade."""
@@ -385,14 +414,31 @@ def make_raw_trade(
         "pair": "BTC/USDT",
         "is_short": is_short,
         "open_rate": 100.0,
-        "close_rate": 110.0,
+        "close_rate": close_rate,
         "amount": 1.0,
         "profit_abs": profit_abs,
         "profit_ratio": profit_ratio,
-        "exit_reason": "roi",
+        "exit_reason": exit_reason,
         "open_date": "2026-01-01T10:00:00+00:00",
-        "close_date": "2026-01-01T12:00:00+00:00",
+        "close_date": close_date,
     }
+
+
+def make_unsettled_raw_trade(*, trade_id: int = 1) -> dict:
+    """Сделка, которую freqtrade отдал закрытой, ещё не досчитав результат.
+
+    Так выглядит окно между «выходной ордер больше не открыт» и «сделка посчитана»:
+    is_open уже False, а цены закрытия, прибыли и причины выхода ещё нет.
+    """
+    return make_raw_trade(
+        trade_id=trade_id,
+        is_open=False,
+        close_rate=None,
+        profit_abs=None,
+        profit_ratio=None,
+        exit_reason=None,
+        close_date=None,
+    )
 
 
 @pytest.fixture
@@ -496,7 +542,7 @@ async def test_known_trade_is_not_saved_twice(sync_env):
     bot = make_bot()
     user = make_user()
     db = FakeSession()
-    already_closed = make_known_trade(close_time="уже закрыта")
+    already_closed = make_recorded_trade()
     commission = sync_env(user=user, known=(already_closed,))
 
     # Act
@@ -598,7 +644,7 @@ async def test_several_trades_are_processed_in_one_pass(sync_env):
     bot = make_bot()
     user = make_user()
     db = FakeSession()
-    known = make_known_trade(freqtrade_trade_id=1, close_time="уже закрыта")
+    known = make_recorded_trade(freqtrade_trade_id=1)
     sync_env(user=user, known=(known,))
 
     # Act
@@ -618,3 +664,114 @@ async def test_several_trades_are_processed_in_one_pass(sync_env):
     assert bot.total_profit == 20.0
     # коммит один на весь пакет, а не на каждую сделку
     assert db.commits == 1
+
+
+# ──────────────────────────────────────────────────────────────
+# Дозапись данных закрытия
+#
+# freqtrade успевает отдать is_open=False раньше, чем досчитает результат сделки.
+# Раньше воркер ловил такую сделку ровно один раз (условие «close_time пустой»), а
+# close_time проставляется всегда — _required_dt подставляет текущее время вместо
+# отсутствующей даты. Поэтому цена закрытия оставалась NULL навсегда: в боевой БД
+# так осели 7 сделок из 1722. Хуже того, начисление в тот же момент уже прошло по
+# profit=0 и выставило commission_paid — сделка выпадала из учёта окончательно.
+# ──────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_closed_trade_without_result_is_left_incomplete(sync_env):
+    # Arrange: сделка известна как открытая, freqtrade отдал её закрытой без результата
+    bot = make_bot()
+    user = make_user()
+    db = FakeSession()
+    open_trade = make_known_trade(close_time=None)
+    commission = sync_env(user=user, known=(open_trade,))
+
+    # Act
+    await _async_bot_trades(db, bot, [make_unsettled_raw_trade()])  # type: ignore
+
+    # Assert: писать нечем — цена закрытия и результат остались пустыми
+    assert open_trade.close_rate is None
+    assert open_trade.profit_usdt is None
+    # close_time всё же проставлен, приблизительно: сделка не должна выпасть из
+    # статистики, а на следующем цикле догадка заменится настоящей датой
+    assert open_trade.close_time is not None
+
+    # Главное: сделка НЕ учтена. Начисли мы здесь — process_commission взял бы profit=0,
+    # поставил commission_paid, и настоящая прибыль не попала бы в учёт уже никогда
+    assert commission.calls == []
+    assert not open_trade.commission_paid
+    assert bot.total_profit == 0.0
+    assert user.service_balance == 5000.0
+
+
+@pytest.mark.asyncio
+async def test_incomplete_trade_is_completed_on_a_later_cycle(sync_env):
+    # Arrange
+    bot = make_bot()
+    user = make_user()
+    db = FakeSession()
+    open_trade = make_known_trade(close_time=None)
+    commission = sync_env(user=user, known=(open_trade,))
+
+    # Act: первый цикл — результата ещё нет, второй — freqtrade досчитал
+    await _async_bot_trades(db, bot, [make_unsettled_raw_trade()])  # type: ignore
+    guessed_close_time = open_trade.close_time
+    await _async_bot_trades(db, bot, [make_raw_trade(profit_abs=10.0)])  # type: ignore
+
+    # Assert: данные дозаписаны на втором проходе
+    assert open_trade.close_rate == 110.0
+    assert open_trade.profit_usdt == 10.0
+    assert open_trade.profit_pct == pytest.approx(5.0)
+    assert open_trade.exit_reason == "roi"
+    # приблизительное время закрытия заменено настоящим close_date из freqtrade
+    assert open_trade.close_time != guessed_close_time
+    assert open_trade.close_time.isoformat().startswith("2026-01-01T12:00")
+
+    # И учтена ровно один раз, несмотря на два прохода
+    assert commission.calls == [open_trade]
+    assert open_trade.commission_paid is True
+    assert bot.total_profit == 10.0
+    assert user.service_balance == 4910.0  # 5000 - (10 * 0.1 * 90)
+
+
+@pytest.mark.asyncio
+async def test_new_trade_arriving_closed_without_result_is_not_accounted(sync_env):
+    # Arrange: сделку впервые видим уже закрытой, но без результата
+    bot = make_bot()
+    user = make_user()
+    db = FakeSession()
+    commission = sync_env(user=user)
+
+    # Act
+    await _async_bot_trades(db, bot, [make_unsettled_raw_trade()])  # type: ignore
+
+    # Assert: запись создана — терять сделку нельзя, она уже случилась
+    assert len(db.added) == 1
+    trade = db.added[0]
+    assert trade.close_rate is None
+    assert trade.profit_usdt is None
+    # но в учёт не пошла: та же ловушка, что и в ветке обновления выше
+    assert commission.calls == []
+    assert not trade.commission_paid
+    assert bot.total_profit == 0.0
+
+
+@pytest.mark.asyncio
+async def test_fully_recorded_trade_is_not_rewritten_or_charged_again(sync_env):
+    # Arrange: сделка уже записана целиком и учтена, freqtrade отдаёт её снова
+    bot = make_bot()
+    user = make_user()
+    db = FakeSession()
+    recorded = make_recorded_trade()
+    commission = sync_env(user=user, known=(recorded,))
+
+    # Act: цена в ответе другая — если дозапись сработает, это будет видно
+    await _async_bot_trades(db, bot, [make_raw_trade(close_rate=999.0, profit_abs=999.0)])  # type: ignore
+
+    # Assert: цикл дозаписи закрыт непустым close_rate, повторное начисление — флагом
+    assert recorded.close_rate == 110.0
+    assert recorded.profit_usdt == 10.0
+    assert commission.calls == []
+    assert bot.total_profit == 0.0
+    assert user.service_balance == 5000.0

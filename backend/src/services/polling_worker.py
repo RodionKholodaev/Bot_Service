@@ -232,7 +232,7 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
                 close_rate=ft.get("close_rate") if not is_open else None,
                 amount=ft.get("amount", 0.0),
                 profit_usdt=ft.get("profit_abs") if not is_open else None,
-                profit_pct=ft.get("profit_ratio", 0.0) * 100 if not is_open else None,
+                profit_pct=(ft.get("profit_ratio") or 0.0) * 100 if not is_open else None,
                 exit_reason=ft.get("exit_reason") if not is_open else None,
                 open_time=_required_dt(ft.get("open_date"), bot.id, "open_date"),
                 close_time=(_required_dt(ft.get("close_date"), bot.id, "close_date") if not is_open else None),
@@ -240,34 +240,53 @@ async def _async_bot_trades(db: AsyncSession, bot: Bot, raw_trades: list[dict]) 
             db.add(trade)
             await db.flush()  # получаем trade.id для дальнейшей логики
 
-            if not is_open:
-                logger.info(
-                    "New trade already closed, processing commission",
-                    extra={
-                        "bot_id": bot.id,
-                        "trade_id": ft_id,
-                        "profit_usdt": trade.profit_usdt,
-                    },
-                )
-                await CommissionService.process_commission(trade, user, bot)
-
         else:
-            # Сделка уже была — проверяем, не закрылась ли она
-            if not is_open and existing.close_time is None:
+            trade = existing
+            # Данные закрытия дозаписываем, пока пуста цена закрытия, а НЕ пока пусто
+            # close_time. close_time проставляется всегда: _required_dt при отсутствии
+            # даты подставляет текущее время, поэтому уже после первого прохода сделка
+            # по нему выглядит записанной. Если freqtrade в тот момент ещё не досчитал
+            # результат (сделка не открыта, но close_rate/profit_abs пустые), второй
+            # попытки не было бы никогда — так в боевой БД и осели 7 сделок из 1722 с
+            # NULL в close_rate. По close_rate же мы возвращаемся к сделке каждый цикл,
+            # пока freqtrade не отдаст цену.
+            if not is_open and trade.close_rate is None:
                 logger.info(
                     "Existing trade closed, updating record",
                     extra={
                         "bot_id": bot.id,
                         "trade_id": ft_id,
+                        "close_rate": ft.get("close_rate"),
                         "profit_usdt": ft.get("profit_abs"),
                     },
                 )
-                existing.close_rate = ft.get("close_rate")
-                existing.profit_usdt = ft.get("profit_abs")
-                existing.profit_pct = (ft.get("profit_ratio", 0.0) or 0.0) * 100
-                existing.exit_reason = ft.get("exit_reason")
-                existing.close_time = _required_dt(ft.get("close_date"), bot.id, "close_date")
-                await CommissionService.process_commission(existing, user, bot)
+                trade.close_rate = ft.get("close_rate")
+                trade.profit_usdt = ft.get("profit_abs")
+                trade.profit_pct = (ft.get("profit_ratio") or 0.0) * 100
+                trade.exit_reason = ft.get("exit_reason")
+                trade.close_time = _required_dt(ft.get("close_date"), bot.id, "close_date")
+
+        # Учёт закрытой сделки — прибавка к Bot.total_profit и комиссия — отдельно от
+        # дозаписи выше и одной точкой на обе ветки. Три условия, и каждое обязательно:
+        #
+        # profit_usdt is not None — по недосчитанному результату начислять нельзя.
+        #   process_commission взял бы profit=0, поставил commission_paid и закрыл сделку
+        #   для учёта навсегда: комиссия по ней уже не возьмётся, в Bot.total_profit она
+        #   не попадёт, даже когда freqtrade досчитает прибыль. Ровно это и случилось с
+        #   теми семью сделками. Дожидаемся результата и учитываем сделку один раз.
+        # not trade.commission_paid — дублирует защиту внутри сервиса намеренно: freqtrade
+        #   отдаёт последние 500 сделок на каждый опрос, и без проверки здесь мы звали бы
+        #   сервис на каждую из них каждые 30 секунд ради предупреждения в лог.
+        if not is_open and trade.profit_usdt is not None and not trade.commission_paid:
+            logger.info(
+                "Closed trade is being accounted",
+                extra={
+                    "bot_id": bot.id,
+                    "trade_id": ft_id,
+                    "profit_usdt": trade.profit_usdt,
+                },
+            )
+            await CommissionService.process_commission(trade, user, bot)
 
     await db.commit()
     logger.info(
