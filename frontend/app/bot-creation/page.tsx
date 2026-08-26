@@ -44,6 +44,7 @@ import {
 import type { Suggestion } from './assistant/types';
 import './create-bot.css';
 import './assistant/assistant.css';
+import { SiteFooter } from '@/app/components/SiteFooter';
 
 // Тип для API-ключа из БД
 interface ApiKey {
@@ -1342,6 +1343,8 @@ const CreateBotPage = () => {
             </div>
           </div>
         </div>
+
+        <SiteFooter />
       </div>
 
       {assistantEnabled && (

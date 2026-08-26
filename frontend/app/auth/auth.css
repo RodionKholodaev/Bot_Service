@@ -77,6 +77,77 @@
 }
 
 /* Card */
+/* Колонка «карточка + футер»: сама .auth-page центрирует своих детей по
+   горизонтали, поэтому футер со ссылками на документы нельзя класть рядом с
+   карточкой — он встал бы сбоку от неё. */
+.auth-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-inner .site-footer {
+  border-top: none;
+  padding-bottom: 8px;
+}
+
+/* ===== ЮРИДИЧЕСКИЕ СОГЛАСИЯ =====
+   Ни одна галочка не отмечена по умолчанию, кнопка регистрации заблокирована,
+   пока не отмечены обязательные (см. requiredConsentsGiven в page.tsx). */
+.auth-consents {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.auth-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #b8c0d0;
+  cursor: pointer;
+}
+
+.auth-consent input[type='checkbox'] {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.auth-consent a {
+  color: #60a5fa;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-consent a:hover {
+  color: #93c5fd;
+}
+
+.auth-consent.optional {
+  color: #8b93a5;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 12px;
+}
+
+.auth-consent.optional em {
+  font-style: normal;
+  color: #6b7280;
+}
+
 .auth-card {
   position: relative;
   z-index: 1;

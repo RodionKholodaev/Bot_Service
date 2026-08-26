@@ -14,6 +14,7 @@ import {
   Lock,
   Globe,
 } from 'lucide-react';
+import { LEGAL_LINKS } from '@/lib/legal';
 import './landing.css';
 
 const LandingPage = () => {
@@ -293,8 +294,18 @@ const LandingPage = () => {
               <Bot size={20} />
               <span>CryptoBot</span>
             </div>
+            {/* Юридические документы должны открываться в один клик с любой
+                страницы. На остальных страницах эти же ссылки даёт общий
+                компонент SiteFooter, здесь — свой оформленный футер. */}
+            <nav className="footer-legal">
+              {LEGAL_LINKS.map((link) => (
+                <Link key={link.href} href={link.href} className="footer-link">
+                  {link.title}
+                </Link>
+              ))}
+            </nav>
             <p className="footer-note">
-              Торговля несёт риски. Используйте ответственно.
+              Торговля несёт риски. Используйте ответственно. 18+
             </p>
           </div>
         </footer>

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { SiteFooter } from '@/app/components/SiteFooter';
 
 // Запросы идут через Next.js-прокси на /api/...
 const API_BASE = '/api';
@@ -359,6 +360,7 @@ const FeedbackPage = () => {
               Напишите в поддержку
             </a>
           </p>
+          <SiteFooter />
         </main>
       </div>
 

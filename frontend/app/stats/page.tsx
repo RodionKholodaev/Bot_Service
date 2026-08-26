@@ -36,6 +36,7 @@ import {
 import { Line, Doughnut } from 'react-chartjs-2';
 import './stats.css';
 import { apiFetch } from '@/lib/api';
+import { SiteFooter } from '@/app/components/SiteFooter';
 
 ChartJS.register(
   CategoryScale,
@@ -739,6 +740,7 @@ const StatsPage: React.FC = () => {
               )}
             </div>
           </div>
+          <SiteFooter />
         </main>
       </div>
     </div>

@@ -24,6 +24,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MIN_SERVICE_BALANCE_RUB } from '@/lib/constants';
+import { SiteFooter } from '@/app/components/SiteFooter';
 // ── Типы под BotPublic с бэка ─────────────────────────────
 type BotStatus = 'created' | 'starting' | 'running' | 'stopped' | 'error';
 
@@ -679,6 +680,7 @@ const TradingBotDashboard = () => {
               </button>
             </Link>
           </section>
+          <SiteFooter />
         </main>
       </div>
 

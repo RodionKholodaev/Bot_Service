@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
 import './api-keys.css';
+import { SiteFooter } from '@/app/components/SiteFooter';
 
 interface ApiKey {
   id: number;
@@ -415,6 +416,8 @@ export default function ApiKeysPage() {
               ))}
             </div>
           )}
+
+          <SiteFooter />
         </div>
       </div>
     </div>

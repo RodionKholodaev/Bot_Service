@@ -636,6 +636,24 @@
   color: #60a5fa;
 }
 
+.footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+}
+
+.footer-link {
+  font-size: 13px;
+  color: #9ca3af;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.footer-link:hover {
+  color: #60a5fa;
+}
+
 .footer-note {
   font-size: 13px;
   color: #4b5563;

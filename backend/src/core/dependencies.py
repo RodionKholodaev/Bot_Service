@@ -9,6 +9,7 @@ from src.models.user import User
 from src.repositories.api_keys_repository import ApiKeysRepository
 from src.repositories.assistant_request_repository import AssistantRequestRepository
 from src.repositories.bot_repository import BotRepository
+from src.repositories.consent_repository import ConsentRepository
 from src.repositories.feedback_repository import FeedbackRepository
 from src.repositories.payments_repository import PaymentsRepository
 from src.repositories.trade_repository import TradeRepository
@@ -31,6 +32,10 @@ async def get_trade_repo(db: AsyncSession = Depends(get_db)):
 
 async def get_user_repo(db: AsyncSession = Depends(get_db)):
     return UserRepository(db)
+
+
+async def get_consent_repo(db: AsyncSession = Depends(get_db)):
+    return ConsentRepository(db)
 
 
 async def get_api_key_repo(db: AsyncSession = Depends(get_db)):

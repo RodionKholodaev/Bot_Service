@@ -11,6 +11,9 @@ async def register_and_get_token(client) -> str:
             "username": "rodion",
             "email": "test@test.com",
             "password": "12345678",
+            "accept_terms": True,
+            "accept_pdn": True,
+            "accept_cross_border": True,
         },
     )
     return response.json()["access_token"]
