@@ -164,7 +164,7 @@ const AuthContent = () => {
             <div className="auth-logo-icon">
               <Bot size={24} />
             </div>
-            <span>CryptoBot</span>
+            <span>Rudder</span>
           </div>
 
           {/* Title */}

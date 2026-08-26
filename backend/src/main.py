@@ -92,7 +92,7 @@ async def lifespan(app: FastAPI):
     # ── shutdown ── (контейнеры ботов специально не трогаем — пусть продолжают работать)
 
 
-app = FastAPI(title="CryptoBot API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Rudder API", version="0.1.0", lifespan=lifespan)
 register_exception_handlers(app)
 
 app.add_middleware(

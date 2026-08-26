@@ -343,7 +343,7 @@ const TradingBotDashboard = () => {
         <div className="header-left">
           <div className="logo">
             <Zap size={28} />
-            <span>CryptoBot</span>
+            <span>Rudder</span>
           </div>
           <nav className="main-nav">
             <a href="#" className="nav-item active">

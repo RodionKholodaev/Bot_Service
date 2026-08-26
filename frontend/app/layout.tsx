@@ -4,8 +4,8 @@ import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'CryptoBot',
-  description: 'CryptoBot - сервис для запуска торговых ботов',
+  title: 'Rudder',
+  description: 'Rudder - сервис для запуска торговых ботов',
 };
 
 export default function RootLayout({

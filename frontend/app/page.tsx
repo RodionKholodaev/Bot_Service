@@ -95,7 +95,7 @@ const LandingPage = () => {
         <div className="nav-inner">
           <div className="nav-logo">
             <Bot size={24} />
-            <span>CryptoBot</span>
+            <span>Rudder</span>
           </div>
           <div className="nav-links">
             <a href="#features">Возможности</a>
@@ -292,7 +292,7 @@ const LandingPage = () => {
           <div className="footer-inner">
             <div className="footer-logo">
               <Bot size={20} />
-              <span>CryptoBot</span>
+              <span>Rudder</span>
             </div>
             {/* Юридические документы должны открываться в один клик с любой
                 страницы. На остальных страницах эти же ссылки даёт общий

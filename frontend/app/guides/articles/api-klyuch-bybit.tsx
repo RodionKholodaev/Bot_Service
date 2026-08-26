@@ -130,7 +130,7 @@ export const ApiKlyuchBybit = () => (
       </p>
     </Callout>
 
-    <h2 id="dobavlenie-v-servis">Добавляем ключ в CryptoBot</h2>
+    <h2 id="dobavlenie-v-servis">Добавляем ключ в Rudder</h2>
     <Steps>
       <Step n={1} title="Откройте настройки">
         <p>

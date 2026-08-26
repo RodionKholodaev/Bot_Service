@@ -58,7 +58,7 @@ class PaymentService:
                     "return_url": f"{settings.FRONTEND_URL}/?payment=success",
                 },
                 "capture": True,
-                "description": f"Пополнение баланса CryptoBot, user_id={current_user.id}",
+                "description": f"Пополнение баланса Rudder, user_id={current_user.id}",
                 "metadata": {
                     "user_id": str(current_user.id),
                 },

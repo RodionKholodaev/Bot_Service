@@ -51,7 +51,7 @@ export const GuidesShell = ({ children }: { children: React.ReactNode }) => {
         <div className="gd-topbar-left">
           <Link href={isAuthed ? '/home' : '/'} className="gd-brand">
             <Zap size={28} />
-            <span>CryptoBot</span>
+            <span>Rudder</span>
           </Link>
           <nav className="gd-nav">
             <Link href={isAuthed ? '/home' : '/'} className="gd-nav-item">

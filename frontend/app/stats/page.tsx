@@ -376,7 +376,7 @@ const StatsPage: React.FC = () => {
         <div className="stats-topbar-left">
           <Link href="/home" className="stats-brand">
             <Zap size={28} />
-            <span>CryptoBot</span>
+            <span>Rudder</span>
           </Link>
           <nav className="stats-nav">
             <Link href="/home" className="stats-nav-item">

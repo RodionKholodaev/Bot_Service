@@ -74,7 +74,7 @@ export interface GuideMeta {
 export const GUIDES: GuideMeta[] = [
   {
     slug: 'kak-eto-rabotaet',
-    title: 'Что такое CryptoBot и как он работает',
+    title: 'Что такое Rudder и как он работает',
     description:
       'За 5 минут: что делает торговый бот, где лежат ваши деньги и почему первый запуск ничем не рискует.',
     category: 'start',

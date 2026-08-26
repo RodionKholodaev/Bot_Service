@@ -138,7 +138,7 @@ const FeedbackPage = () => {
         <div className="header-left">
           <div className="logo">
             <Zap size={28} />
-            <span>CryptoBot</span>
+            <span>Rudder</span>
           </div>
           <nav className="main-nav">
             {/* span внутри Link обязателен: styled-jsx не скоупит классы на React-компоненты */}
@@ -185,7 +185,7 @@ const FeedbackPage = () => {
             <h1>Нам важно ваше мнение</h1>
             <p>
               Мы правда рады любым предложениям и конструктивной критике — они
-              помогают делать CryptoBot лучше. Расскажите, что понравилось, что
+              помогают делать Rudder лучше. Расскажите, что понравилось, что
               стоит поправить, или чего не хватает.
             </p>
           </section>
