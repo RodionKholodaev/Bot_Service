@@ -309,10 +309,14 @@
   flex-shrink: 0;
 }
 
-.gd-quickstart-sub {
+/* .gd-page — чтобы перебить сброс `.gd-page p { margin: 0 }` выше:
+   у него специфичность выше, чем у одного класса, и margin-bottom здесь
+   без этого просто не применяется. */
+.gd-page .gd-quickstart-sub {
   color: #9ca3af;
   font-size: 14px;
-  margin-bottom: 18px;
+  line-height: 1.6;
+  margin-bottom: 22px;
 }
 
 .gd-quickstart-steps {
