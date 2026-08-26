@@ -74,7 +74,10 @@ const getAuthHeader = (): Record<string, string> => {
 };
 
 const TradingBotDashboard = () => {
-  const [serviceBalance, setServiceBalance] = useState<number>(0);
+  // null — баланс ещё не загружен (или запрос упал). Отличать это от нуля
+  // обязательно: иначе на первом рендере 0 < порога и страница показывает
+  // баннер «баланс ниже 100 ₽» пользователю, у которого баланс в порядке.
+  const [serviceBalance, setServiceBalance] = useState<number | null>(null);
   // статистика
   const [homeStats, setHomeStats] = useState<HomeStats | null>(null);
   const router = useRouter();
@@ -117,7 +120,8 @@ const TradingBotDashboard = () => {
   // Ниже порога сервис останавливает боевых ботов и не даёт создавать новых
   // (см. backend/src/services/balance_guard.py). Здесь это только предупреждение
   // и погашенные кнопки — отказ всё равно выносит бэкенд, 402-м ответом.
-  const lowBalance = serviceBalance < MIN_SERVICE_BALANCE_RUB;
+  const lowBalance =
+    serviceBalance !== null && serviceBalance < MIN_SERVICE_BALANCE_RUB;
 
   const [showTopUpModal, setShowTopUpModal] = useState(false);
 
@@ -300,7 +304,9 @@ const TradingBotDashboard = () => {
     fundsUnderManagement: homeStats?.funds_under_management ?? 0,
   };
 
-  const getBalanceStatus = (balance: number) => {
+  const getBalanceStatus = (balance: number | null) => {
+    if (balance === null)
+      return { color: 'gray', daysLeft: 0, status: 'loading' };
     if (balance < 100) return { color: 'red', daysLeft: 1, status: 'critical' };
     if (balance < 1000) return { color: 'orange', daysLeft: 5, status: 'low' };
     return { color: 'green', daysLeft: 14, status: 'good' };
@@ -361,7 +367,9 @@ const TradingBotDashboard = () => {
           >
             <CreditCard size={16} />
             <span className="balance-amount">
-              {serviceBalance.toLocaleString('ru-RU')} ₽
+              {serviceBalance === null
+                ? '— ₽'
+                : `${serviceBalance.toLocaleString('ru-RU')} ₽`}
             </span>
           </div>
           <button className="btn-icon" onClick={() => setShowTopUpModal(true)}>
@@ -385,23 +393,16 @@ const TradingBotDashboard = () => {
               <p>Ваши торговые боты работают круглосуточно</p>
             </div>
             <div className="home-hero-actions">
-              {lowBalance ? (
-                <button
-                  className="btn-primary"
-                  disabled
-                  title={`Пополните баланс до ${MIN_SERVICE_BALANCE_RUB} ₽, чтобы создать бота`}
-                >
+              {/* Кнопку не гасим даже при низком балансе: порог закрывает только
+                  боевых ботов, демо создавать можно всегда (см.
+                  backend/src/services/balance_guard.py). Про боевой режим
+                  предупреждает и отказывает уже страница создания. */}
+              <Link href="/bot-creation">
+                <button className="btn-primary">
                   <Plus size={20} />
                   Создать бота
                 </button>
-              ) : (
-                <Link href="/bot-creation">
-                  <button className="btn-primary">
-                    <Plus size={20} />
-                    Создать бота
-                  </button>
-                </Link>
-              )}
+              </Link>
               {/* <button className="btn-secondary">
               <BookOpen size={20} />
               Как это работает?
@@ -411,14 +412,18 @@ const TradingBotDashboard = () => {
 
           {lowBalance && (
             <section className="low-balance-banner">
-              <AlertTriangle size={20} />
-              <span>
+              {/* обёртка обязательна: styled-jsx не скоупит класс, повешенный
+                  на React-компонент, — стиль до иконки просто не дойдёт */}
+              <span className="low-balance-icon">
+                <AlertTriangle size={20} />
+              </span>
+              <span className="low-balance-text">
                 Баланс сервиса ниже {MIN_SERVICE_BALANCE_RUB} ₽ — боевые боты
-                остановлены, а новых создать нельзя. Демо-боты продолжают
-                работать.
+                остановлены, новых создать нельзя. Демо-ботов это не касается:
+                они работают и создаются как обычно.
               </span>
               <button
-                className="btn-text"
+                className="btn-text low-balance-action"
                 onClick={() => setShowTopUpModal(true)}
               >
                 Пополнить
@@ -1129,6 +1134,40 @@ const TradingBotDashboard = () => {
           transform: translateY(-2px);
         }
 
+        /* Low Balance Banner */
+        /* Стоит между hero и сеткой статистики: у hero margin-bottom: 40px,
+           столько же снизу здесь — баннер оказывается ровно посередине. */
+        .low-balance-banner {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin: 0 0 40px;
+          padding: 16px 24px;
+          text-align: center;
+          background: rgba(251, 191, 36, 0.08);
+          border: 1px solid rgba(251, 191, 36, 0.3);
+          border-radius: 16px;
+          animation: slideUp 0.6s ease-out;
+        }
+
+        .low-balance-icon {
+          display: flex;
+          color: #fbbf24;
+          flex-shrink: 0;
+        }
+
+        .low-balance-text {
+          color: #fbbf24;
+          font-size: 15px;
+          font-weight: 500;
+        }
+
+        .low-balance-action {
+          text-decoration: underline;
+        }
+
         /* Stats Grid */
         .stats-grid {
           display: grid;
@@ -1832,6 +1871,12 @@ const TradingBotDashboard = () => {
 
           .stats-grid {
             grid-template-columns: 1fr;
+          }
+
+          .low-balance-banner {
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px;
           }
 
           .dashboard-main {
