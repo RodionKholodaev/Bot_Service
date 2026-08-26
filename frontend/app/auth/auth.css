@@ -128,8 +128,15 @@
 }
 
 .auth-inner .site-footer {
-  border-top: none;
+  /* padding-top вместо отступа у ::before — линия ниже отключена. */
+  padding-top: 24px;
   padding-bottom: 8px;
+}
+
+/* На /auth разделительной линии нет (карточка сама по себе отделена от фона),
+   поэтому псевдоэлемент убран целиком — вместе с его отступом сверху. */
+.auth-inner .site-footer::before {
+  display: none;
 }
 
 /* ===== ЮРИДИЧЕСКИЕ СОГЛАСИЯ =====

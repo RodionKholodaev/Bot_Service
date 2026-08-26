@@ -4,14 +4,30 @@
    footer-* лендинга (landing.css — глобальный файл). */
 
 .site-footer {
+  /* Во флекс-колонке (/auth, /legal) прижимает футер к низу; на страницах с
+     обычным блочным контейнером (/home, /feedback) считается нулём — отступ
+     сверху там даёт margin у ::before, см. ниже. */
   margin-top: auto;
-  padding: 24px 40px 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0 40px 32px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   text-align: center;
+}
+
+/* Разделительная линия — псевдоэлемент, а не border-top футера: border рисуется
+   по самой границе блока, и на /home и /feedback линия прилипала к последнему
+   блоку контента (там margin-top: auto = 0, а padding футера уходит уже под
+   линию). У псевдоэлемента отступ сверху работает в любом контейнере.
+   Отрицательные горизонтальные поля возвращают линии полную ширину футера —
+   такую же, какая была у border-top. */
+.site-footer::before {
+  content: '';
+  align-self: stretch;
+  height: 1px;
+  margin: 48px -40px 14px; /* 14px + gap 10px = 24px до ссылок, как было */
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .site-footer-links {
@@ -22,8 +38,8 @@
 }
 
 .site-footer-link {
-  font-size: 13px;
-  color: #9ca3af;
+  font-size: 12px;
+  color: #868e9d;
   text-decoration: none;
   transition: color 0.15s ease;
 }
@@ -35,14 +51,18 @@
 .site-footer-note {
   margin: 0;
   max-width: 720px;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.6;
-  color: #6b7280;
+  color: #626a78;
 }
 
 @media (max-width: 640px) {
   .site-footer {
-    padding: 20px 20px 28px;
+    padding: 0 20px 28px;
+  }
+
+  .site-footer::before {
+    margin: 36px -20px 14px;
   }
 
   .site-footer-links {
