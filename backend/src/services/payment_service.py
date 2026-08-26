@@ -85,8 +85,8 @@ class PaymentService:
         )
 
         return PaymentCreateResponse(
-            payment_id=yk_payment.id,  # type:ignore
-            confirmation_url=yk_payment.confirmation.confirmation_url,  # type:ignore
+            payment_id=yk_payment.id,  # type: ignore
+            confirmation_url=yk_payment.confirmation.confirmation_url,  # type: ignore
         )
 
     async def process_payment_webhook(self, request: Request):
@@ -208,7 +208,7 @@ class PaymentService:
             )
             raise ForbiddenError()
 
-        amount = float(yk_payment.amount.value) # type: ignore
+        amount = float(yk_payment.amount.value)  # type: ignore
 
         # Расхождение с суммой, на которую платёж создавался, — аномалия: либо
         # частичная оплата, либо кто-то трогал платёж мимо нас. Начисляем то, что

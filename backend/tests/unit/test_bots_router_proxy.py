@@ -93,7 +93,7 @@ async def test_logs_handler_returns_data_not_a_coroutine(monkeypatch):
         bot_id=bot.id,
         tail=50,
         current_user=user,
-        bot_repo=FakeBotRepo([bot]), # type: ignore
+        bot_repo=FakeBotRepo([bot]),  # type: ignore
         api_keys_repo=FakeApiKeysRepo(),
     )
 
@@ -122,7 +122,7 @@ async def test_logs_handler_passes_tail_through(monkeypatch):
         bot_id=bot.id,
         tail=17,
         current_user=user,
-        bot_repo=FakeBotRepo([bot]), # type: ignore
+        bot_repo=FakeBotRepo([bot]),  # type: ignore
         api_keys_repo=FakeApiKeysRepo(),
     )
 
@@ -143,7 +143,7 @@ async def test_logs_handler_rejects_someone_elses_bot():
             bot_id=bot.id,
             tail=50,
             current_user=stranger,
-            bot_repo=FakeBotRepo([bot]), # type: ignore
+            bot_repo=FakeBotRepo([bot]),  # type: ignore
             api_keys_repo=FakeApiKeysRepo(),
         )
 
@@ -163,7 +163,7 @@ async def test_status_handler_returns_data_not_a_coroutine(monkeypatch):
     result = await freqtrade_status(
         bot_id=bot.id,
         current_user=user,
-        bot_repo=FakeBotRepo([bot]), # type: ignore
+        bot_repo=FakeBotRepo([bot]),  # type: ignore
         api_keys_repo=FakeApiKeysRepo(),
     )
 
@@ -185,6 +185,6 @@ async def test_status_handler_raises_when_bot_api_is_silent(monkeypatch):
         await freqtrade_status(
             bot_id=bot.id,
             current_user=user,
-            bot_repo=FakeBotRepo([bot]), # type: ignore
+            bot_repo=FakeBotRepo([bot]),  # type: ignore
             api_keys_repo=FakeApiKeysRepo(),
         )
