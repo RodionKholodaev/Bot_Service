@@ -157,242 +157,244 @@ const AuthContent = () => {
         На главную
       </Link>
 
-      <div className="auth-inner">
-        <div className="auth-card">
-          {/* Logo */}
-          <div className="auth-logo">
-            <div className="auth-logo-icon">
-              <Bot size={24} />
+      <div className="auth-scroll">
+        <div className="auth-inner">
+          <div className="auth-card">
+            {/* Logo */}
+            <div className="auth-logo">
+              <div className="auth-logo-icon">
+                <Bot size={24} />
+              </div>
+              <span>Rudder</span>
             </div>
-            <span>Rudder</span>
-          </div>
 
-          {/* Title */}
-          <div className="auth-header">
-            <h1>{isRegister ? 'Создайте аккаунт' : 'Добро пожаловать'}</h1>
-            <p>
-              {isRegister
-                ? 'Начните торговать автоматически уже сегодня'
-                : 'Войдите, чтобы управлять ботами'}
-            </p>
-          </div>
+            {/* Title */}
+            <div className="auth-header">
+              <h1>{isRegister ? 'Создайте аккаунт' : 'Добро пожаловать'}</h1>
+              <p>
+                {isRegister
+                  ? 'Начните торговать автоматически уже сегодня'
+                  : 'Войдите, чтобы управлять ботами'}
+              </p>
+            </div>
 
-          {/* Tab switcher */}
-          <div className="auth-tabs">
-            <button
-              className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
-              onClick={() => switchMode('login')}
-              type="button"
-            >
-              Вход
-            </button>
-            <button
-              className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
-              onClick={() => switchMode('register')}
-              type="button"
-            >
-              Регистрация
-            </button>
-          </div>
+            {/* Tab switcher */}
+            <div className="auth-tabs">
+              <button
+                className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
+                onClick={() => switchMode('login')}
+                type="button"
+              >
+                Вход
+              </button>
+              <button
+                className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
+                onClick={() => switchMode('register')}
+                type="button"
+              >
+                Регистрация
+              </button>
+            </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="auth-form" noValidate>
-            {isRegister && (
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="auth-form" noValidate>
+              {isRegister && (
+                <div className="auth-field">
+                  <label>Имя пользователя</label>
+                  <input
+                    type="text"
+                    placeholder="your_username"
+                    value={form.username}
+                    onChange={(e) =>
+                      setForm({ ...form, username: e.target.value })
+                    }
+                    className="auth-input"
+                    autoComplete="username"
+                  />
+                </div>
+              )}
+
               <div className="auth-field">
-                <label>Имя пользователя</label>
+                <label>Email</label>
                 <input
-                  type="text"
-                  placeholder="your_username"
-                  value={form.username}
-                  onChange={(e) =>
-                    setForm({ ...form, username: e.target.value })
-                  }
+                  type="email"
+                  placeholder="you@example.com"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
                   className="auth-input"
-                  autoComplete="username"
+                  autoComplete="email"
                 />
               </div>
-            )}
 
-            <div className="auth-field">
-              <label>Email</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="auth-input"
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="auth-field">
-              <label>Пароль</label>
-              <div className="auth-pass-wrap">
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  placeholder={
-                    isRegister ? 'Минимум 8 символов' : 'Введите пароль'
-                  }
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm({ ...form, password: e.target.value })
-                  }
-                  className="auth-input"
-                  autoComplete={
-                    isRegister ? 'new-password' : 'current-password'
-                  }
-                />
-                <button
-                  type="button"
-                  className="auth-eye"
-                  onClick={() => setShowPass((v) => !v)}
-                  tabIndex={-1}
-                >
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            {isRegister && (
               <div className="auth-field">
-                <label>Повторите пароль</label>
+                <label>Пароль</label>
                 <div className="auth-pass-wrap">
                   <input
                     type={showPass ? 'text' : 'password'}
-                    placeholder="Повторите пароль"
-                    value={form.confirmPassword}
+                    placeholder={
+                      isRegister ? 'Минимум 8 символов' : 'Введите пароль'
+                    }
+                    value={form.password}
                     onChange={(e) =>
-                      setForm({ ...form, confirmPassword: e.target.value })
+                      setForm({ ...form, password: e.target.value })
                     }
                     className="auth-input"
-                    autoComplete="new-password"
+                    autoComplete={
+                      isRegister ? 'new-password' : 'current-password'
+                    }
                   />
+                  <button
+                    type="button"
+                    className="auth-eye"
+                    onClick={() => setShowPass((v) => !v)}
+                    tabIndex={-1}
+                  >
+                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
-            )}
 
-            {isRegister && (
-              <div className="auth-consents">
-                <label className="auth-consent">
-                  <input
-                    type="checkbox"
-                    checked={consents.terms}
-                    onChange={() => toggleConsent('terms')}
-                  />
-                  <span>
-                    Я принимаю{' '}
-                    <Link
-                      href="/legal/terms"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Пользовательское соглашение
-                    </Link>
-                  </span>
-                </label>
+              {isRegister && (
+                <div className="auth-field">
+                  <label>Повторите пароль</label>
+                  <div className="auth-pass-wrap">
+                    <input
+                      type={showPass ? 'text' : 'password'}
+                      placeholder="Повторите пароль"
+                      value={form.confirmPassword}
+                      onChange={(e) =>
+                        setForm({ ...form, confirmPassword: e.target.value })
+                      }
+                      className="auth-input"
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </div>
+              )}
 
-                <label className="auth-consent">
-                  <input
-                    type="checkbox"
-                    checked={consents.pdn}
-                    onChange={() => toggleConsent('pdn')}
-                  />
-                  <span>
-                    Я даю согласие на обработку персональных данных в
-                    соответствии с{' '}
-                    <Link
-                      href="/legal/pdn-consent"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Согласием на обработку персональных данных
-                    </Link>
-                    . Подробности обработки — в{' '}
-                    <Link
-                      href="/legal/privacy-policy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Политике обработки персональных данных
-                    </Link>
-                    .
-                  </span>
-                </label>
-
-                {CROSS_BORDER_TRANSFER && (
+              {isRegister && (
+                <div className="auth-consents">
                   <label className="auth-consent">
                     <input
                       type="checkbox"
-                      checked={consents.crossBorder}
-                      onChange={() => toggleConsent('crossBorder')}
+                      checked={consents.terms}
+                      onChange={() => toggleConsent('terms')}
                     />
                     <span>
-                      Я согласен на{' '}
+                      Я принимаю{' '}
                       <Link
-                        href="/legal/pdn-consent#cross-border"
+                        href="/legal/terms"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        трансграничную передачу моих персональных данных
-                      </Link>{' '}
-                      — серверы сервиса расположены за пределами РФ
+                        Пользовательское соглашение
+                      </Link>
                     </span>
                   </label>
-                )}
 
-                <label className="auth-consent optional">
-                  <input
-                    type="checkbox"
-                    checked={consents.marketing}
-                    onChange={() => toggleConsent('marketing')}
-                  />
-                  <span>
-                    Хочу получать письма и push-уведомления с новостями сервиса
-                    и предложениями <em>(необязательно)</em>
-                  </span>
-                </label>
-              </div>
-            )}
+                  <label className="auth-consent">
+                    <input
+                      type="checkbox"
+                      checked={consents.pdn}
+                      onChange={() => toggleConsent('pdn')}
+                    />
+                    <span>
+                      Я даю согласие на обработку персональных данных в
+                      соответствии с{' '}
+                      <Link
+                        href="/legal/pdn-consent"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Согласием на обработку персональных данных
+                      </Link>
+                      . Подробности обработки — в{' '}
+                      <Link
+                        href="/legal/privacy-policy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Политике обработки персональных данных
+                      </Link>
+                      .
+                    </span>
+                  </label>
 
-            {error && (
-              <div className="auth-error">
-                <AlertCircle size={15} />
-                {error}
-              </div>
-            )}
+                  {CROSS_BORDER_TRANSFER && (
+                    <label className="auth-consent">
+                      <input
+                        type="checkbox"
+                        checked={consents.crossBorder}
+                        onChange={() => toggleConsent('crossBorder')}
+                      />
+                      <span>
+                        Я согласен на{' '}
+                        <Link
+                          href="/legal/pdn-consent#cross-border"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          трансграничную передачу моих персональных данных
+                        </Link>{' '}
+                        — серверы сервиса расположены за пределами РФ
+                      </span>
+                    </label>
+                  )}
 
-            <button
-              type="submit"
-              className="auth-submit"
-              disabled={loading || (isRegister && !requiredConsentsGiven)}
-            >
-              {loading ? (
-                <>
-                  <Loader size={16} className="spin" />
-                  {isRegister ? 'Создание аккаунта...' : 'Вход...'}
-                </>
-              ) : isRegister ? (
-                'Создать аккаунт'
-              ) : (
-                'Войти'
+                  <label className="auth-consent optional">
+                    <input
+                      type="checkbox"
+                      checked={consents.marketing}
+                      onChange={() => toggleConsent('marketing')}
+                    />
+                    <span>
+                      Хочу получать письма и push-уведомления с новостями
+                      сервиса и предложениями <em>(необязательно)</em>
+                    </span>
+                  </label>
+                </div>
               )}
-            </button>
-          </form>
 
-          {/* Switch hint */}
-          <p className="auth-switch">
-            {isRegister ? 'Уже есть аккаунт? ' : 'Нет аккаунта? '}
-            <button
-              type="button"
-              className="auth-switch-btn"
-              onClick={() => switchMode(isRegister ? 'login' : 'register')}
-            >
-              {isRegister ? 'Войти' : 'Зарегистрироваться'}
-            </button>
-          </p>
+              {error && (
+                <div className="auth-error">
+                  <AlertCircle size={15} />
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="auth-submit"
+                disabled={loading || (isRegister && !requiredConsentsGiven)}
+              >
+                {loading ? (
+                  <>
+                    <Loader size={16} className="spin" />
+                    {isRegister ? 'Создание аккаунта...' : 'Вход...'}
+                  </>
+                ) : isRegister ? (
+                  'Создать аккаунт'
+                ) : (
+                  'Войти'
+                )}
+              </button>
+            </form>
+
+            {/* Switch hint */}
+            <p className="auth-switch">
+              {isRegister ? 'Уже есть аккаунт? ' : 'Нет аккаунта? '}
+              <button
+                type="button"
+                className="auth-switch-btn"
+                onClick={() => switchMode(isRegister ? 'login' : 'register')}
+              >
+                {isRegister ? 'Войти' : 'Зарегистрироваться'}
+              </button>
+            </p>
+          </div>
+
+          <SiteFooter />
         </div>
-
-        <SiteFooter />
       </div>
     </div>
   );

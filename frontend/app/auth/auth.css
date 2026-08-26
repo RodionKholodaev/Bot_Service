@@ -1,14 +1,46 @@
 /* ===== AUTH PAGE ===== */
 .auth-page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: linear-gradient(135deg, #0f1729 0%, #1a1f35 100%);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  flex-direction: column;
   position: relative;
   font-family: 'Inter', system-ui, sans-serif;
   color: #e4e7f0;
+}
+
+/* ===== SCROLL AREA (как на /home, /stats и лендинге) =====
+   Страница скроллится не документом, а этим контейнером — иначе браузер
+   рисует свой системный скроллбар, а не тонкий тёмный как на остальных
+   страницах. */
+.auth-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.35) rgba(255, 255, 255, 0.05);
+}
+
+.auth-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.auth-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.auth-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.35);
+  border-radius: 4px;
+}
+
+.auth-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
 }
 
 /* Background decorations (same as landing) */
@@ -77,7 +109,7 @@
 }
 
 /* Card */
-/* Колонка «карточка + футер»: сама .auth-page центрирует своих детей по
+/* Колонка «карточка + футер»: сам .auth-scroll центрирует своих детей по
    горизонтали, поэтому футер со ссылками на документы нельзя класть рядом с
    карточкой — он встал бы сбоку от неё. */
 .auth-inner {
@@ -88,6 +120,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Вертикальное центрирование через auto-margin, а не align-items на
+     .auth-scroll: у центрированного флекс-элемента, который выше контейнера,
+     верх уезжает за пределы скролла и до него не долистать (длинная форма
+     регистрации с согласиями). */
+  margin: auto 0;
 }
 
 .auth-inner .site-footer {
