@@ -24,6 +24,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MIN_SERVICE_BALANCE_RUB } from '@/lib/constants';
+import { apiFetch } from '@/lib/api';
 import { SiteFooter } from '@/app/components/SiteFooter';
 // ── Типы под BotPublic с бэка ─────────────────────────────
 type BotStatus = 'created' | 'starting' | 'running' | 'stopped' | 'error';
@@ -65,14 +66,8 @@ interface HomeStats {
   funds_under_management: number;
 }
 
-// Запросы идут через Next.js-прокси на /api/...
-const API_BASE = '/api';
-
-const getAuthHeader = (): Record<string, string> => {
-  if (typeof window === 'undefined') return {};
-  const token = localStorage.getItem('access_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
+// Запросы идут через apiFetch (lib/api.ts): он же подставляет токен и он же
+// сбрасывает сессию на 401 — руками собранный заголовок этого не умел.
 
 const TradingBotDashboard = () => {
   // null — баланс ещё не загружен (или запрос упал). Отличать это от нуля
@@ -92,12 +87,10 @@ const TradingBotDashboard = () => {
 
   const fetchBalance = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/users/me/balance`, {
-        headers: { ...getAuthHeader() },
-        cache: 'no-store',
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: { service_balance: number } = await res.json();
+      const data = await apiFetch<{ service_balance: number }>(
+        '/users/me/balance',
+        { cache: 'no-store' },
+      );
       setServiceBalance(data.service_balance);
     } catch (e) {
       console.error('Не удалось загрузить баланс:', e);
@@ -106,12 +99,9 @@ const TradingBotDashboard = () => {
 
   const fetchHomeStats = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/stats/home`, {
-        headers: { ...getAuthHeader() },
+      const data = await apiFetch<HomeStats>('/stats/home', {
         cache: 'no-store',
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: HomeStats = await res.json();
       setHomeStats(data);
     } catch (e) {
       console.error('Не удалось загрузить статистику:', e);
@@ -148,12 +138,11 @@ const TradingBotDashboard = () => {
     setOpenTrades(null);
     setOpenTradesLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/bots/${botId}/open-trades`, {
-        headers: { ...getAuthHeader() },
-        cache: 'no-store',
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setOpenTrades(await res.json());
+      setOpenTrades(
+        await apiFetch<OpenTrade[]>(`/bots/${botId}/open-trades`, {
+          cache: 'no-store',
+        }),
+      );
     } catch (e) {
       // Оставляем null: молча сказать «открытых сделок нет» нельзя — мы этого не знаем.
       console.error('Не удалось проверить открытые сделки:', e);
@@ -170,13 +159,10 @@ const TradingBotDashboard = () => {
 
     setTopUpLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/payments/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-        body: JSON.stringify({ amount }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: { confirmation_url: string } = await res.json();
+      const data = await apiFetch<{ confirmation_url: string }>(
+        '/payments/create',
+        { method: 'POST', body: { amount } },
+      );
       // Редиректим пользователя на страницу оплаты ЮКассы
       window.location.href = data.confirmation_url;
     } catch (e) {
@@ -190,12 +176,9 @@ const TradingBotDashboard = () => {
   const fetchBots = useCallback(async () => {
     try {
       setBotsError(null);
-      const res = await fetch(`${API_BASE}/bots`, {
-        headers: { ...getAuthHeader() },
+      const data = await apiFetch<BotPublic[]>('/bots', {
         cache: 'no-store',
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: BotPublic[] = await res.json();
       setBots(data);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Неизвестная ошибка';
@@ -243,12 +226,9 @@ const TradingBotDashboard = () => {
       bot.status === 'running' || bot.status === 'starting' ? 'stop' : 'start';
     markPending(bot.id, true);
     try {
-      const res = await fetch(`${API_BASE}/bots/${bot.id}/${action}`, {
+      const updated = await apiFetch<BotPublic>(`/bots/${bot.id}/${action}`, {
         method: 'POST',
-        headers: { ...getAuthHeader() },
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const updated: BotPublic = await res.json();
       setBots((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
     } catch (e) {
       console.error(e);
@@ -265,11 +245,7 @@ const TradingBotDashboard = () => {
   const handleDelete = async (botId: string) => {
     markPending(botId, true);
     try {
-      const res = await fetch(`${API_BASE}/bots/${botId}`, {
-        method: 'DELETE',
-        headers: { ...getAuthHeader() },
-      });
-      if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+      await apiFetch(`/bots/${botId}`, { method: 'DELETE' });
       const deletedBot = bots.find((b) => b.id === botId);
       setBots((prev) => prev.filter((b) => b.id !== botId));
       setHomeStats((prev) => {

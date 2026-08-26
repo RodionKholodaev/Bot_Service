@@ -14,15 +14,10 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SiteFooter } from '@/app/components/SiteFooter';
+import { apiFetch } from '@/lib/api';
 
-// Запросы идут через Next.js-прокси на /api/...
-const API_BASE = '/api';
-
-const getAuthHeader = (): Record<string, string> => {
-  if (typeof window === 'undefined') return {};
-  const token = localStorage.getItem('access_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
+// Запросы идут через apiFetch (lib/api.ts): он же подставляет токен и он же
+// сбрасывает сессию на 401.
 
 // ── Темы обращения ────────────────────────────────────────
 type TopicKey = 'idea' | 'bug' | 'ux' | 'other';
@@ -62,12 +57,10 @@ const FeedbackPage = () => {
 
   const fetchBalance = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/users/me/balance`, {
-        headers: { ...getAuthHeader() },
-        cache: 'no-store',
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: { service_balance: number } = await res.json();
+      const data = await apiFetch<{ service_balance: number }>(
+        '/users/me/balance',
+        { cache: 'no-store' },
+      );
       setServiceBalance(data.service_balance);
     } catch (e) {
       console.error('Не удалось загрузить баланс:', e);
@@ -100,20 +93,15 @@ const FeedbackPage = () => {
     setStatus('loading');
     setErrorText('');
     try {
-      const res = await fetch(`${API_BASE}/feedback`, {
+      await apiFetch('/feedback', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-        body: JSON.stringify({
+        body: {
           topic,
           message: trimmed,
           email: email.trim() || null,
           rating: rating || null,
-        }),
+        },
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.detail ?? `HTTP ${res.status}`);
-      }
       setStatus('success');
     } catch (e) {
       setErrorText(

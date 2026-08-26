@@ -1,3 +1,4 @@
+import { handleUnauthorized } from '@/lib/api';
 import type {
   AssistantEvent,
   AssistantMessage,
@@ -24,6 +25,7 @@ export async function fetchAssistantStatus(): Promise<{
   web_search_available: boolean;
 }> {
   const res = await fetch('/api/assistant/status', { headers: authHeaders() });
+  if (res.status === 401) handleUnauthorized();
   if (!res.ok) return { enabled: false, web_search_available: false };
   return res.json();
 }
@@ -79,6 +81,10 @@ export async function* streamAssistantChat(
       web_search: params.webSearch,
     }),
   });
+
+  // Стрим идёт мимо apiFetch (нужен ReadableStream), поэтому 401 обрабатываем
+  // сами — тем же способом, что и весь остальной фронт.
+  if (res.status === 401) handleUnauthorized();
 
   if (!res.ok || !res.body) {
     let detail = 'Ассистент недоступен. Попробуйте позже.';

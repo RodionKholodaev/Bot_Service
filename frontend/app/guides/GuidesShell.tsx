@@ -14,7 +14,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Zap, Settings, CreditCard, LogIn } from 'lucide-react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, ApiError } from '@/lib/api';
 import { SiteFooter } from '@/app/components/SiteFooter';
 import './guides.css';
 
@@ -40,9 +40,15 @@ export const GuidesShell = ({ children }: { children: React.ReactNode }) => {
     if (!isAuthed) return;
     // Баланс нужен только для индикатора в шапке. Молча игнорируем ошибку:
     // из-за неё статья не должна перестать открываться.
-    apiFetch<{ service_balance: number }>('/users/me/balance')
+    apiFetch<{ service_balance: number }>('/users/me/balance', {
+      onUnauthorized: 'clear-only',
+    })
       .then((data) => setServiceBalance(data.service_balance))
-      .catch(() => {});
+      .catch((e) => {
+        // Протухший токен — не повод выгонять со статьи: гайды открыты и гостям.
+        // Сессию apiFetch уже почистил, здесь только перерисовываем шапку.
+        if (e instanceof ApiError && e.status === 401) setIsAuthed(false);
+      });
   }, [isAuthed]);
 
   return (
