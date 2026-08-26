@@ -89,6 +89,20 @@ class BotCreate(BaseModel):
         return self
 
 
+# ── Открытые сделки: спрашиваются перед удалением бота ────
+class OpenTradeOut(BaseModel):
+    """Открытая сделка бота. Нужна интерфейсу, чтобы предупредить при удалении:
+    позиция останется на бирже, а связь с ней (sqlite бота) удаление уничтожит."""
+
+    pair: str
+    direction: str
+    open_rate: float
+    amount: float
+    open_time: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # ── Что отдаём фронту ─────────────────────────────────────
 class BotPublic(BaseModel):
     id: str

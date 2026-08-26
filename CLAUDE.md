@@ -31,7 +31,7 @@ Bot_Service is a platform for creating and running automated crypto trading bots
 
 - **Log messages in English**, `extra={...}` dict for structured context (`bot_id`, `user_id`, etc.), `logger.exception()` inside `except` blocks for the traceback, `logger.critical()` reserved for things that should page the developer (see `telegram_alerts.py` above) — don't casually bump something to `critical`.
 - **User-facing error text (HTTP `detail`) is in Russian**; that's the existing split, keep it.
-- Known gaps worth knowing about before touching related code: exchange-level errors (insufficient balance, rate limits, bad API key) are currently only visible in raw freqtrade container logs (`GET /bots/{id}/logs`) — the backend doesn't parse/classify them. `Bot.total_profit` and the sum of `Trade.profit_usdt` are two independent running totals that can drift.
+- Known gaps worth knowing about before touching related code: exchange-level errors (insufficient balance, rate limits, bad API key) are currently only visible in raw freqtrade container logs (`GET /bots/{id}/logs`) — the backend doesn't parse/classify them. `Bot.total_profit` and the sum of `Trade.profit_usdt` are two independent running totals that can drift. `delete_bot` wipes `bots_data/<bot_id>/` together with freqtrade's `tradesv3.sqlite` — and that file is the only link between an exchange position and the bot, so deleting a bot with an open trade leaves a position on Bybit that can only be closed by hand. The UI therefore calls `GET /bots/{id}/open-trades` (open == `Trade.close_time IS NULL`, **not** `close_rate` — that one is NULL on some closed trades too) and warns in the delete dialog; the backend itself does not block the delete.
 
 ## Testing
 

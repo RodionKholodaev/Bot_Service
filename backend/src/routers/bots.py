@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, status
 
-from src.core.dependencies import get_api_key_repo, get_bot_repo, get_current_user
+from src.core.dependencies import get_api_key_repo, get_bot_repo, get_current_user, get_trade_repo
 from src.models.user import User
 from src.repositories.bot_repository import BotRepository
-from src.schemas.bot import BotCreate, BotPublic
+from src.repositories.trade_repository import TradeRepository
+from src.schemas.bot import BotCreate, BotPublic, OpenTradeOut
 from src.services.bot_service import BotService
 
 router = APIRouter(prefix="/bots", tags=["Bots"])
@@ -52,6 +53,23 @@ async def get_bot(
     api_keys_repo=Depends(get_api_key_repo),
 ):
     return await BotService(bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
+
+
+@router.get("/{bot_id}/open-trades", response_model=list[OpenTradeOut])
+async def get_open_trades(
+    bot_id: str,
+    current_user: User = Depends(get_current_user),
+    bot_repo: BotRepository = Depends(get_bot_repo),
+    api_keys_repo=Depends(get_api_key_repo),
+    trade_repo: TradeRepository = Depends(get_trade_repo),
+):
+    """
+    Сделки бота, открытые прямо сейчас. Интерфейс спрашивает это перед удалением:
+    удаление сносит папку бота вместе с его sqlite, а позиция остаётся на бирже —
+    и опознать её после этого нечем.
+    """
+    bot = await BotService(bot_repo, api_keys_repo).get_user_bot(bot_id, current_user)
+    return await trade_repo.get_open_trades(bot.id)
 
 
 # ── Старт / стоп / удаление ───────────────────────────────

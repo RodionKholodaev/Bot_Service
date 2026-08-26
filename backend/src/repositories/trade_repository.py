@@ -23,6 +23,22 @@ class TradeRepository:
         result = await self.db.execute(select(Trade).where(Trade.bot_id == bot_id, Trade.freqtrade_trade_id == ft_id))
         return result.scalar_one_or_none()
 
+    async def get_open_trades(self, bot_id: str) -> list[Trade]:
+        """
+        Сделки бота, которые сейчас открыты, — по ним на бирже висит позиция.
+
+        Признак открытости — пустое close_time, а не close_rate: close_rate у части
+        закрытых сделок так и остался NULL (freqtrade не досчитал результат к моменту
+        опроса), и по нему сюда попали бы уже закрытые сделки.
+
+        Читаем из своей БД, а не из API бота: спрашивать нужно ровно тогда, когда
+        контейнер остановлен и спросить некого.
+        """
+        result = await self.db.execute(
+            select(Trade).where(Trade.bot_id == bot_id, Trade.close_time.is_(None)).order_by(Trade.open_time.asc())
+        )
+        return list(result.scalars().all())
+
     async def get_closed_trades(
         self,
         user_id: int,

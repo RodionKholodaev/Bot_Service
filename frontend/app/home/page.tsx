@@ -46,6 +46,15 @@ interface BotPublic {
   total_profit?: number;
 }
 
+// Открытая сделка бота — GET /bots/{id}/open-trades. Нужна только диалогу удаления.
+interface OpenTrade {
+  pair: string;
+  direction: string;
+  open_rate: number;
+  amount: number;
+  open_time: string;
+}
+
 interface HomeStats {
   service_balance: number;
   total_profit: number;
@@ -123,6 +132,31 @@ const TradingBotDashboard = () => {
   // id ботов, по которым сейчас идёт start/stop/delete — чтобы блокировать кнопки
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // Открытые сделки удаляемого бота. Удаление сносит папку бота вместе с базой
+  // freqtrade, а позиция остаётся на бирже — и связать её с сервисом больше нечем,
+  // поэтому спрашиваем до удаления, а не после. null — проверка ещё не дала ответа.
+  const [openTrades, setOpenTrades] = useState<OpenTrade[] | null>(null);
+  const [openTradesLoading, setOpenTradesLoading] = useState(false);
+
+  const askDeleteConfirm = async (botId: string) => {
+    setDeleteConfirmId(botId);
+    setOpenTrades(null);
+    setOpenTradesLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/bots/${botId}/open-trades`, {
+        headers: { ...getAuthHeader() },
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setOpenTrades(await res.json());
+    } catch (e) {
+      // Оставляем null: молча сказать «открытых сделок нет» нельзя — мы этого не знаем.
+      console.error('Не удалось проверить открытые сделки:', e);
+      setOpenTrades(null);
+    } finally {
+      setOpenTradesLoading(false);
+    }
+  };
 
   // Функция создания платежа:
   const handleTopUp = async () => {
@@ -547,7 +581,7 @@ const TradingBotDashboard = () => {
                           </Link>
                           <button
                             className="btn-icon-small btn-icon-danger"
-                            onClick={() => setDeleteConfirmId(bot.id)}
+                            onClick={() => askDeleteConfirm(bot.id)}
                             disabled={isPending}
                             title="Удалить"
                           >
@@ -644,37 +678,82 @@ const TradingBotDashboard = () => {
       </div>
 
       {/* Delete confirmation modal */}
-      {deleteConfirmId && (
-        <div className="modal-overlay" onClick={() => setDeleteConfirmId(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Удалить бота?</h2>
-            <p className="modal-description">
-              Бот будет остановлен и удалён. История сделок сохранится в
-              статистике, но восстановить настройки нельзя.
-            </p>
-            <div className="modal-actions">
-              <button
-                className="btn-secondary"
-                onClick={() => setDeleteConfirmId(null)}
+      {deleteConfirmId &&
+        (() => {
+          const botToDelete = bots.find((b) => b.id === deleteConfirmId);
+          // Предупреждаем только по боевому боту: в демо-режиме «открытая сделка»
+          // живёт лишь в базе freqtrade, на бирже терять нечего.
+          const liveOpenTrades =
+            botToDelete && !botToDelete.dry_run && openTrades ? openTrades : [];
+
+          return (
+            <div
+              className="modal-overlay"
+              onClick={() => setDeleteConfirmId(null)}
+            >
+              <div
+                className="modal-content"
+                onClick={(e) => e.stopPropagation()}
               >
-                Отмена
-              </button>
-              <button
-                className="btn-danger"
-                onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-                disabled={pendingIds.has(deleteConfirmId)}
-              >
-                {pendingIds.has(deleteConfirmId) ? (
-                  <Loader2 size={16} className="spin" />
-                ) : (
-                  <Trash2 size={16} />
+                <h2>Удалить бота?</h2>
+                <p className="modal-description">
+                  Бот будет остановлен и удалён. История сделок сохранится в
+                  статистике, но восстановить настройки нельзя.
+                </p>
+
+                {openTradesLoading && (
+                  <p className="modal-description">
+                    Проверяем открытые сделки...
+                  </p>
                 )}
-                Удалить
-              </button>
+
+                {!openTradesLoading && liveOpenTrades.length > 0 && (
+                  <div className="delete-open-trades-warning">
+                    <AlertTriangle size={16} />
+                    <span>
+                      На бирже открыто сделок: {liveOpenTrades.length} (
+                      {liveOpenTrades.map((t) => t.pair).join(', ')}). Удаление
+                      не закрывает позицию: бот перестанет ей управлять,
+                      тейк-профит не сработает, и закрыть её можно будет только
+                      вручную на Bybit. Стоп-лосс, выставленный на бирже,
+                      продолжит действовать. Чтобы бот довёл сделку сам, сначала
+                      дождитесь её закрытия.
+                    </span>
+                  </div>
+                )}
+
+                <div className="modal-actions">
+                  <button
+                    className="btn-secondary"
+                    onClick={() => setDeleteConfirmId(null)}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    className="btn-danger"
+                    onClick={() =>
+                      deleteConfirmId && handleDelete(deleteConfirmId)
+                    }
+                    // Пока не знаем про открытые сделки — удалять рано:
+                    // предупреждение появится через долю секунды.
+                    disabled={
+                      pendingIds.has(deleteConfirmId) || openTradesLoading
+                    }
+                  >
+                    {pendingIds.has(deleteConfirmId) ? (
+                      <Loader2 size={16} className="spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                    {liveOpenTrades.length > 0
+                      ? 'Всё равно удалить'
+                      : 'Удалить'}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          );
+        })()}
 
       {/* Top-up Modal */}
       {showTopUpModal && (
