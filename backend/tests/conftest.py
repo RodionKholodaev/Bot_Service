@@ -35,9 +35,11 @@ for _handler in list(_root_logger.handlers):
     if isinstance(_handler, TelegramAlertHandler):
         _root_logger.removeHandler(_handler)
 
+import pytest
 from sqlalchemy import delete
 
 from src.database import Base, get_db
+from src.services import capital_guard
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db"  # адрес тестовой бд
 
@@ -125,3 +127,13 @@ async def clear_database():
         for table in reversed(Base.metadata.sorted_tables):
             await session.execute(delete(table))
         await session.commit()
+
+
+# Баланс биржевого ключа кэшируется на несколько секунд по id ключа (capital_guard).
+# Кэш живёт в модуле, а id ключей в тестах повторяются — без сброса баланс из одного
+# теста подставился бы в следующий, и проверка капитала прошла бы «по инерции».
+@pytest.fixture(autouse=True)
+def clear_exchange_balance_cache():
+    capital_guard.clear_balance_cache()
+    yield
+    capital_guard.clear_balance_cache()

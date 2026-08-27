@@ -53,6 +53,21 @@ interface ApiKey {
   exchange: string;
 }
 
+// Свободный капитал ключа: баланс на бирже минус депозиты уже созданных на нём
+// ботов. Тот же расчёт отбивает создание бота на бэкенде (409) — здесь он нужен,
+// чтобы человек увидел лимит, пока вводит депозит, а не отказом на последнем шаге.
+interface KeyBalance {
+  total: number;
+  free: number;
+  reserved: number;
+  available: number;
+  bots: { id: string; name: string; stake_amount: number }[];
+}
+
+// 40 -> "40", 12.55 -> "12.55": цифры баланса читает человек, хвост из нулей мешает
+const formatUsdt = (value: number) =>
+  Number(value.toFixed(2)).toLocaleString('ru-RU');
+
 // кастомный select для выбора индикаторов (чтобы нормально выглядело))
 const CustomSelect = ({
   value,
@@ -147,6 +162,15 @@ const CreateBotPage = () => {
   const [apiKeysLoading, setApiKeysLoading] = useState(true);
   const [apiKeysError, setApiKeysError] = useState<string | null>(null);
 
+  // Капитал выбранного ключа вместе с id ключа, для которого он посчитан: без id
+  // при переключении ключа секунду показывались бы чужие цифры. null — ещё не
+  // спрашивали или биржа не ответила; тогда ничего не показываем и ничего не
+  // блокируем — решение всё равно за бэкендом, а он спросит биржу заново.
+  const [keyBalance, setKeyBalance] = useState<{
+    keyId: string;
+    data: KeyBalance;
+  } | null>(null);
+
   const [showIndicatorTooltip, setShowIndicatorTooltip] = useState<
     string | null
   >(null);
@@ -193,6 +217,30 @@ const CreateBotPage = () => {
     loadApiKeys();
   }, []);
 
+  // Баланс ключа спрашиваем только в боевом режиме и только по выбранному ключу:
+  // этот запрос ходит на биржу, дёргать его на каждый ключ в списке ни к чему.
+  // Состояние трогаем строго в .then/.catch: синхронный setState внутри эффекта
+  // запрещён правилом react-hooks/set-state-in-effect (жёсткий гейт линта), а
+  // устаревшие цифры отсекаются сравнением keyId при отображении.
+  useEffect(() => {
+    if (!localStorage.getItem('access_token')) return;
+    if (formData.dryRun || !formData.selectedApiKeyId) return;
+
+    const keyId = formData.selectedApiKeyId;
+    let cancelled = false;
+    apiFetch<KeyBalance>(`/api/api-keys/${keyId}/balance`)
+      .then((data) => {
+        if (!cancelled) setKeyBalance({ keyId, data });
+      })
+      .catch(() => {
+        if (!cancelled) setKeyBalance(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.dryRun, formData.selectedApiKeyId]);
+
   useEffect(() => {
     if (!localStorage.getItem('access_token')) return;
     apiFetch<{ service_balance: number }>('/users/me/balance')
@@ -206,6 +254,15 @@ const CreateBotPage = () => {
       .then((status) => setAssistantEnabled(status.enabled))
       .catch(() => setAssistantEnabled(false));
   }, []);
+
+  // Цифры показываем, только если они посчитаны для сейчас выбранного ключа и
+  // режим боевой: в dry-run биржевого счёта у бота нет вовсе.
+  const keyCapital =
+    !formData.dryRun &&
+    keyBalance &&
+    keyBalance.keyId === formData.selectedApiKeyId
+      ? keyBalance.data
+      : null;
 
   // Боевого бота при таком балансе создать нельзя; dry-run порог не ограничивает —
   // за него комиссия не берётся.
@@ -397,7 +454,7 @@ const CreateBotPage = () => {
         ...prev,
         dryRun: true,
         selectedApiKeyId: '',
-        exchange: 'binance',
+        exchange: 'bybit',
       }));
     } else {
       const firstKey = apiKeys[0];
@@ -418,6 +475,18 @@ const CreateBotPage = () => {
       }
       if (!formData.stakeAmount || Number(formData.stakeAmount) <= 0) {
         setSubmitError('Укажите депозит больше 0');
+        return;
+      }
+      // Тот же отказ придёт с бэкенда (409), но лучше сказать об этом здесь, чем
+      // после четырёх шагов формы. Если баланс не загрузился — не мешаем.
+      if (keyCapital && Number(formData.stakeAmount) > keyCapital.available) {
+        setSubmitError(
+          `На ключе свободно ${formatUsdt(keyCapital.available)} USDT` +
+            (keyCapital.reserved > 0
+              ? ` (${formatUsdt(keyCapital.reserved)} занято другими ботами)`
+              : '') +
+            '. Уменьшите депозит или пополните счёт на бирже.',
+        );
         return;
       }
     }
@@ -686,6 +755,32 @@ const CreateBotPage = () => {
           {showIndicatorTooltip === 'stake' && (
             <div className="tooltip">
               Общая сумма, которую бот может использовать для торговли
+            </div>
+          )}
+          {/* Депозиты всех ботов на одном ключе берутся из одного кошелька:
+              изолированная маржа разводит риск по позициям, но не деньги. */}
+          {keyCapital && (
+            <div
+              className={
+                Number(formData.stakeAmount) > keyCapital.available
+                  ? 'field-hint field-hint--warning'
+                  : 'field-hint'
+              }
+            >
+              Свободно на ключе {formatUsdt(keyCapital.available)} USDT из{' '}
+              {formatUsdt(keyCapital.total)}
+              {keyCapital.reserved > 0 && (
+                <>
+                  {' '}
+                  — {formatUsdt(keyCapital.reserved)} уже занято:{' '}
+                  {keyCapital.bots
+                    .map(
+                      (bot) =>
+                        `${bot.name} (${formatUsdt(bot.stake_amount)} USDT)`,
+                    )
+                    .join(', ')}
+                </>
+              )}
             </div>
           )}
         </div>

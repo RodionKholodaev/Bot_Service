@@ -19,6 +19,7 @@ from src.models.user import User
 from src.schemas.bot import BotCreate
 from src.services import bot_service as bot_service_module
 from src.services.bot_service import BotService
+from tests.fakes.test_exchange_account import FakeExchangeAccountClient
 
 
 class FakeApiKeysRepo:
@@ -41,6 +42,11 @@ class FakeBotRepo:
 
     def __init__(self):
         self.created: list = []
+
+    async def get_live_bots_on_key(self, api_key_id, *, exclude_bot_id=None):
+        # Занятый капитал здесь не проверяется — на него есть
+        # tests/unit/test_capital_guard.py; ключ в этих тестах всегда пустой.
+        return []
 
     async def allocate_port(self):
         return 9000
@@ -123,7 +129,9 @@ async def test_bot_creation_rejects_api_key_of_another_user(monkeypatch):
 
     # Act / Assert
     with pytest.raises(NotFoundError):
-        await BotService(bot_repo, api_keys_repo).create_bot(attacker, make_body(api_key_id=10))  # type: ignore
+        await BotService(bot_repo, api_keys_repo, FakeExchangeAccountClient()).create_bot(
+            attacker, make_body(api_key_id=10)
+        )  # type: ignore
 
     # ключ искался именно среди ключей запросившего
     assert api_keys_repo.calls == [(10, 1)]
@@ -146,7 +154,9 @@ async def test_bot_creation_rejects_unknown_api_key(monkeypatch):
     # несуществующий и чужой ключ дают один и тот же ответ: по коду нельзя понять,
     # какие id ключей вообще заняты
     with pytest.raises(NotFoundError):
-        await BotService(bot_repo, api_keys_repo).create_bot(user, make_body(api_key_id=999))  # type: ignore
+        await BotService(bot_repo, api_keys_repo, FakeExchangeAccountClient()).create_bot(
+            user, make_body(api_key_id=999)
+        )  # type: ignore
 
     assert bot_repo.created == []
 
@@ -162,7 +172,9 @@ async def test_own_api_key_is_decrypted_and_passed_to_bot_files(monkeypatch):
     bot_repo = FakeBotRepo()
 
     # Act
-    bot = await BotService(bot_repo, api_keys_repo).create_bot(user, make_body(api_key_id=10))  # type: ignore
+    bot = await BotService(bot_repo, api_keys_repo, FakeExchangeAccountClient()).create_bot(
+        user, make_body(api_key_id=10)
+    )  # type: ignore
 
     # Assert
     assert bot_repo.created == [bot]
@@ -184,7 +196,9 @@ async def test_bot_without_api_key_is_created_with_empty_credentials(monkeypatch
 
     # Act
     # dry-run бот ключа не требует — в репозиторий за ним ходить не должны вовсе
-    await BotService(bot_repo, api_keys_repo).create_bot(user, make_body(api_key_id=None, dry_run=True))  # type: ignore
+    await BotService(bot_repo, api_keys_repo, FakeExchangeAccountClient()).create_bot(
+        user, make_body(api_key_id=None, dry_run=True)
+    )  # type: ignore
 
     # Assert
     assert api_keys_repo.calls == []

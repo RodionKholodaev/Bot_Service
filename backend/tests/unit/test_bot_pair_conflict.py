@@ -25,6 +25,7 @@ from src.models.user import User
 from src.schemas.bot import BotCreate
 from src.services import bot_service as bot_service_module
 from src.services.bot_service import BotService
+from tests.fakes.test_exchange_account import FakeExchangeAccountClient
 
 PAIR = "SOL/USDT:USDT"
 
@@ -94,6 +95,11 @@ class FakeBotRepo:
             }
         )
         return self.rival
+
+    async def get_live_bots_on_key(self, api_key_id, *, exclude_bot_id=None):
+        # Занятый капитал в этих тестах не проверяется — на него есть
+        # tests/unit/test_capital_guard.py; ключ здесь всегда пустой.
+        return []
 
     async def allocate_port(self):
         return 9000
@@ -189,7 +195,9 @@ async def test_second_bot_on_same_key_and_pair_is_rejected(spy_files):
     # Act / Assert
     # 409, а не 400: запрос сам по себе валиден, мешает состояние — уже занятая пара.
     with pytest.raises(ConflictError) as exc:
-        await BotService(bot_repo, FakeApiKeysRepo([make_api_key()])).create_bot(user, make_body())  # type: ignore
+        await BotService(bot_repo, FakeApiKeysRepo([make_api_key()]), FakeExchangeAccountClient()).create_bot(
+            user, make_body()
+        )  # type: ignore
 
     # текст пользователю на русском и называет обоих участников конфликта
     assert "Старый бот" in exc.value.detail
@@ -207,7 +215,9 @@ async def test_creation_asks_about_any_status_of_rival(spy_files):
     bot_repo = FakeBotRepo(rival=None)
 
     # Act
-    await BotService(bot_repo, FakeApiKeysRepo([make_api_key()])).create_bot(make_user(), make_body())  # type: ignore
+    await BotService(bot_repo, FakeApiKeysRepo([make_api_key()]), FakeExchangeAccountClient()).create_bot(
+        make_user(), make_body()
+    )  # type: ignore
 
     # Assert
     assert bot_repo.pair_queries == [
@@ -221,7 +231,7 @@ async def test_bot_on_free_pair_is_created(spy_files):
     bot_repo = FakeBotRepo(rival=None)
 
     # Act
-    bot = await BotService(bot_repo, FakeApiKeysRepo([make_api_key()])).create_bot(  # type: ignore
+    bot = await BotService(bot_repo, FakeApiKeysRepo([make_api_key()]), FakeExchangeAccountClient()).create_bot(  # type: ignore
         make_user(), make_body(pair="XRP/USDT:USDT")
     )
 
@@ -237,7 +247,7 @@ async def test_dry_run_bot_is_created_on_busy_pair(spy_files):
     bot_repo = FakeBotRepo(rival=make_bot())
 
     # Act
-    bot = await BotService(bot_repo, FakeApiKeysRepo([make_api_key()])).create_bot(  # type: ignore
+    bot = await BotService(bot_repo, FakeApiKeysRepo([make_api_key()]), FakeExchangeAccountClient()).create_bot(  # type: ignore
         make_user(), make_body(dry_run=True)
     )
 
@@ -256,7 +266,7 @@ async def test_bot_without_api_key_does_not_check_the_pair(spy_files):
     bot_repo = FakeBotRepo(rival=make_bot())
 
     # Act
-    await BotService(bot_repo, FakeApiKeysRepo([])).create_bot(  # type: ignore
+    await BotService(bot_repo, FakeApiKeysRepo([]), FakeExchangeAccountClient()).create_bot(  # type: ignore
         make_user(), make_body(api_key_id=None, dry_run=True)
     )
 
@@ -277,7 +287,7 @@ async def test_start_is_rejected_while_another_bot_trades_the_pair():
 
     # Act / Assert
     with pytest.raises(ConflictError) as exc:
-        await BotService(bot_repo, FakeApiKeysRepo([])).start_bot(mine)  # type: ignore
+        await BotService(bot_repo, FakeApiKeysRepo([]), FakeExchangeAccountClient()).start_bot(mine)  # type: ignore
 
     assert "Старый бот" in exc.value.detail
     # Статус не тронут: проверка стоит до перевода в "starting", иначе отбитый бот
@@ -308,7 +318,7 @@ async def test_start_asks_only_about_trading_rivals_and_excludes_itself(tmp_path
     )
 
     # Act
-    await BotService(bot_repo, FakeApiKeysRepo([])).start_bot(mine)  # type: ignore
+    await BotService(bot_repo, FakeApiKeysRepo([]), FakeExchangeAccountClient()).start_bot(mine)  # type: ignore
 
     # Assert
     assert bot_repo.pair_queries == [
@@ -339,7 +349,7 @@ async def test_dry_run_bot_start_does_not_check_the_pair(tmp_path, monkeypatch):
     )
 
     # Act
-    await BotService(bot_repo, FakeApiKeysRepo([])).start_bot(mine)  # type: ignore
+    await BotService(bot_repo, FakeApiKeysRepo([]), FakeExchangeAccountClient()).start_bot(mine)  # type: ignore
 
     # Assert
     assert bot_repo.pair_queries == []

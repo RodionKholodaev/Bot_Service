@@ -67,6 +67,34 @@ class BotRepository:
         result = await self.db.execute(query)
         return result.scalars().first()
 
+    async def get_live_bots_on_key(
+        self,
+        api_key_id: int,
+        *,
+        exclude_bot_id: str | None = None,
+    ) -> Sequence[Bot]:
+        """
+        Все неархивированные боевые боты на этом биржевом ключе, в любом статусе.
+
+        Нужны, чтобы посчитать, сколько капитала ключа уже роздано под депозиты
+        (см. services/capital_guard.py). Статус намеренно не фильтруется: остановленный
+        или упавший бот может держать открытую позицию, и его депозит по-прежнему занят.
+
+        Dry-run не считается: симуляция денег со счёта не берёт.
+        """
+        # достаем бота с любым статусом, но активного
+        query = select(Bot).where(
+            Bot.api_key_id == api_key_id,
+            Bot.dry_run.is_(False),
+            Bot.is_active.is_(True),
+        )
+        # если вдруг есть бот, которого не нужно учитывать - не учитываем его
+        if exclude_bot_id is not None:
+            query = query.where(Bot.id != exclude_bot_id)
+
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
     async def get_all_busy_ports(self):
         # Только активные боты: у архивированного контейнер удалён, порт на хосте
         # свободен, и держать его занятым навсегда — значит рано или поздно исчерпать

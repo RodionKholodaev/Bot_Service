@@ -8,24 +8,39 @@ import sentry_sdk
 
 from src.config import settings
 from src.core.crypto import decrypt
-from src.core.exceptions import BadRequestError, ConflictError, NotFoundError, PaymentRequiredError
+from src.core.exceptions import (
+    BadRequestError,
+    ConflictError,
+    NotFoundError,
+    PaymentRequiredError,
+    ServiceUnavailableError,
+)
 from src.models.bot import Bot
 from src.models.user import User
 from src.repositories.api_keys_repository import ApiKeysRepository
 from src.repositories.bot_repository import BotRepository
 from src.schemas.bot import BotCreate
-from src.services import docker_manager, freqtrade_client
+from src.services import capital_guard, docker_manager, freqtrade_client
 from src.services.balance_guard import cannot_create_message, cannot_start_message, is_balance_sufficient
 from src.services.bot_file_manager import BotFileManager
+from src.services.exchange_account import CcxtAccountClient, ExchangeAccountClient
 from src.services.strategy_presets import resolve_filters
 
 logger = logging.getLogger(__name__)
 
 
 class BotService:
-    def __init__(self, bot_repo: BotRepository, api_keys_repo: ApiKeysRepository):
+    def __init__(
+        self,
+        bot_repo: BotRepository,
+        api_keys_repo: ApiKeysRepository,
+        exchange_client: ExchangeAccountClient | None = None,
+    ):
         self.bot_repo: BotRepository = bot_repo
         self.api_keys_repo: ApiKeysRepository = api_keys_repo
+        # Клиент биржи нужен только боевым ботам с ключом; создание объекта в сеть
+        # не ходит, поэтому дефолт здесь безопасен, а тесты подставляют фейк.
+        self.exchange_client: ExchangeAccountClient = exchange_client or CcxtAccountClient()
 
     # Процент, заданный пользователем, — это движение ЦЕНЫ, и плечо на него не влияет:
     # «take profit 1.5%» значит «цена прошла 1.5%», при любом плече. freqtrade же меряет
@@ -98,6 +113,58 @@ class BotService:
             },
         )
         raise ConflictError(message.format(name=rival.name, pair=rival.pair))
+
+    async def _ensure_capital_is_available(
+        self,
+        *,
+        api_key,
+        requested: float,
+        user_id: int,
+        exclude_bot_id: str | None,
+        allow_skip_on_network_error: bool,
+    ) -> None:
+        """
+        Поднимает ConflictError, если на ключе не хватает денег под депозит этого бота.
+
+        Депозит бота уезжает в config.json как available_capital, и до этой проверки
+        депозиты разных ботов на одном ключе ни с чем не сверялись: два бота по 40 USDT
+        на счёте в 40 USDT оба стартовали, а дальше ордера отбивала биржа — молча, при
+        живом контейнере и статусе running.
+
+        allow_skip_on_network_error — что делать, если биржа не ответила. При создании
+        бота отвечаем 503 (лучше отказ, чем непроверенный депозит), а при запуске уже
+        созданного бота проверку пропускаем: его депозит проверяли при создании, сумма
+        чужих резервов с тех пор не выросла, а блокировать перезапуск из-за минутной
+        недоступности биржи — хуже, чем один раз не пересчитать.
+        """
+        live_bots = await self.bot_repo.get_live_bots_on_key(api_key.id, exclude_bot_id=exclude_bot_id)
+
+        try:
+            capital = await capital_guard.get_key_capital(self.exchange_client, api_key, list(live_bots))
+        except ServiceUnavailableError:
+            if not allow_skip_on_network_error:
+                raise
+            logger.warning(
+                "Capital check skipped: exchange is unreachable",
+                extra={"user_id": user_id, "api_key_id": api_key.id, "bot_id": exclude_bot_id},
+            )
+            return
+
+        if capital_guard.is_enough(capital, requested):
+            return
+
+        logger.warning(
+            "Bot rejected: not enough capital on the exchange key",
+            extra={
+                "user_id": user_id,
+                "api_key_id": api_key.id,
+                "requested": requested,
+                "balance_total": capital.total,
+                "reserved": capital.reserved,
+                "available": capital.available,
+            },
+        )
+        raise ConflictError(capital_guard.not_enough_capital_message(api_key.label, capital, requested))
 
     @staticmethod
     def _bot_dir(bot_id: str) -> Path:
@@ -173,6 +240,17 @@ class BotService:
                     "Биржа считает их сделки одной позицией: вход второго увеличит позицию первого, "
                     "а стоп первого закроет её целиком. Удалите существующего бота или выберите другую пару."
                 ),
+            )
+
+            # Депозиты всех ботов на этом ключе берутся из одного кошелька — сверяем
+            # сумму с реальным балансом биржи. Тоже до create(): порт и файлы ни к чему,
+            # если денег на бота нет.
+            await self._ensure_capital_is_available(
+                api_key=api_key,
+                requested=body.stake_amount,
+                user_id=current_user.id,
+                exclude_bot_id=None,
+                allow_skip_on_network_error=False,
             )
 
         exchange_key = decrypt(api_key.api_key_encrypted) if api_key else ""
@@ -289,6 +367,18 @@ class BotService:
                         "Биржа считает их сделки одной позицией — остановите его, прежде чем запускать этого."
                     ),
                 )
+
+                # Себя из резерва исключаем: бот уже лежит в БД, и без exclude_bot_id
+                # он увидел бы в занятом собственный депозит и не стартовал бы никогда.
+                api_key = await self.api_keys_repo.get_api_key_by_id(bot.api_key_id, bot.user_id)
+                if api_key is not None:
+                    await self._ensure_capital_is_available(
+                        api_key=api_key,
+                        requested=bot.stake_amount,
+                        user_id=bot.user_id,
+                        exclude_bot_id=bot.id,
+                        allow_skip_on_network_error=True,
+                    )
 
         # получаем папку с настройками бота
         bot_dir = BotService._bot_dir(bot.id)

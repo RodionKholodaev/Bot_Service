@@ -147,22 +147,29 @@ npm audit fix              # безопасный автофикс (без --for
 backend/tests/
 ├── conftest.py                        # общая обвязка: тестовая БД, http-клиент, очистка
 ├── fakes/
+│   ├── test_exchange_account.py       # FakeExchangeAccountClient — биржа в памяти
 │   └── test_user_repository.py        # FakeUserRepository — репозиторий в памяти
 ├── integration/
-│   └── test_auth.py                   # HTTP-тесты ручек /auth через реальное приложение
+│   ├── test_auth.py                   # HTTP-тесты ручек /auth через реальное приложение
+│   └── test_bot_capital_repository.py # SQL-фильтр «чьи депозиты заняли ключ»
 └── unit/
+    ├── test_api_key_verification.py   # проверка биржевого ключа при добавлении
     ├── test_assistant_rate_limit.py   # лимит запросов к ИИ-ассистенту
     ├── test_assistant_suggestions.py  # валидация предложений ИИ-ассистента
     ├── test_auth_service.py           # регистрация и вход
+    ├── test_bot_capital_check.py      # хватает ли денег на ключе под нового бота
+    ├── test_capital_guard.py          # арифметика свободного капитала ключа
     ├── test_comission_service.py      # расчёт и списание комиссии сервиса
     ├── test_polling_worker.py         # живость ботов + синхронизация сделок
     └── test_stats_service.py          # P&L, просадка, winrate
 ```
 
+(в дереве перечислены не все файлы — только те, о которых идёт речь дальше.)
+
 Два замечания по именам, чтобы не искать глазами:
 
-- `fakes/test_user_repository.py` — **не тест**, несмотря на префикс `test_`. Это
-  переиспользуемый фейк. Префикс достался исторически; pytest пытается собрать оттуда
+- `fakes/test_user_repository.py` и `fakes/test_exchange_account.py` — **не тесты**,
+  несмотря на префикс `test_`. Это переиспользуемые фейки. Префикс достался исторически; pytest пытается собрать оттуда
   тесты, не находит их и идёт дальше.
 - `test_comission_service.py` — опечатка в имени файла (одна `m`). Сам сервис называется
   правильно: `src/services/commission_service.py`.
@@ -450,8 +457,11 @@ trade.commission_paid`), а не представление.
 в dry-run вручную.
 
 **5. Не покрыты:** `payment_service` (YooKassa, вебхуки, whitelist IP),
-`bot_service` (создание/запуск/удаление бота), `exchange_api_key` (шифрование Fernet),
-`strategy_presets`, `get_portfolio_stats` и `get_home_stats`.
+докерная и файловая часть `bot_service` (создание/запуск/удаление контейнера),
+`exchange_api_key` (шифрование Fernet), `strategy_presets`, `get_portfolio_stats` и
+`get_home_stats`. Отдельно — **`CcxtAccountClient`**: всё, что выше него, ходит через
+`fakes/test_exchange_account.py`, поэтому реальные ответы Bybit (форма `fetch_balance`,
+состав групп прав в `/v5/user/query-api`) проверяются только руками на живом ключе.
 
 **6. Миграции не проверяются тестами.** Тесты строят схему напрямую из
 `Base.metadata.create_all()` и про alembic ничего не знают. Модель поменялась →

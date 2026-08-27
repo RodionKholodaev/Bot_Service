@@ -33,11 +33,10 @@ interface AddKeyForm {
   api_secret: string;
 }
 
-const EXCHANGES = [
-  { value: 'binance', label: 'Binance' },
-  { value: 'bybit', label: 'Bybit' },
-  { value: 'okx', label: 'OKX' },
-];
+// Биржа пока одна: конфиг бота всегда собирается под bybit, и бэкенд отбивает
+// ключи других бирж (см. services/exchange_account.py). Выпадающий список со
+// свободным выбором обещал бы то, чего сервис не умеет.
+const EXCHANGES = [{ value: 'bybit', label: 'Bybit' }];
 
 const EXCHANGE_COLORS: Record<string, string> = {
   binance: '#f0b90b',
@@ -55,7 +54,7 @@ export default function ApiKeysPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<AddKeyForm>({
     name: '',
-    exchange: 'binance',
+    exchange: 'bybit',
     api_key: '',
     api_secret: '',
   });
@@ -119,7 +118,7 @@ export default function ApiKeysPage() {
       });
       setKeys((prev) => [created, ...prev]);
       setSavedId(created.id);
-      setForm({ name: '', exchange: 'binance', api_key: '', api_secret: '' });
+      setForm({ name: '', exchange: 'bybit', api_key: '', api_secret: '' });
       setShowForm(false);
       setTimeout(() => setSavedId(null), 3000);
     } catch (err) {
@@ -206,7 +205,7 @@ export default function ApiKeysPage() {
                   <label>Название</label>
                   <input
                     type="text"
-                    placeholder="Например: Мой Binance"
+                    placeholder="Например: Мой Bybit"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="ak-input"
@@ -270,8 +269,9 @@ export default function ApiKeysPage() {
 
               <div className="ak-notice">
                 <ShieldCheck size={15} />
-                Ключ шифруется перед сохранением. Secret не отображается после
-                добавления.
+                Ключ шифруется перед сохранением и сразу проверяется на бирже:
+                нужны права на торговлю деривативами. Secret не отображается
+                после добавления.
               </div>
 
               {saveError && (
@@ -296,7 +296,8 @@ export default function ApiKeysPage() {
                 >
                   {saving ? (
                     <>
-                      <Loader2 size={16} className="spin" /> Сохраняем...
+                      <Loader2 size={16} className="spin" /> Проверяем на
+                      бирже...
                     </>
                   ) : (
                     <>

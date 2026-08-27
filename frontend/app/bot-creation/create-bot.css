@@ -673,6 +673,19 @@
   color: #f59e0b;
 }
 
+/* Подсказка под полем: свободный капитал биржевого ключа.
+   --warning — введённый депозит уже больше свободного, бэкенд такого бота не создаст. */
+.field-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #9ca3af;
+}
+
+.field-hint--warning {
+  color: #f59e0b;
+}
+
 /* Form Actions */
 .form-actions {
   display: flex;

@@ -44,3 +44,9 @@ class UnauthorizedError(AppException):
 class TooManyRequestsError(AppException):
     def __init__(self, detail: str = "Слишком много запросов"):
         self.detail = detail
+
+
+# 503 — внешний сервис (биржа) не ответил; запрос сам по себе валиден
+class ServiceUnavailableError(AppException):
+    def __init__(self, detail: str = "Сервис временно недоступен"):
+        self.detail = detail

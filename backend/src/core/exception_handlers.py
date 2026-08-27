@@ -7,6 +7,7 @@ from src.core.exceptions import (
     ForbiddenError,
     NotFoundError,
     PaymentRequiredError,
+    ServiceUnavailableError,
     TooManyRequestsError,
     UnauthorizedError,
 )
@@ -40,3 +41,7 @@ def register_exception_handlers(app):
     @app.exception_handler(TooManyRequestsError)
     async def too_many_requests_handler(request: Request, exc: TooManyRequestsError):
         return JSONResponse(status_code=429, content={"detail": exc.detail})
+
+    @app.exception_handler(ServiceUnavailableError)
+    async def service_unavailable_handler(request: Request, exc: ServiceUnavailableError):
+        return JSONResponse(status_code=503, content={"detail": exc.detail})

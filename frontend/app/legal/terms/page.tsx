@@ -421,10 +421,6 @@ const TermsPage = () => (
       <p>
         <strong>Сайт:</strong> {SERVICE_URL}
       </p>
-      <p>
-        <strong>Банковские реквизиты:</strong> [ЗАПОЛНИТЬ: расчётный счёт, банк,
-        БИК — при необходимости]
-      </p>
     </div>
   </LegalDoc>
 );
