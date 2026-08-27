@@ -45,6 +45,11 @@ class FakeBotRepo:
     async def allocate_port(self):
         return 9000
 
+    async def get_live_bot_on_pair(self, api_key_id, pair, *, statuses=None, exclude_bot_id=None):
+        # пара всегда свободна: запрет «один ключ — одна пара» проверяется отдельно,
+        # в test_bot_pair_conflict.py
+        return None
+
     async def create(self, bot):
         self.created.append(bot)
         return bot

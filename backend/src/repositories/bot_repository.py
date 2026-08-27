@@ -1,6 +1,7 @@
+from collections.abc import Sequence
 from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
@@ -30,6 +31,41 @@ class BotRepository:
     async def get_bot_by_id(self, bot_id):
         result = await self.db.execute(select(Bot).where(Bot.id == bot_id))
         return result.scalar_one_or_none()
+
+    async def get_live_bot_on_pair(
+        self,
+        api_key_id: int,
+        pair: str,
+        *,
+        statuses: Sequence[str] | None = None,
+        exclude_bot_id: str | None = None,
+    ) -> Bot | None:
+        """
+        Неархивированный боевой (dry_run=False) бот на этом биржевом ключе и этой паре.
+
+        Нужен, чтобы на одном ключе не оказалось двух ботов на одной паре
+
+        Dry-run не учитывается ни с какой стороны: симуляция реальных ордеров не ставит.
+
+        statuses — сузить до конкретных статусов (например, только реально торгующие);
+        None означает «любой». exclude_bot_id — не считать конфликтом самого себя.
+
+        Пара сравнивается без учёта регистра: она приходит строкой из тела запроса, а
+        "sol/usdt:usdt" и "SOL/USDT:USDT" — одна и та же позиция на бирже.
+        """
+        query = select(Bot).where(
+            Bot.api_key_id == api_key_id,
+            func.upper(Bot.pair) == pair.upper(),
+            Bot.dry_run.is_(False),
+            Bot.is_active.is_(True),
+        )
+        if statuses is not None:
+            query = query.where(Bot.status.in_(statuses))
+        if exclude_bot_id is not None:
+            query = query.where(Bot.id != exclude_bot_id)
+
+        result = await self.db.execute(query)
+        return result.scalars().first()
 
     async def get_all_busy_ports(self):
         # Только активные боты: у архивированного контейнер удалён, порт на хосте

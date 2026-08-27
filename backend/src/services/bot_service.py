@@ -8,7 +8,7 @@ import sentry_sdk
 
 from src.config import settings
 from src.core.crypto import decrypt
-from src.core.exceptions import BadRequestError, NotFoundError, PaymentRequiredError
+from src.core.exceptions import BadRequestError, ConflictError, NotFoundError, PaymentRequiredError
 from src.models.bot import Bot
 from src.models.user import User
 from src.repositories.api_keys_repository import ApiKeysRepository
@@ -57,6 +57,47 @@ class BotService:
         if not enabled or percent is None:
             return -0.99
         return -round(percent / 100.0 * leverage, 6)
+
+    # Один биржевой ключ + одна пара = одна позиция на бирже: Bybit нетит сделки разных
+    # ботов в неё же. Вход второго бота увеличит позицию первого, а стоп первого закроет
+    # её целиком, вместе с чужой частью. Общей картины при этом нет ни у кого: у каждого
+    # бота свой tradesv3.sqlite, и комиссия сервиса считается с разъехавшихся цифр.
+    # Отсюда запрет — и на создании, и на запуске.
+    #
+    # Статусы проверяются разные по разным причинам, см. вызовы ниже.
+
+    async def _ensure_pair_is_free(
+        self,
+        *,
+        api_key_id: int,
+        pair: str,
+        statuses: tuple[str, ...] | None,
+        exclude_bot_id: str | None,
+        user_id: int,
+        message: str,
+    ) -> None:
+        """Поднимает ConflictError, если на этом ключе уже есть боевой бот на этой паре."""
+        # rival - соперник
+        rival = await self.bot_repo.get_live_bot_on_pair(
+            api_key_id,
+            pair,
+            statuses=statuses,
+            exclude_bot_id=exclude_bot_id,
+        )
+        if rival is None:
+            return
+
+        logger.warning(
+            "Bot rejected: another live bot already trades this pair on the same API key",
+            extra={
+                "user_id": user_id,
+                "api_key_id": api_key_id,
+                "pair": pair,
+                "rival_bot_id": rival.id,
+                "rival_status": rival.status,
+            },
+        )
+        raise ConflictError(message.format(name=rival.name, pair=rival.pair))
 
     @staticmethod
     def _bot_dir(bot_id: str) -> Path:
@@ -116,6 +157,22 @@ class BotService:
             logger.info(
                 "Bot work with dry-run",
                 extra={"user_id": current_user.id},
+            )
+
+        # проверка на то что нет бота на той же торговой паре
+        # стоит до создания чтобы не создавать файлы просто так
+        if api_key is not None and not body.dry_run:
+            await self._ensure_pair_is_free(
+                api_key_id=api_key.id,
+                pair=body.pair,
+                statuses=None,
+                exclude_bot_id=None,
+                user_id=current_user.id,
+                message=(
+                    "На этом API-ключе уже есть бот на паре {pair} — «{name}». "
+                    "Биржа считает их сделки одной позицией: вход второго увеличит позицию первого, "
+                    "а стоп первого закроет её целиком. Удалите существующего бота или выберите другую пару."
+                ),
             )
 
         exchange_key = decrypt(api_key.api_key_encrypted) if api_key else ""
@@ -217,6 +274,21 @@ class BotService:
                     },
                 )
                 raise PaymentRequiredError(cannot_start_message())
+
+            # дополнительная проврка на наличие бота с той же парой, на том же ключе
+            # вроде даже не нужна, но пусть будет)
+            if bot.api_key_id is not None:
+                await self._ensure_pair_is_free(
+                    api_key_id=bot.api_key_id,
+                    pair=bot.pair,
+                    statuses=("starting", "running"),
+                    exclude_bot_id=bot.id,
+                    user_id=bot.user_id,
+                    message=(
+                        "Бот «{name}» уже торгует парой {pair} на этом API-ключе. "
+                        "Биржа считает их сделки одной позицией — остановите его, прежде чем запускать этого."
+                    ),
+                )
 
         # получаем папку с настройками бота
         bot_dir = BotService._bot_dir(bot.id)
