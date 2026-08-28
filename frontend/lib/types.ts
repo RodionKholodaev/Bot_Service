@@ -39,11 +39,27 @@ export interface BotPublic {
   strategy_preset: string;
   entry_filters_long: FilterRule[];
   entry_filters_short: FilterRule[];
-  take_profit: Record<string, number>;
-  stop_loss: number;
+  // Проценты движения цены, как их задал человек. null — у ботов, созданных до того,
+  // как эти поля появились: тогда в базе есть только формат freqtrade (доли маржи).
+  take_profit_percent: number | null;
+  stop_loss_percent: number | null;
   dry_run: boolean;
   status: string;
   error_message: string | null;
   api_port: number;
   created_at: string;
+}
+
+/** Готовый набор настроек стратегии — GET /bots/presets.
+ *  Числа приходят с бэкенда: копии на фронте больше нет, иначе бот, созданный
+ *  запросом с тем же именем пресета, отличался бы от нарисованного формой. */
+export interface StrategyPresetOut {
+  key: string;
+  name: string;
+  description: string;
+  long_filters: FilterRule[];
+  short_filters: FilterRule[];
+  take_profit_percent: number;
+  stop_loss_percent: number | null;
+  stop_loss_enabled: boolean;
 }

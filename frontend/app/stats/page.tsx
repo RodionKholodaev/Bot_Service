@@ -36,6 +36,7 @@ import {
 import { Line, Doughnut } from 'react-chartjs-2';
 import './stats.css';
 import { apiFetch } from '@/lib/api';
+import { presetLabel } from '@/lib/constants';
 import { SiteFooter } from '@/app/components/SiteFooter';
 
 ChartJS.register(
@@ -415,7 +416,7 @@ const StatsPage: React.FC = () => {
               <h1>{selectedBot ? selectedBot.pair : 'Все боты'}</h1>
               <p className="stats-hero-sub">
                 {selectedBot
-                  ? `x${selectedBot.leverage} · ${selectedBot.direction} · ${selectedBot.strategy_preset} · ${
+                  ? `x${selectedBot.leverage} · ${selectedBot.direction} · ${presetLabel(selectedBot.strategy_preset)} · ${
                       selectedBot.status === 'running'
                         ? 'Работает'
                         : 'Остановлен'
@@ -467,7 +468,7 @@ const StatsPage: React.FC = () => {
                       <div className="bot-row-info">
                         <div className="bot-row-name">{b.pair}</div>
                         <div className="bot-row-sub">
-                          x{b.leverage} · {b.strategy_preset}
+                          x{b.leverage} · {presetLabel(b.strategy_preset)}
                         </div>
                       </div>
                       <div

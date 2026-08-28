@@ -4,8 +4,9 @@ from src.core.dependencies import get_api_key_repo, get_bot_repo, get_current_us
 from src.models.user import User
 from src.repositories.bot_repository import BotRepository
 from src.repositories.trade_repository import TradeRepository
-from src.schemas.bot import BotCreate, BotPublic, OpenTradeOut
+from src.schemas.bot import BotCreate, BotPublic, OpenTradeOut, StrategyPresetOut
 from src.services.bot_service import BotService
+from src.services.strategy_presets import list_presets
 
 router = APIRouter(prefix="/bots", tags=["Bots"])
 
@@ -43,6 +44,21 @@ async def list_bots(
     # только активные: архивированные боты остаются в БД ради истории сделок,
     # но пользователю их показывать нельзя
     return await bot_repo.get_user_active_bots(current_user.id)
+
+
+# Объявлен до "/{bot_id}": иначе "presets" уедет в него как id бота и вернёт 404.
+@router.get("/presets", response_model=list[StrategyPresetOut])
+async def get_strategy_presets(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Готовые наборы настроек для формы создания бота.
+
+    Форма рисует карточки и заполняет по ним фильтры и TP/SL — своих чисел она не
+    хранит. Пока это был словарь на фронте, бот, созданный запросом с тем же именем
+    пресета, отличался от того, что показывал интерфейс.
+    """
+    return list_presets()
 
 
 @router.get("/{bot_id}", response_model=BotPublic)

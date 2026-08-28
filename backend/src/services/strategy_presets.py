@@ -1,53 +1,101 @@
 """
-Пресеты стратегий — словарь "имя пресета → набор фильтров".
+Пресеты стратегий — единственный источник готовых наборов настроек.
 
-Значения подобраны на старте, ты их потом скорректируешь под свою торговую логику.
-Логика простая:
-  - Консервативная — редко входим, нужны очень понятные сигналы перепроданности/перекупленности
-  - Умеренная — баланс между частотой и качеством
-  - Агрессивная — заходим часто, на ранних сигналах
+Раньше наборов было два: этот словарь и его копия в форме создания бота на фронте,
+с другими числами. Фронт всегда слал ``strategy_preset="custom"`` вместе со своими
+фильтрами, поэтому словарь здесь не вызывался никогда, а запрос в POST /bots мимо
+интерфейса создавал не того бота, которого интерфейс показывает. Теперь значения
+живут здесь, фронт забирает их через GET /bots/presets и своих чисел не хранит.
+
+Пресет задаёт не только условия входа, но и TP/SL — в интерфейсе выбор пресета
+заполняет и их тоже.
+
+Характер наборов:
+  - Консервативный — много мелких сделок, небольшая цель, быстрый выход из убытка
+  - Умеренный — баланс частоты и размера цели
+  - Агрессивный — ставка на крупное движение, входит редко
+
+Проценты TP/SL — движение ЦЕНЫ, как их вводит человек; в доли маржи их переводит
+плечо уже в BotService._build_take_profit/_build_stoploss.
 """
 
 import logging
 
 logger = logging.getLogger(__name__)
 
-PRESETS: dict[str, dict[str, list[dict]]] = {
+PRESETS: dict[str, dict] = {
     "conservative": {
-        "long": [
-            {"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 30},
-            {"indicator": "rsi", "timeframe": "15m", "condition": "less", "value": 35},
-            {"indicator": "cci", "timeframe": "1h", "condition": "less", "value": -100},
+        "name": "Консервативный",
+        "description": "Минимальный риск, небольшая прибыль",
+        "long_filters": [
+            {"indicator": "rsi", "timeframe": "1m", "condition": "less", "value": 50},
+            {"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 50},
+            {"indicator": "rsi", "timeframe": "30m", "condition": "less", "value": 50},
+            {"indicator": "rsi", "timeframe": "1h", "condition": "less", "value": 55},
+            {"indicator": "cci", "timeframe": "5m", "condition": "less", "value": 70},
+            {"indicator": "cci", "timeframe": "15m", "condition": "less", "value": 75},
+            {"indicator": "cci", "timeframe": "1h", "condition": "less", "value": 80},
         ],
-        "short": [
-            {"indicator": "rsi", "timeframe": "5m", "condition": "greater", "value": 70},
-            {"indicator": "rsi", "timeframe": "15m", "condition": "greater", "value": 65},
-            {"indicator": "cci", "timeframe": "1h", "condition": "greater", "value": 100},
+        "short_filters": [
+            {"indicator": "rsi", "timeframe": "1m", "condition": "greater", "value": 50},
+            {"indicator": "rsi", "timeframe": "5m", "condition": "greater", "value": 50},
+            {"indicator": "rsi", "timeframe": "30m", "condition": "greater", "value": 50},
+            {"indicator": "rsi", "timeframe": "1h", "condition": "greater", "value": 55},
+            {"indicator": "cci", "timeframe": "5m", "condition": "greater", "value": 70},
+            {"indicator": "cci", "timeframe": "15m", "condition": "greater", "value": 75},
+            {"indicator": "cci", "timeframe": "1h", "condition": "greater", "value": 80},
         ],
+        "take_profit_percent": 1.5,
+        "stop_loss_percent": 1.0,
+        "stop_loss_enabled": True,
     },
     "moderate": {
-        "long": [
-            {"indicator": "rsi", "timeframe": "1m", "condition": "less", "value": 40},
-            {"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 45},
-            {"indicator": "cci", "timeframe": "30m", "condition": "less", "value": -50},
+        "name": "Умеренный",
+        "description": "Баланс риска и прибыли",
+        "long_filters": [
+            {"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 55},
+            {"indicator": "rsi", "timeframe": "30m", "condition": "less", "value": 65},
+            {"indicator": "cci", "timeframe": "1h", "condition": "less", "value": 85},
         ],
-        "short": [
-            {"indicator": "rsi", "timeframe": "1m", "condition": "greater", "value": 60},
+        "short_filters": [
             {"indicator": "rsi", "timeframe": "5m", "condition": "greater", "value": 55},
-            {"indicator": "cci", "timeframe": "30m", "condition": "greater", "value": 50},
+            {"indicator": "rsi", "timeframe": "30m", "condition": "greater", "value": 65},
+            {"indicator": "cci", "timeframe": "1h", "condition": "greater", "value": 85},
         ],
+        "take_profit_percent": 2.5,
+        "stop_loss_percent": 1.5,
+        "stop_loss_enabled": True,
     },
     "aggressive": {
-        "long": [
-            {"indicator": "rsi", "timeframe": "1m", "condition": "less", "value": 55},
-            {"indicator": "cci", "timeframe": "5m", "condition": "less", "value": 0},
+        "name": "Агрессивный",
+        "description": "Высокий риск, максимальная прибыль",
+        "long_filters": [
+            {"indicator": "rsi", "timeframe": "1m", "condition": "less", "value": 35},
+            {"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 35},
+            {"indicator": "rsi", "timeframe": "30m", "condition": "less", "value": 35},
+            {"indicator": "rsi", "timeframe": "4h", "condition": "less", "value": 35},
         ],
-        "short": [
-            {"indicator": "rsi", "timeframe": "1m", "condition": "greater", "value": 55},
-            {"indicator": "cci", "timeframe": "5m", "condition": "greater", "value": 0},
+        "short_filters": [
+            {"indicator": "rsi", "timeframe": "1m", "condition": "greater", "value": 35},
+            {"indicator": "rsi", "timeframe": "5m", "condition": "greater", "value": 35},
+            {"indicator": "rsi", "timeframe": "30m", "condition": "greater", "value": 35},
+            {"indicator": "rsi", "timeframe": "4h", "condition": "greater", "value": 35},
         ],
+        "take_profit_percent": 5.0,
+        "stop_loss_percent": 2.0,
+        "stop_loss_enabled": True,
     },
 }
+
+
+def get_preset(preset: str) -> dict | None:
+    """Набор по имени. None — если это "custom" или имя неизвестно."""
+    return PRESETS.get(preset)
+
+
+def list_presets() -> list[dict]:
+    """Все пресеты для GET /bots/presets: тот же словарь плюс ключ в поле key."""
+    return [{"key": key, **data} for key, data in PRESETS.items()]
 
 
 def resolve_filters(
@@ -59,43 +107,42 @@ def resolve_filters(
     """
     Возвращает (long_filters, short_filters) для бота.
 
+    Присланные фильтры сильнее пресета — при любом его имени. Иначе имя пресета
+    в теле запроса молча переписывало бы условия, которые человек поправил руками
+    в форме: интерфейс шлёт и имя, и фильтры, и на экране видны вторые. Пресет
+    раскрывается только там, где фильтров не прислали вовсе.
+
     Если direction=="long" — short_filters пустой и наоборот.
-    Для preset="custom" — берёт custom_long/custom_short, для остальных — из PRESETS.
     """
     logger.debug(
         "Resolving strategy filters",
         extra={
             "preset": preset,
             "direction": direction,
-            "has_custom_long": custom_long is not None,
-            "has_custom_short": custom_short is not None,
+            "has_custom_long": bool(custom_long),
+            "has_custom_short": bool(custom_short),
         },
     )
 
-    if preset == "custom":
-        long_filters = list(custom_long or [])
-        short_filters = list(custom_short or [])
-        logger.debug(
-            "Using custom filters",
-            extra={"long_count": len(long_filters), "short_count": len(short_filters)},
-        )
-    else:
-        if preset not in PRESETS:
+    preset_data = None
+    if preset != "custom":
+        preset_data = get_preset(preset)
+        if preset_data is None:
             logger.error(
                 "Unknown preset requested",
                 extra={"preset": preset, "available": list(PRESETS.keys())},
             )
             raise ValueError(f"Unknown preset: {preset}")
-        long_filters = list(PRESETS[preset]["long"])
-        short_filters = list(PRESETS[preset]["short"])
-        logger.debug(
-            "Preset filters loaded",
-            extra={
-                "preset": preset,
-                "long_count": len(long_filters),
-                "short_count": len(short_filters),
-            },
-        )
+
+    def pick(custom: list[dict] | None, preset_key: str) -> list[dict]:
+        if custom:
+            return list(custom)
+        if preset_data is not None:
+            return list(preset_data[preset_key])
+        return []
+
+    long_filters = pick(custom_long, "long_filters")
+    short_filters = pick(custom_short, "short_filters")
 
     if direction == "long":
         short_filters = []

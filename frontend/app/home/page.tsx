@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MIN_SERVICE_BALANCE_RUB } from '@/lib/constants';
+import { MIN_SERVICE_BALANCE_RUB, presetLabel } from '@/lib/constants';
 import { apiFetch } from '@/lib/api';
 import { SiteFooter } from '@/app/components/SiteFooter';
 // ── Типы под BotPublic с бэка ─────────────────────────────
@@ -38,8 +38,10 @@ interface BotPublic {
   strategy_preset: string;
   entry_filters_long: Array<Record<string, unknown>>;
   entry_filters_short: Array<Record<string, unknown>>;
-  take_profit: Record<string, number>;
-  stop_loss: number;
+  // Проценты движения цены, как их задал человек. null — у ботов, созданных до
+  // появления этих полей: у них в базе только формат freqtrade.
+  take_profit_percent: number | null;
+  stop_loss_percent: number | null;
   dry_run: boolean;
   status: BotStatus;
   error_message: string | null;
@@ -528,7 +530,19 @@ const TradingBotDashboard = () => {
                             </div>
                             <p className="bot-meta">
                               {bot.pair} • {bot.direction} • x{bot.leverage} •{' '}
-                              {bot.strategy_preset}
+                              {presetLabel(bot.strategy_preset)}
+                              {bot.take_profit_percent !== null && (
+                                <> • TP {bot.take_profit_percent}%</>
+                              )}
+                              {bot.take_profit_percent !== null && (
+                                <>
+                                  {' '}
+                                  •{' '}
+                                  {bot.stop_loss_percent !== null
+                                    ? `SL ${bot.stop_loss_percent}%`
+                                    : 'без SL'}
+                                </>
+                              )}
                             </p>
                           </div>
                         </div>

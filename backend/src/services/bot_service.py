@@ -272,6 +272,11 @@ class BotService:
             entry_filters_short=short_filters,
             take_profit=take_profit,
             stop_loss=stop_loss,
+            # Проценты человека — рядом с ними же в формате freqtrade: обратно из долей
+            # маржи их не достать, не поделив на плечо, а плечо к тому моменту может быть
+            # уже не тем. Выключенный стоп — None, а не число из поля формы.
+            take_profit_percent=body.take_profit_percent,
+            stop_loss_percent=body.stop_loss_percent if body.stop_loss_enabled else None,
             # Трейлинг-стоп выключен намеренно и переключателя в интерфейсе больше нет.
             # В шаблоне стратегии его дистанция и порог захардкожены (0.001 / 0.002), а
             # freqtrade делит их на плечо: при x10 это 0.01% и 0.02% движения цены. Стоп

@@ -1,4 +1,5 @@
 import type { FilterRule } from '@/lib/types';
+import { PRESET_LABELS } from '@/lib/constants';
 import type { Suggestion, SuggestableField } from './types';
 
 /** Как показать предложение ассистента человеку: подпись поля, шаг мастера,
@@ -10,13 +11,6 @@ interface FieldMeta {
   step: number;
   format: (value: Suggestion['value']) => string;
 }
-
-const PRESET_LABELS: Record<string, string> = {
-  conservative: 'Консервативный',
-  moderate: 'Умеренный',
-  aggressive: 'Агрессивный',
-  custom: 'Свои настройки',
-};
 
 export function formatFilterRule(rule: FilterRule): string {
   const sign =

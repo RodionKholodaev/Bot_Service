@@ -25,6 +25,8 @@ import type {
   BotCreatePayload,
   FilterRule,
   Indicator,
+  StrategyPreset,
+  StrategyPresetOut,
   Timeframe,
 } from '@/lib/types';
 import { AssistantLauncher } from './assistant/AssistantLauncher';
@@ -67,6 +69,23 @@ interface KeyBalance {
 // 40 -> "40", 12.55 -> "12.55": цифры баланса читает человек, хвост из нулей мешает
 const formatUsdt = (value: number) =>
   Number(value.toFixed(2)).toLocaleString('ru-RU');
+
+// Иконка и цвет карточки пресета — единственное, что фронт про пресеты знает сам:
+// React-компонент бэкенду не сериализовать. Всё остальное (условия входа, TP, SL)
+// приходит из GET /bots/presets. Незнакомый ключ рисуется дефолтом, а не роняет форму.
+const PRESET_VISUALS: Record<
+  string,
+  {
+    icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+    color: string;
+  }
+> = {
+  conservative: { icon: Shield, color: '#10b981' },
+  moderate: { icon: TrendingUp, color: '#60a5fa' },
+  aggressive: { icon: Target, color: '#f59e0b' },
+};
+
+const DEFAULT_PRESET_VISUAL = { icon: Settings, color: '#8b5cf6' };
 
 // кастомный select для выбора индикаторов (чтобы нормально выглядело))
 const CustomSelect = ({
@@ -157,6 +176,12 @@ const CreateBotPage = () => {
     dryRun: true,
   });
 
+  // Готовые стратегии с бэкенда. Своей копии наборов у формы больше нет: пока она
+  // была, бот, созданный запросом POST /bots с тем же именем пресета, отличался от
+  // того, что рисовал интерфейс.
+  const [presets, setPresets] = useState<Record<string, StrategyPresetOut>>({});
+  const [presetsLoading, setPresetsLoading] = useState(true);
+
   // Список API-ключей из БД
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [apiKeysLoading, setApiKeysLoading] = useState(true);
@@ -215,6 +240,18 @@ const CreateBotPage = () => {
       }
     };
     loadApiKeys();
+  }, []);
+
+  // Состояние трогаем в .then/.catch, а не синхронно в эффекте — так же, как с
+  // балансом ниже: синхронный setState внутри эффекта запрещён линтом.
+  useEffect(() => {
+    if (!localStorage.getItem('access_token')) return;
+    apiFetch<StrategyPresetOut[]>('/bots/presets')
+      .then((list) => {
+        setPresets(Object.fromEntries(list.map((p) => [p.key, p])));
+        setPresetsLoading(false);
+      })
+      .catch(() => setPresetsLoading(false));
   }, []);
 
   // Баланс ключа спрашиваем только в боевом режиме и только по выбранному ключу:
@@ -291,112 +328,27 @@ const CreateBotPage = () => {
   );
 
   useEffect(() => {
-    if (formData.strategyPreset !== 'custom') {
-      const presetData = strategyPresets[formData.strategyPreset];
-      if (presetData) {
-        const direction = formData.algorithm as 'long' | 'short';
-        const newFilters =
-          direction === 'long'
-            ? presetData.longFilters
-            : presetData.shortFilters;
-        // Эффект нарочно: фильтры пресета пересобираются не только по клику
-        // (для этого есть handlePresetSelect), но и когда strategyPreset меняет
-        // ИИ-ассистент — см. applySuggestionsToForm. Перенести в обработчики
-        // нельзя, не потеряв этот путь.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setFormData((prev) => ({
-          ...prev,
-          filters: newFilters,
-          takeProfit: presetData.takeProfit,
-          stopLoss: presetData.stopLoss,
-          useStopLoss: presetData.useStopLoss,
-        }));
-      }
-    }
-  }, [formData.algorithm, formData.strategyPreset]);
+    if (formData.strategyPreset === 'custom') return;
+    const preset = presets[formData.strategyPreset];
+    if (!preset) return;
+    // Эффект нарочно: значения пресета подставляются не только по клику (для этого
+    // есть handlePresetSelect), но и когда strategyPreset меняет ИИ-ассистент
+    // (см. applySuggestionsToForm) или когда пресеты доехали с бэкенда позже выбора.
+    // Перенести в обработчики нельзя, не потеряв эти пути.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFormData((prev) => ({
+      ...prev,
+      filters:
+        prev.algorithm === 'long' ? preset.long_filters : preset.short_filters,
+      takeProfit: String(preset.take_profit_percent),
+      stopLoss:
+        preset.stop_loss_percent === null
+          ? ''
+          : String(preset.stop_loss_percent),
+      useStopLoss: preset.stop_loss_enabled,
+    }));
+  }, [formData.algorithm, formData.strategyPreset, presets]);
 
-  const strategyPresets: Record<
-    string,
-    {
-      name: string;
-      description: string;
-      icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
-      color: string;
-      longFilters: FilterRule[];
-      shortFilters: FilterRule[];
-      takeProfit: string;
-      stopLoss: string;
-      useStopLoss: boolean;
-    }
-  > = {
-    conservative: {
-      name: 'Консервативный',
-      description: 'Минимальный риск, небольшая прибыль',
-      icon: Shield,
-      color: '#10b981',
-      longFilters: [
-        { indicator: 'rsi', timeframe: '1m', condition: 'less', value: 50 },
-        { indicator: 'rsi', timeframe: '5m', condition: 'less', value: 50 },
-        { indicator: 'rsi', timeframe: '30m', condition: 'less', value: 50 },
-        { indicator: 'rsi', timeframe: '1h', condition: 'less', value: 55 },
-        { indicator: 'cci', timeframe: '5m', condition: 'less', value: 70 },
-        { indicator: 'cci', timeframe: '15m', condition: 'less', value: 75 },
-        { indicator: 'cci', timeframe: '1h', condition: 'less', value: 80 },
-      ],
-      shortFilters: [
-        { indicator: 'rsi', timeframe: '1m', condition: 'greater', value: 50 },
-        { indicator: 'rsi', timeframe: '5m', condition: 'greater', value: 50 },
-        { indicator: 'rsi', timeframe: '30m', condition: 'greater', value: 50 },
-        { indicator: 'rsi', timeframe: '1h', condition: 'greater', value: 55 },
-        { indicator: 'cci', timeframe: '5m', condition: 'greater', value: 70 },
-        { indicator: 'cci', timeframe: '15m', condition: 'greater', value: 75 },
-        { indicator: 'cci', timeframe: '1h', condition: 'greater', value: 80 },
-      ],
-      takeProfit: '1.5',
-      stopLoss: '1',
-      useStopLoss: true,
-    },
-    moderate: {
-      name: 'Умеренный',
-      description: 'Баланс риска и прибыли',
-      icon: TrendingUp,
-      color: '#60a5fa',
-      longFilters: [
-        { indicator: 'rsi', timeframe: '5m', condition: 'less', value: 55 },
-        { indicator: 'rsi', timeframe: '30m', condition: 'less', value: 65 },
-        { indicator: 'cci', timeframe: '1h', condition: 'less', value: 85 },
-      ],
-      shortFilters: [
-        { indicator: 'rsi', timeframe: '5m', condition: 'greater', value: 55 },
-        { indicator: 'rsi', timeframe: '30m', condition: 'greater', value: 65 },
-        { indicator: 'cci', timeframe: '1h', condition: 'greater', value: 85 },
-      ],
-      takeProfit: '2.5',
-      stopLoss: '1.5',
-      useStopLoss: true,
-    },
-    aggressive: {
-      name: 'Агрессивный',
-      description: 'Высокий риск, максимальная прибыль',
-      icon: Target,
-      color: '#f59e0b',
-      longFilters: [
-        { indicator: 'rsi', timeframe: '1m', condition: 'less', value: 35 },
-        { indicator: 'rsi', timeframe: '5m', condition: 'less', value: 35 },
-        { indicator: 'rsi', timeframe: '30m', condition: 'less', value: 35 },
-        { indicator: 'rsi', timeframe: '4h', condition: 'less', value: 35 },
-      ],
-      shortFilters: [
-        { indicator: 'rsi', timeframe: '1m', condition: 'greater', value: 35 },
-        { indicator: 'rsi', timeframe: '5m', condition: 'greater', value: 35 },
-        { indicator: 'rsi', timeframe: '30m', condition: 'greater', value: 35 },
-        { indicator: 'rsi', timeframe: '4h', condition: 'greater', value: 35 },
-      ],
-      takeProfit: '5',
-      stopLoss: '2',
-      useStopLoss: true,
-    },
-  };
   const indicatorInfo = {
     rsi: {
       name: 'RSI (Индекс относительной силы)',
@@ -421,20 +373,30 @@ const CreateBotPage = () => {
     'AVAX/USDT',
   ];
 
-  const handlePresetSelect = (preset: string) => {
-    const presetData = strategyPresets[preset];
-    const direction = formData.algorithm as 'long' | 'short';
-    const filters =
-      direction === 'long' ? presetData.longFilters : presetData.shortFilters;
+  const handlePresetSelect = (key: string) => {
+    const preset = presets[key];
+    if (!preset) return;
     setFormData({
       ...formData,
-      strategyPreset: preset,
-      filters: filters,
-      takeProfit: presetData.takeProfit,
-      stopLoss: presetData.stopLoss,
-      useStopLoss: presetData.useStopLoss,
+      strategyPreset: key,
+      filters:
+        formData.algorithm === 'long'
+          ? preset.long_filters
+          : preset.short_filters,
+      takeProfit: String(preset.take_profit_percent),
+      stopLoss:
+        preset.stop_loss_percent === null
+          ? ''
+          : String(preset.stop_loss_percent),
+      useStopLoss: preset.stop_loss_enabled,
     });
   };
+
+  // Любая ручная правка условий переводит стратегию в «Свои настройки». Иначе в базу
+  // уехало бы имя пресета, под которым лежат уже другие условия, — и сравнивать
+  // пресеты между собой было бы не с чем.
+  const setFilters = (filters: FilterRule[]) =>
+    setFormData((prev) => ({ ...prev, filters, strategyPreset: 'custom' }));
 
   // Когда меняется выбранный ключ — синхронизируем exchange
   const handleApiKeyChange = (keyId: string) => {
@@ -545,7 +507,9 @@ const CreateBotPage = () => {
       pair: toFuturesPair(formData.tradingPair),
       leverage: Number(formData.leverage),
       direction,
-      strategy_preset: 'custom',
+      // Настоящий выбор человека, а не литерал: раньше у всех ботов, созданных
+      // через форму, в базе оказывался «custom».
+      strategy_preset: formData.strategyPreset as StrategyPreset,
       take_profit_percent: Number(formData.takeProfit),
       stop_loss_enabled: formData.useStopLoss,
       stop_loss_percent: formData.useStopLoss
@@ -953,27 +917,25 @@ const CreateBotPage = () => {
       </div>
 
       <div className="preset-selector">
-        {Object.entries(strategyPresets).map(([key, preset]) => {
-          const Icon = preset.icon;
+        {Object.values(presets).map((preset) => {
+          const visual = PRESET_VISUALS[preset.key] ?? DEFAULT_PRESET_VISUAL;
+          const Icon = visual.icon;
+          const active = formData.strategyPreset === preset.key;
           return (
             <button
-              key={key}
-              className={`preset-card ${formData.strategyPreset === key ? 'active' : ''}`}
-              onClick={() => handlePresetSelect(key)}
-              style={
-                formData.strategyPreset === key
-                  ? { borderColor: preset.color }
-                  : {}
-              }
+              key={preset.key}
+              className={`preset-card ${active ? 'active' : ''}`}
+              onClick={() => handlePresetSelect(preset.key)}
+              style={active ? { borderColor: visual.color } : {}}
             >
-              <Icon size={24} style={{ color: preset.color }} />
+              <Icon size={24} style={{ color: visual.color }} />
               <strong>{preset.name}</strong>
               <span>{preset.description}</span>
             </button>
           );
         })}
         <button
-          className="preset-card"
+          className={`preset-card ${formData.strategyPreset === 'custom' ? 'active' : ''}`}
           onClick={() => setFormData({ ...formData, strategyPreset: 'custom' })}
         >
           <Settings size={24} style={{ color: '#8b5cf6' }} />
@@ -981,6 +943,18 @@ const CreateBotPage = () => {
           <span>Настроить вручную</span>
         </button>
       </div>
+
+      {/* Готовые стратегии живут на бэкенде. Пока не доехали — показываем это, а не
+          пустое место: ручная настройка работает в любом случае. */}
+      {presetsLoading && (
+        <p className="preset-hint">Загружаем готовые стратегии…</p>
+      )}
+      {!presetsLoading && Object.keys(presets).length === 0 && (
+        <p className="preset-hint">
+          Не удалось загрузить готовые стратегии — настройте условия входа
+          вручную.
+        </p>
+      )}
 
       <div className="indicators-config">
         <h3>Индикаторы входа</h3>
@@ -992,7 +966,7 @@ const CreateBotPage = () => {
               onChange={(val) => {
                 const updated = [...formData.filters];
                 updated[idx] = { ...updated[idx], indicator: val as Indicator };
-                setFormData({ ...formData, filters: updated });
+                setFilters(updated);
               }}
               options={[
                 { value: 'rsi', label: 'RSI' },
@@ -1005,7 +979,7 @@ const CreateBotPage = () => {
               onChange={(val) => {
                 const updated = [...formData.filters];
                 updated[idx] = { ...updated[idx], timeframe: val as Timeframe };
-                setFormData({ ...formData, filters: updated });
+                setFilters(updated);
               }}
               options={[
                 { value: '1m', label: '1m' },
@@ -1025,7 +999,7 @@ const CreateBotPage = () => {
                   ...updated[idx],
                   condition: val as FilterRule['condition'],
                 };
-                setFormData({ ...formData, filters: updated });
+                setFilters(updated);
               }}
               options={[
                 { value: 'less', label: '< меньше' },
@@ -1042,7 +1016,7 @@ const CreateBotPage = () => {
                   ...updated[idx],
                   value: Number(e.target.value),
                 };
-                setFormData({ ...formData, filters: updated });
+                setFilters(updated);
               }}
               className="form-input filter-input"
               placeholder="30"
@@ -1051,10 +1025,7 @@ const CreateBotPage = () => {
             <button
               className="filter-remove-btn"
               onClick={() =>
-                setFormData({
-                  ...formData,
-                  filters: formData.filters.filter((_, i) => i !== idx),
-                })
+                setFilters(formData.filters.filter((_, i) => i !== idx))
               }
             >
               ✕
@@ -1065,18 +1036,15 @@ const CreateBotPage = () => {
         <button
           className="filter-add-btn"
           onClick={() =>
-            setFormData({
-              ...formData,
-              filters: [
-                ...formData.filters,
-                {
-                  indicator: 'rsi' as Indicator,
-                  timeframe: '5m' as Timeframe,
-                  condition: 'less',
-                  value: 30,
-                },
-              ],
-            })
+            setFilters([
+              ...formData.filters,
+              {
+                indicator: 'rsi' as Indicator,
+                timeframe: '5m' as Timeframe,
+                condition: 'less',
+                value: 30,
+              },
+            ])
           }
         >
           <span>＋</span> Добавить индикатор
@@ -1351,7 +1319,8 @@ const CreateBotPage = () => {
             <strong>
               {formData.strategyPreset === 'custom'
                 ? 'Своя'
-                : strategyPresets[formData.strategyPreset]?.name}
+                : (presets[formData.strategyPreset]?.name ??
+                  formData.strategyPreset)}
             </strong>
           </div>
           <div className="summary-row">

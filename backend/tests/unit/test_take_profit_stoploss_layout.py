@@ -208,3 +208,66 @@ async def test_created_bot_stores_price_percents_converted_by_leverage(monkeypat
     assert bot.stop_loss == -0.1
     # в файлы бота уходит тот же объект, значит эти же числа попадут в стратегию
     assert spy_files.calls[0]["bot"] is bot
+
+
+# ──────────────────────────────────────────────
+# В базу попадает то, что выбрал человек
+# ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_created_bot_keeps_the_user_percents_as_typed(monkeypatch):
+    # Arrange
+    monkeypatch.setattr(bot_service_module, "BotFileManager", SpyFileManager())
+    bot_repo = FakeBotRepo()
+
+    # Act
+    bot = await BotService(bot_repo, FakeApiKeysRepo()).create_bot(  # type: ignore
+        make_user(),
+        make_body(leverage=10, take_profit_percent=2.5, stop_loss_percent=1.5),
+    )
+
+    # Assert
+    # рядом с форматом freqtrade (0.25 и -0.15 при x10) лежат исходные проценты: обратно
+    # из долей маржи их не достать, не поделив на плечо, а показать человеку надо именно их
+    assert bot.take_profit_percent == 2.5
+    assert bot.stop_loss_percent == 1.5
+
+
+@pytest.mark.asyncio
+async def test_created_bot_stores_no_stop_loss_percent_when_it_is_disabled(monkeypatch):
+    # Arrange
+    monkeypatch.setattr(bot_service_module, "BotFileManager", SpyFileManager())
+    bot_repo = FakeBotRepo()
+
+    # Act
+    # число в поле формы остаётся, но галочка снята — до базы оно доехать не должно,
+    # иначе интерфейс покажет стоп, которого у бота нет
+    bot = await BotService(bot_repo, FakeApiKeysRepo()).create_bot(  # type: ignore
+        make_user(),
+        make_body(stop_loss_enabled=False, stop_loss_percent=2.0),
+    )
+
+    # Assert
+    assert bot.stop_loss_percent is None
+    assert bot.stop_loss == -0.99
+
+
+@pytest.mark.asyncio
+async def test_created_bot_stores_the_chosen_preset_name(monkeypatch):
+    # Arrange
+    monkeypatch.setattr(bot_service_module, "BotFileManager", SpyFileManager())
+    bot_repo = FakeBotRepo()
+
+    # Act
+    bot = await BotService(bot_repo, FakeApiKeysRepo()).create_bot(  # type: ignore
+        make_user(),
+        make_body(strategy_preset="moderate"),
+    )
+
+    # Assert
+    # раньше здесь у всех ботов оказывался "custom": форма слала литерал, и сравнить,
+    # какие пресеты работают лучше, было не на чем
+    assert bot.strategy_preset == "moderate"
+    # при этом торгует бот по присланным фильтрам, а не по набору пресета
+    assert bot.entry_filters_long == [{"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 30}]

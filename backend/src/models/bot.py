@@ -41,6 +41,13 @@ class Bot(Base):
     # если SL отключен — кладём -0.99 (фактически выключено)
     stop_loss: Mapped[float] = mapped_column(Float, nullable=False)
 
+    # Те же две настройки в том виде, в каком их задал человек: движение ЦЕНЫ в процентах.
+    # Из take_profit/stop_loss их не восстановить, не поделив обратно на плечо — а показать
+    # человеку его собственную настройку надо. Nullable: у ботов, созданных до этих полей,
+    # значений нет. stop_loss_percent = None означает ещё и «стоп выключен».
+    take_profit_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    stop_loss_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     trailing_stop: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     trailing_config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
