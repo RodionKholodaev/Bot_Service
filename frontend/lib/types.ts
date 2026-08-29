@@ -43,11 +43,18 @@ export interface BotPublic {
   // как эти поля появились: тогда в базе есть только формат freqtrade (доли маржи).
   take_profit_percent: number | null;
   stop_loss_percent: number | null;
+  // Имена достались от первой трактовки и не совпадают со смыслом (см. models/bot.py
+  // на бэкенде): stake_amount — весь депозит бота, tradable_balance_ratio — доля
+  // депозита на одну сделку (0.2 = 20%).
+  stake_amount: number;
+  tradable_balance_ratio: number;
+  api_key_id: number | null;
   dry_run: boolean;
   status: string;
   error_message: string | null;
   api_port: number;
   created_at: string;
+  total_profit?: number;
 }
 
 /** Готовый набор настроек стратегии — GET /bots/presets.

@@ -155,6 +155,15 @@ class BotPublic(BaseModel):
     take_profit_percent: float | None
     stop_loss_percent: float | None
 
+    # Имена достались от первой трактовки и не совпадают со смыслом (см. models/bot.py):
+    # stake_amount — весь депозит бота, tradable_balance_ratio — доля депозита на одну
+    # сделку (0.2 = 20%). Страница настроек бота показывает обе как есть и считает по ним
+    # размер сделки и объём позиции — иначе их пришлось бы угадывать по конфигу freqtrade.
+    stake_amount: float
+    tradable_balance_ratio: float
+    # Только id: имя ключа интерфейс берёт из GET /api-keys, секреты наружу не уходят.
+    api_key_id: int | None
+
     dry_run: bool
     status: str
     error_message: str | None
