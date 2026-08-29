@@ -20,7 +20,7 @@ class Bot(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     pair: Mapped[str] = mapped_column(String(50), nullable=False)
     leverage: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    direction: Mapped[str] = mapped_column(String(10), nullable=False)  # long / short / both
+    direction: Mapped[str] = mapped_column(String(10), nullable=False)  # long / short
 
     # Имена достались от первой (неверной) трактовки и не совпадают со смыслом:
     # stake_amount — весь депозит бота, tradable_balance_ratio — доля депозита на одну

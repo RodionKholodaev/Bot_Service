@@ -21,7 +21,7 @@ class BotCreate(BaseModel):
     # пример: "XRP/USDT:USDT" — формат фьючерсной пары bybit/binance в freqtrade
 
     leverage: int = Field(..., ge=1, le=125)
-    direction: Literal["long", "short", "both"]
+    direction: Literal["long", "short"]
 
     strategy_preset: Literal["conservative", "moderate", "aggressive", "custom"]
 
@@ -79,11 +79,11 @@ class BotCreate(BaseModel):
         if self.strategy_preset != "custom":
             return self
 
-        if self.direction in ("long", "both") and not self.entry_filters_long:
-            raise ValueError("Для направления long/both нужны entry_filters_long")
+        if self.direction == "long" and not self.entry_filters_long:
+            raise ValueError("Для направления long нужны entry_filters_long")
 
-        if self.direction in ("short", "both") and not self.entry_filters_short:
-            raise ValueError("Для направления short/both нужны entry_filters_short")
+        if self.direction == "short" and not self.entry_filters_short:
+            raise ValueError("Для направления short нужны entry_filters_short")
         return self
 
     @model_validator(mode="after")

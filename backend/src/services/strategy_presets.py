@@ -112,7 +112,7 @@ def resolve_filters(
     в форме: интерфейс шлёт и имя, и фильтры, и на экране видны вторые. Пресет
     раскрывается только там, где фильтров не прислали вовсе.
 
-    Если direction=="long" — short_filters пустой и наоборот.
+    Направление всегда одно: при "long" short_filters пустой и наоборот.
     """
     logger.debug(
         "Resolving strategy filters",
@@ -147,7 +147,7 @@ def resolve_filters(
     if direction == "long":
         short_filters = []
         logger.debug("Direction is long, short filters cleared")
-    elif direction == "short":
+    else:
         long_filters = []
         logger.debug("Direction is short, long filters cleared")
 

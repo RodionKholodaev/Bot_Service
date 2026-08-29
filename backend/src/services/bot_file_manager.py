@@ -48,7 +48,7 @@ class BotFileManager:
         write_config(cfg, bot_dir / "config.json")
 
         # создаем файл стратегии
-        can_short = bot.direction in ("short", "both")
+        can_short = bot.direction == "short"
         strategy_code = generate_strategy_file(
             leverage=bot.leverage,
             can_short=can_short,

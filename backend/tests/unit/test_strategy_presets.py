@@ -61,19 +61,19 @@ def test_preset_expands_when_no_filters_sent():
     assert long_filters == PRESETS["moderate"]["long_filters"]
 
 
-def test_each_side_falls_back_to_preset_independently():
+def test_sent_short_filters_win_over_preset_name():
     # Arrange / Act
-    # прислали только шорт — лонг должен прийти из пресета, а не остаться пустым
-    long_filters, short_filters = resolve_filters("moderate", "both", custom_short=CUSTOM_SHORT)
+    long_filters, short_filters = resolve_filters("moderate", "short", custom_short=CUSTOM_SHORT)
 
     # Assert
     assert short_filters == CUSTOM_SHORT
-    assert long_filters == PRESETS["moderate"]["long_filters"]
+    # направление одно, поэтому противоположная сторона всегда пустая
+    assert long_filters == []
 
 
 def test_custom_preset_without_filters_gives_empty_lists():
     # Arrange / Act
-    long_filters, short_filters = resolve_filters("custom", "both")
+    long_filters, short_filters = resolve_filters("custom", "long")
 
     # Assert
     # custom раскрывать нечем — схема такое тело и не пропустит, но функция не падает

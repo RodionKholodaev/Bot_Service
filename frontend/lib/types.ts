@@ -1,4 +1,4 @@
-export type BotDirection = 'long' | 'short' | 'both';
+export type BotDirection = 'long' | 'short';
 export type StrategyPreset =
   'conservative' | 'moderate' | 'aggressive' | 'custom';
 export type Indicator = 'rsi' | 'cci';

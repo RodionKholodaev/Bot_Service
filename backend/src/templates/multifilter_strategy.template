@@ -44,9 +44,6 @@ class StrategyConfig:
     STOPLOSS = {{STOPLOSS}}
 
     TRAILING_STOP = {{TRAILING_STOP}}
-    TRAILING_STOP_POSITIVE = 0.001
-    TRAILING_STOP_POSITIVE_OFFSET = 0.002
-    TRAILING_ONLY_OFFSET_IS_REACHED = True
 
 
 # ==============================================================================
@@ -61,9 +58,6 @@ class MultiFilterStrategy(IStrategy):
     timeframe = StrategyConfig.BASE_TIMEFRAME
     stoploss = StrategyConfig.STOPLOSS
     trailing_stop = StrategyConfig.TRAILING_STOP
-    trailing_stop_positive = StrategyConfig.TRAILING_STOP_POSITIVE
-    trailing_stop_positive_offset = StrategyConfig.TRAILING_STOP_POSITIVE_OFFSET
-    trailing_only_offset_is_reached = StrategyConfig.TRAILING_ONLY_OFFSET_IS_REACHED
 
     minimal_roi = {k: v for k, v in StrategyConfig.TAKE_PROFIT.items()}
 
