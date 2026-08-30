@@ -257,6 +257,15 @@
   font-size: 15px;
 }
 
+/* Две группы кнопок справа в шапке: период и тип ботов */
+.stats-hero-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
 .stats-period {
   display: flex;
   gap: 4px;
@@ -278,6 +287,11 @@
   cursor: pointer;
   transition: all 0.2s;
   font-family: inherit;
+}
+
+/* у типа ботов подписи длиннее периода — ужимаем горизонтальные отступы */
+.stats-bot-type .stats-period-tab {
+  padding: 8px 14px;
 }
 
 .stats-period-tab:hover:not(.active) {
@@ -433,6 +447,21 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* метка симуляции: в общем списке боевого бота от dry-run иначе не отличить */
+.bot-row-badge {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  vertical-align: middle;
 }
 
 .bot-row-sub {
@@ -889,6 +918,10 @@
 
   .stats-hero h1 {
     font-size: 24px;
+  }
+
+  .stats-hero-controls {
+    width: 100%;
   }
 
   .stats-period {

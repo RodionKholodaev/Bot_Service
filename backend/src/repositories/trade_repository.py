@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.models.bot import Bot
 from src.models.trade import Trade
 
 
@@ -45,6 +46,7 @@ class TradeRepository:
         *,
         bot_id: str | None = None,
         since: datetime | None = None,
+        dry_run: bool | None = None,
     ) -> list[Trade]:
         """
         Закрытые сделки пользователя, отсортированные по времени закрытия.
@@ -53,7 +55,11 @@ class TradeRepository:
         идут по списку подряд и копят P&L, поэтому на неотсортированном списке они молча
         дадут неверный график и неверную просадку.
 
-        bot_id — сузить до одного бота, since — отсечь всё, что закрыто раньше.
+        bot_id — сузить до одного бота, since — отсечь всё, что закрыто раньше,
+        dry_run — оставить только сделки симуляции (True) или только боевые (False);
+        None — все. Признак берётся из бота через join, а не из самой сделки: у Trade
+        такого поля нет, и дублировать его в каждую строку ради фильтра не за чем.
+        Архивированные боты при этом никуда не деваются — их строки в bots остаются.
         """
         query = select(Trade).where(
             Trade.user_id == user_id,
@@ -63,6 +69,8 @@ class TradeRepository:
             query = query.where(Trade.bot_id == bot_id)
         if since is not None:
             query = query.where(Trade.close_time >= since)
+        if dry_run is not None:
+            query = query.join(Bot, Bot.id == Trade.bot_id).where(Bot.dry_run.is_(dry_run))
 
         query = query.order_by(Trade.close_time.asc())
 

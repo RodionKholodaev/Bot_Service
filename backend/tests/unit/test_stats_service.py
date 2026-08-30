@@ -62,9 +62,10 @@ def make_trade(
 def make_bot(**overrides) -> Bot:
     """Бот с дефолтами, нужными для сборки BotStats (name/pair/... не могут быть None).
 
-    is_active и stake_amount задаются явно: в БД у них есть default, но у объекта,
-    созданного в памяти без flush, они остались бы None — и активный бот выглядел бы
-    архивированным, а просадку было бы не от чего считать.
+    is_active, stake_amount и dry_run задаются явно: в БД у них есть default, но у
+    объекта, созданного в памяти без flush, они остались бы None — активный бот выглядел
+    бы архивированным, просадку было бы не от чего считать, а BotSummary.dry_run (bool)
+    вообще не прошёл бы валидацию.
     """
     defaults = {
         "id": "bot-1",
@@ -78,6 +79,7 @@ def make_bot(**overrides) -> Bot:
         "total_profit": 0.0,
         "stake_amount": 1000.0,
         "is_active": True,
+        "dry_run": False,
     }
     defaults.update(overrides)
     return Bot(**defaults)
@@ -99,12 +101,13 @@ class FakeTradeRepo:
         # чем позвали — по этому проверяем, что сервис правильно прокидывает период
         self.calls: list[dict] = []
 
-    async def get_closed_trades(self, user_id, *, bot_id=None, since=None) -> list[Trade]:
-        self.calls.append({"user_id": user_id, "bot_id": bot_id, "since": since})
+    async def get_closed_trades(self, user_id, *, bot_id=None, since=None, dry_run=None) -> list[Trade]:
+        self.calls.append({"user_id": user_id, "bot_id": bot_id, "since": since, "dry_run": dry_run})
         # Настоящий репозиторий фильтрует в SQL. Здесь повторяем только фильтр по боту:
         # он нужен, чтобы тесты могли смешивать сделки нескольких ботов в одном наборе.
-        # Фильтр по since не повторяем намеренно — иначе тест проверял бы сам fake,
-        # а не то, что сервис посчитал границу периода и передал её вниз.
+        # Фильтр по since и по dry_run не повторяем намеренно — иначе тест проверял бы
+        # сам fake, а не то, что сервис посчитал границу периода и передал её вниз
+        # (dry_run настоящий репозиторий вообще фильтрует join-ом с bots).
         if bot_id is not None:
             return [t for t in self._trades if t.bot_id == bot_id]
         return list(self._trades)
@@ -114,8 +117,10 @@ class FakeBotRepo:
     def __init__(self, bots: list[Bot]):
         self._bots = bots
 
-    async def get_user_active_bots(self, user_id) -> list[Bot]:
-        return [b for b in self._bots if b.is_active]
+    async def get_user_active_bots(self, user_id, *, dry_run=None) -> list[Bot]:
+        # фильтр по dry_run повторяем: настоящий репозиторий делает ровно это одним
+        # .where(), и без него было бы не видно, что сервис вообще его прокинул
+        return [b for b in self._bots if b.is_active and (dry_run is None or b.dry_run is dry_run)]
 
     async def get_user_bots(self, user_id) -> list[Bot]:
         return list(self._bots)
@@ -461,6 +466,54 @@ async def test_portfolio_drawdown_uses_total_invested_capital():
 
     # (1900 - 2100) / 2100 * 100 = -9.52%
     assert stats.max_drawdown_pct == -9.52
+
+
+@pytest.mark.asyncio
+async def test_portfolio_bot_type_filter_reaches_both_repositories():
+    # Фильтр «боевые / dry-run / все» должен уходить одинаковым значением и в список
+    # ботов, и в выборку сделок. Если прокинуть его только в одно место, график
+    # посчитается по одному набору ботов, а сайдбар и просадка — по другому.
+    bots = [make_bot(id="bot-real", dry_run=False), make_bot(id="bot-dry", dry_run=True)]
+    trade_repo = FakeTradeRepo([])
+    service = StatsService(bot_repo=FakeBotRepo(bots), trade_repo=trade_repo)  # type: ignore[arg-type]
+
+    stats = await service.get_portfolio_stats(make_user(), dry_run=True)
+
+    assert trade_repo.calls[0]["dry_run"] is True
+    assert [b.bot_id for b in stats.bots] == ["bot-dry"]
+
+
+@pytest.mark.asyncio
+async def test_portfolio_without_bot_type_filter_keeps_both_kinds():
+    bots = [make_bot(id="bot-real", dry_run=False), make_bot(id="bot-dry", dry_run=True)]
+    trade_repo = FakeTradeRepo([])
+    service = StatsService(bot_repo=FakeBotRepo(bots), trade_repo=trade_repo)  # type: ignore[arg-type]
+
+    stats = await service.get_portfolio_stats(make_user())
+
+    assert trade_repo.calls[0]["dry_run"] is None
+    assert {b.bot_id for b in stats.bots} == {"bot-real", "bot-dry"}
+
+
+@pytest.mark.asyncio
+async def test_portfolio_drawdown_counts_only_capital_of_filtered_bots():
+    # Просадка считается от вложенного капитала, и при фильтре по типу бота в базу
+    # должен попадать депозит только отфильтрованных ботов: иначе dry-run бот на 1000
+    # размывал бы просадку боевого.
+    trades = [
+        make_trade(id=1, profit_usdt=100.0, close_time=datetime(2026, 1, 1, tzinfo=UTC)),
+        make_trade(id=2, profit_usdt=-200.0, close_time=datetime(2026, 1, 2, tzinfo=UTC)),
+    ]
+    bots = [
+        make_bot(id="bot-real", dry_run=False, stake_amount=1000.0),
+        make_bot(id="bot-dry", dry_run=True, stake_amount=1000.0),
+    ]
+    service = make_service(trades, bots)
+
+    stats = await service.get_portfolio_stats(make_user(), dry_run=False)
+
+    # база 1000 (только боевой бот), кривая 1000 -> 1100 -> 900: (900-1100)/1100 = -18.18%
+    assert stats.max_drawdown_pct == -18.18
 
 
 @pytest.mark.asyncio

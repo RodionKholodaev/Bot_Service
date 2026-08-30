@@ -112,8 +112,15 @@ class BotRepository:
                 return port
         return None
 
-    async def get_user_active_bots(self, user_id):
-        result = await self.db.execute(select(Bot).where(Bot.user_id == user_id, Bot.is_active.is_(True)))
+    async def get_user_active_bots(self, user_id, *, dry_run: bool | None = None):
+        """Неархивированные боты пользователя.
+
+        dry_run — оставить только симуляцию (True) или только боевых (False);
+        None — и те и другие."""
+        query = select(Bot).where(Bot.user_id == user_id, Bot.is_active.is_(True))
+        if dry_run is not None:
+            query = query.where(Bot.dry_run.is_(dry_run))
+        result = await self.db.execute(query)
         bots = result.scalars().all()
         return bots
 

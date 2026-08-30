@@ -41,6 +41,7 @@ class BotSummary(BaseModel):
     direction: str
     strategy_preset: str
     status: str
+    dry_run: bool  # симуляция или боевой бот — фронт этим фильтрует список
     profit: float  # за выбранный период, USDT
     trades_total: int
     winrate: float  # 0..100

@@ -23,6 +23,14 @@ PERIOD_MAP: dict[str, int | None] = {
     "all": None,
 }
 
+# Какие боты попадают в портфель: боевые, симуляция или и те и другие.
+# None — не фильтровать; значение уходит прямо в Bot.dry_run.
+BOT_TYPE_MAP: dict[str, bool | None] = {
+    "all": None,
+    "real": False,
+    "dry": True,
+}
+
 
 @router.get("/home", response_model=HomeStats)
 async def home_stats(
@@ -40,6 +48,7 @@ async def home_stats(
 @router.get("/portfolio", response_model=PortfolioStats)
 async def portfolio_stats(
     period: Literal["1D", "1W", "1M", "all"] = Query(default="1W"),
+    bot_type: Literal["all", "real", "dry"] = Query(default="all"),
     current_user: User = Depends(get_current_user),
     bot_repo: BotRepository = Depends(get_bot_repo),
     trade_repo: TradeRepository = Depends(get_trade_repo),
@@ -47,9 +56,16 @@ async def portfolio_stats(
     """
     Агрегированная статистика по всем ботам пользователя.
     Используется на странице статистики при выборе «Все боты».
+
+    bot_type сужает портфель до боевых ботов или до dry-run: прибыль симуляции
+    ненастоящая, и в одной сумме с реальной она вводит в заблуждение.
     """
     period_days = PERIOD_MAP[period]
-    return await StatsService(bot_repo, trade_repo).get_portfolio_stats(current_user, period_days)
+    return await StatsService(bot_repo, trade_repo).get_portfolio_stats(
+        current_user,
+        period_days,
+        dry_run=BOT_TYPE_MAP[bot_type],
+    )
 
 
 @router.get("/bots/{bot_id}", response_model=BotStats)

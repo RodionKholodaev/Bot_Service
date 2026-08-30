@@ -177,6 +177,7 @@ class StatsService:
             direction=bot.direction,
             strategy_preset=bot.strategy_preset,
             status=bot.status,
+            dry_run=bot.dry_run,
             profit=StatsService._profit(trades),
             trades_total=total,
             winrate=StatsService._winrate(win_count, total),
@@ -229,15 +230,21 @@ class StatsService:
         user: User,
         period_days: int | None = None,
         recent_limit: int = 30,
+        dry_run: bool | None = None,
     ) -> PortfolioStats:
-        """Агрегированная статистика по всем ботам пользователя."""
+        """Агрегированная статистика по всем ботам пользователя.
+
+        dry_run — считать только по симуляции (True) или только по боевым ботам (False);
+        None — по всем. Фильтр идёт одним и тем же значением и в список ботов, и в
+        выборку сделок: иначе график считался бы по одному набору ботов, а сайдбар и
+        вложенный капитал под просадку — по другому."""
 
         logger.info(
             "Fetching portfolio stats",
-            extra={"user_id": user.id, "period_days": period_days},
+            extra={"user_id": user.id, "period_days": period_days, "dry_run": dry_run},
         )
 
-        bots = list(await self.bot_repo.get_user_active_bots(user.id))
+        bots = list(await self.bot_repo.get_user_active_bots(user.id, dry_run=dry_run))
 
         # Все закрытые сделки пользователя за период — в том числе сделки архивированных
         # ботов: удалённый бот пропадает из сайдбара, но заработанное им остаётся частью
@@ -245,6 +252,7 @@ class StatsService:
         all_trades = await self.trade_repo.get_closed_trades(
             user.id,
             since=self._period_start(period_days),
+            dry_run=dry_run,
         )
 
         # раскладываем один раз по ботам, чтобы сводка для сайдбара не стоила

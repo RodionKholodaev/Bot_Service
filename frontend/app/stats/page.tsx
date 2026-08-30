@@ -52,6 +52,8 @@ ChartJS.register(
 
 // ===== Types (зеркалят бэкенд schemas/stats.py) =====
 type Period = '1D' | '1W' | '1M';
+// Какие боты попадают в портфель. Значения зеркалят BOT_TYPE_MAP в routers/stats.py
+type BotType = 'all' | 'real' | 'dry';
 type ViewKey = 'all' | string;
 
 interface PnlPoint {
@@ -83,6 +85,7 @@ interface BotSummary {
   direction: string;
   strategy_preset: string;
   status: string;
+  dry_run: boolean; // симуляция — по этому полю фильтруется список
   profit: number; // за выбранный период
   trades_total: number;
   winrate: number;
@@ -128,6 +131,16 @@ const PERIOD_LABEL: Record<Period, string> = {
   '1M': '1М',
 };
 
+const BOT_TYPE_LABEL: Record<BotType, string> = {
+  all: 'Все',
+  real: 'Боевые',
+  dry: 'Dry-run',
+};
+
+// Подходит ли бот под выбранный фильтр — тем же правилом, что и на бэкенде
+const matchesBotType = (bot: BotSummary, type: BotType): boolean =>
+  type === 'all' || (type === 'dry' ? bot.dry_run : !bot.dry_run);
+
 // Палитра графиков — из общей схемы сайта (см. /home, /feedback)
 const COLOR_GREEN = '#34d399';
 const COLOR_RED = '#f87171';
@@ -168,6 +181,7 @@ const StatsPage: React.FC = () => {
   const router = useRouter();
   const [view, setView] = useState<ViewKey>('all');
   const [period, setPeriod] = useState<Period>('1W');
+  const [botType, setBotType] = useState<BotType>('all');
   const [portfolio, setPortfolio] = useState<PortfolioStats | null>(null);
   const [botData, setBotData] = useState<BotStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -211,7 +225,9 @@ const StatsPage: React.FC = () => {
       // Портфель запрашиваем всегда: числа в сайдбаре считаются за выбранный период,
       // поэтому при смене периода они устаревают, даже когда открыт отдельный бот.
       const [pData, bData] = await Promise.all([
-        apiFetch<PortfolioStats>(`/stats/portfolio?period=${period}`),
+        apiFetch<PortfolioStats>(
+          `/stats/portfolio?period=${period}&bot_type=${botType}`,
+        ),
         view === 'all'
           ? Promise.resolve(null)
           : apiFetch<BotStats>(`/stats/bots/${view}?period=${period}`),
@@ -223,7 +239,7 @@ const StatsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [view, period]);
+  }, [view, period, botType]);
 
   useEffect(() => {
     if (!localStorage.getItem('access_token')) return;
@@ -362,6 +378,15 @@ const StatsPage: React.FC = () => {
 
   // Данные для сайдбара всегда из portfolio
   const sidebarBots = portfolio?.bots ?? [];
+
+  // Смена фильтра по типу ботов. Выбранный бот может под новый фильтр не подходить —
+  // тогда возвращаемся к портфелю: иначе на экране остался бы бот, которого нет
+  // в сайдбаре, а его статистика продолжала бы грузиться отдельным запросом.
+  const changeBotType = (type: BotType) => {
+    setBotType(type);
+    const selected = sidebarBots.find((b) => b.bot_id === view);
+    if (selected && !matchesBotType(selected, type)) setView('all');
+  };
   const runningCount = portfolio?.bots_running ?? 0;
   const stoppedCount = portfolio?.bots_stopped ?? 0;
 
@@ -416,7 +441,7 @@ const StatsPage: React.FC = () => {
               <h1>{selectedBot ? selectedBot.pair : 'Все боты'}</h1>
               <p className="stats-hero-sub">
                 {selectedBot
-                  ? `x${selectedBot.leverage} · ${selectedBot.direction} · ${presetLabel(selectedBot.strategy_preset)} · ${
+                  ? `x${selectedBot.leverage} · ${selectedBot.direction} · ${presetLabel(selectedBot.strategy_preset)}${selectedBot.dry_run ? ' · Dry-run' : ''} · ${
                       selectedBot.status === 'running'
                         ? 'Работает'
                         : 'Остановлен'
@@ -424,16 +449,31 @@ const StatsPage: React.FC = () => {
                   : 'Общая статистика портфеля'}
               </p>
             </div>
-            <div className="stats-period">
-              {(['1D', '1W', '1M'] as Period[]).map((p) => (
-                <button
-                  key={p}
-                  className={`stats-period-tab ${period === p ? 'active' : ''}`}
-                  onClick={() => setPeriod(p)}
-                >
-                  {PERIOD_LABEL[p]}
-                </button>
-              ))}
+            <div className="stats-hero-controls">
+              <div className="stats-period">
+                {(['1D', '1W', '1M'] as Period[]).map((p) => (
+                  <button
+                    key={p}
+                    className={`stats-period-tab ${period === p ? 'active' : ''}`}
+                    onClick={() => setPeriod(p)}
+                  >
+                    {PERIOD_LABEL[p]}
+                  </button>
+                ))}
+              </div>
+              {/* Фильтр по типу ботов: прибыль dry-run ненастоящая, и в одной сумме
+                  с реальной она вводит в заблуждение */}
+              <div className="stats-period stats-bot-type">
+                {(['all', 'real', 'dry'] as BotType[]).map((t) => (
+                  <button
+                    key={t}
+                    className={`stats-period-tab ${botType === t ? 'active' : ''}`}
+                    onClick={() => changeBotType(t)}
+                  >
+                    {BOT_TYPE_LABEL[t]}
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
 
@@ -466,7 +506,12 @@ const StatsPage: React.FC = () => {
                         className={`bot-row-dot ${b.status === 'running' ? 'running' : 'stopped'}`}
                       />
                       <div className="bot-row-info">
-                        <div className="bot-row-name">{b.pair}</div>
+                        <div className="bot-row-name">
+                          {b.pair}
+                          {b.dry_run && (
+                            <span className="bot-row-badge">Dry</span>
+                          )}
+                        </div>
                         <div className="bot-row-sub">
                           x{b.leverage} · {presetLabel(b.strategy_preset)}
                         </div>
@@ -479,7 +524,11 @@ const StatsPage: React.FC = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="sb-empty">Ботов пока нет</div>
+                  <div className="sb-empty">
+                    {botType === 'all'
+                      ? 'Ботов пока нет'
+                      : `Нет ботов: ${BOT_TYPE_LABEL[botType].toLowerCase()}`}
+                  </div>
                 )}
               </div>
 
