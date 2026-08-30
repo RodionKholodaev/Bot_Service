@@ -13,7 +13,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Zap, Settings, CreditCard, LogIn } from 'lucide-react';
+import { BrandMark } from '@/app/components/BrandMark';
+import { Settings, CreditCard, LogIn } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
 import { SiteFooter } from '@/app/components/SiteFooter';
 import './guides.css';
@@ -56,7 +57,7 @@ export const GuidesShell = ({ children }: { children: React.ReactNode }) => {
       <header className="gd-topbar">
         <div className="gd-topbar-left">
           <Link href={isAuthed ? '/home' : '/'} className="gd-brand">
-            <Zap size={28} />
+            <BrandMark size={28} />
             <span>Rudder</span>
           </Link>
           <nav className="gd-nav">

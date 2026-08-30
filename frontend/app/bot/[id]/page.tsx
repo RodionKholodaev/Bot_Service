@@ -19,6 +19,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { BrandMark } from '@/app/components/BrandMark';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -35,7 +36,6 @@ import {
   Settings,
   Target,
   Trash2,
-  Zap,
 } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
 import { MIN_SERVICE_BALANCE_RUB, presetLabel } from '@/lib/constants';
@@ -349,7 +349,7 @@ export default function BotDetailPage() {
     <header className="bd-topbar">
       <div className="bd-topbar-left">
         <Link href="/home" className="bd-brand">
-          <Zap size={28} />
+          <BrandMark size={28} />
           <span>Rudder</span>
         </Link>
         <nav className="bd-nav">
@@ -549,13 +549,9 @@ export default function BotDetailPage() {
               </div>
               <div className="bd-kpi">
                 <div className="bd-kpi-label">В позиции</div>
-                <div className="bd-kpi-value">
-                  {openTradesCount === null
-                    ? '—'
-                    : openTradesCount === 0
-                      ? '—'
-                      : openTradesCount}
-                </div>
+                {/* 0 и «—» — разные вещи: ноль значит «открытых позиций нет»,
+                    прочерк — что список открытых сделок не загрузился. */}
+                <div className="bd-kpi-value">{openTradesCount ?? '—'}</div>
               </div>
             </div>
           </section>
@@ -854,9 +850,7 @@ export default function BotDetailPage() {
             </section>
 
             <div className="bd-footer-bar">
-              <span>
-                Бот создан {fmtDate(bot.created_at)} · порт API {bot.api_port}
-              </span>
+              <span>Бот создан {fmtDate(bot.created_at)}</span>
               <div className="bd-footer-spacer" />
               <Link href="/stats">Статистика и сделки</Link>
               <Link href="/guides">Как это работает</Link>

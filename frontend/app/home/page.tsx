@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { BrandMark } from '@/app/components/BrandMark';
 import {
   TrendingUp,
   Bot,
@@ -13,7 +14,6 @@ import {
   Pause,
   Play,
   AlertCircle,
-  Zap,
   ChevronRight,
   CreditCard,
   Loader2,
@@ -320,7 +320,7 @@ const TradingBotDashboard = () => {
       <header className="dashboard-header">
         <div className="header-left">
           <div className="logo">
-            <Zap size={28} />
+            <BrandMark size={28} />
             <span>Rudder</span>
           </div>
           <nav className="main-nav">

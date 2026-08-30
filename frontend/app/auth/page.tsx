@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Bot, Eye, EyeOff, ArrowLeft, AlertCircle, Loader } from 'lucide-react';
+import { BrandMark } from '@/app/components/BrandMark';
+import { Eye, EyeOff, ArrowLeft, AlertCircle, Loader } from 'lucide-react';
 import Link from 'next/link';
 import { CROSS_BORDER_TRANSFER } from '@/lib/legal';
 import { SiteFooter } from '@/app/components/SiteFooter';
@@ -163,7 +164,7 @@ const AuthContent = () => {
             {/* Logo */}
             <div className="auth-logo">
               <div className="auth-logo-icon">
-                <Bot size={24} />
+                <BrandMark size={24} />
               </div>
               <span>Rudder</span>
             </div>

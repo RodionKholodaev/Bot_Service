@@ -6,7 +6,6 @@ import { GuidesHub } from './GuidesHub';
  * клиентского компонента (а GuidesHub клиентский из-за поиска) нельзя. */
 
 export const metadata: Metadata = {
-  title: 'Обучение — Rudder',
   description:
     'Гайды по Rudder: как подключить биржу, создать торгового бота, настроить стратегию и читать статистику.',
 };

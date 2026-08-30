@@ -9,8 +9,8 @@ import React, {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { TooltipItem } from 'chart.js';
+import { BrandMark } from '@/app/components/BrandMark';
 import {
-  Zap,
   Settings,
   CreditCard,
   LayoutGrid,
@@ -376,7 +376,7 @@ const StatsPage: React.FC = () => {
       <header className="stats-topbar">
         <div className="stats-topbar-left">
           <Link href="/home" className="stats-brand">
-            <Zap size={28} />
+            <BrandMark size={28} />
             <span>Rudder</span>
           </Link>
           <nav className="stats-nav">

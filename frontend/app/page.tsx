@@ -1,6 +1,7 @@
 'use client';
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
+import { BrandMark } from '@/app/components/BrandMark';
 import {
   Bot,
   TrendingUp,
@@ -94,7 +95,7 @@ const LandingPage = () => {
       <nav className={`landing-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="nav-inner">
           <div className="nav-logo">
-            <Bot size={24} />
+            <BrandMark size={24} />
             <span>Rudder</span>
           </div>
           <div className="nav-links">
@@ -291,7 +292,7 @@ const LandingPage = () => {
         <footer className="landing-footer">
           <div className="footer-inner">
             <div className="footer-logo">
-              <Bot size={20} />
+              <BrandMark size={20} />
               <span>Rudder</span>
             </div>
             {/* Юридические документы должны открываться в один клик с любой

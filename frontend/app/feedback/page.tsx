@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { BrandMark } from '@/app/components/BrandMark';
 import {
-  Zap,
   Settings,
   CreditCard,
   MessageSquare,
@@ -125,7 +125,7 @@ const FeedbackPage = () => {
       <header className="dashboard-header">
         <div className="header-left">
           <div className="logo">
-            <Zap size={28} />
+            <BrandMark size={28} />
             <span>Rudder</span>
           </div>
           <nav className="main-nav">
