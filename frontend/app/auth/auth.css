@@ -218,13 +218,10 @@
 .auth-logo-icon {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
 }
 
 /* Header */
