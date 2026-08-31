@@ -1,5 +1,5 @@
 import type { FilterRule } from '@/lib/types';
-import { PRESET_LABELS } from '@/lib/constants';
+import { PRESET_LABELS, indicatorLabel } from '@/lib/constants';
 import type { Suggestion, SuggestableField } from './types';
 
 /** Как показать предложение ассистента человеку: подпись поля, шаг мастера,
@@ -15,7 +15,7 @@ interface FieldMeta {
 export function formatFilterRule(rule: FilterRule): string {
   const sign =
     rule.condition === 'less' || rule.condition === 'less_equal' ? '<' : '>';
-  return `${rule.indicator.toUpperCase()} ${rule.timeframe} ${sign} ${rule.value}`;
+  return `${indicatorLabel(rule.indicator)} ${rule.timeframe} ${sign} ${rule.value}`;
 }
 
 export const FIELD_META: Record<SuggestableField, FieldMeta> = {

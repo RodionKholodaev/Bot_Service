@@ -561,6 +561,21 @@
   color: #f59e0b;
 }
 
+.ai-rule--mfi {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+.ai-rule--bb_percent {
+  background: rgba(167, 139, 250, 0.15);
+  color: #a78bfa;
+}
+
+.ai-rule--adx {
+  background: rgba(244, 114, 182, 0.15);
+  color: #f472b6;
+}
+
 .ai-suggestion__reason {
   margin: 6px 0 0;
   font-size: 12px;

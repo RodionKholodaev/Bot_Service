@@ -29,6 +29,48 @@ logger = logging.getLogger(__name__)
 
 
 # ==============================================================================
+#  ИНДИКАТОРЫ — общие для всех ботов, пользователь их не настраивает
+# ==============================================================================
+
+# Периоды зашиты здесь: человек выбирает только индикатор, таймфрейм, знак и значение.
+# Список колонок должен совпадать с FilterRule.indicator в backend/src/schemas/bot.py —
+# индикатор без колонки молча выпадет из условий входа (см. _apply_filters ниже), и бот
+# будет входить по менее строгим условиям, чем настроил пользователь. Совпадение
+# проверяет tests/unit/test_strategy_template_indicators.py.
+RSI_PERIOD = 14
+CCI_PERIOD = 20
+MFI_PERIOD = 14
+BB_PERIOD = 20
+BB_STD = 2.0
+ADX_PERIOD = 14
+
+INDICATOR_COLUMNS = ["rsi", "cci", "mfi", "bb_percent", "adx"]
+
+
+def compute_indicators(df: DataFrame, suffix: str = "") -> DataFrame:
+    """Считает все индикаторы сервиса. suffix — для колонок чужого таймфрейма."""
+    df[f"rsi{suffix}"] = ta.RSI(df["close"], timeperiod=RSI_PERIOD)
+    df[f"cci{suffix}"] = ta.CCI(df["high"], df["low"], df["close"], timeperiod=CCI_PERIOD)
+    df[f"mfi{suffix}"] = ta.MFI(
+        df["high"], df["low"], df["close"], df["volume"], timeperiod=MFI_PERIOD
+    )
+
+    upper, _middle, lower = ta.BBANDS(
+        df["close"], timeperiod=BB_PERIOD, nbdevup=BB_STD, nbdevdn=BB_STD, matype=0
+    )
+    width = upper - lower
+    # %B в процентах: 0 — цена на нижней полосе, 100 — на верхней. Шкала 0..100 выбрана
+    # ради единообразия с остальными индикаторами (значение вводится обычным числом);
+    # за полосами %B выходит за эти границы, и это нормально. На флэте полосы схлопываются
+    # в одну линию — деление на нулевую ширину дало бы inf, поэтому там NaN.
+    df[f"bb_percent{suffix}"] = np.where(width > 0, (df["close"] - lower) / width * 100, np.nan)
+
+    # ADX — сила тренда без направления: одинаково фильтрует и лонг, и шорт.
+    df[f"adx{suffix}"] = ta.ADX(df["high"], df["low"], df["close"], timeperiod=ADX_PERIOD)
+    return df
+
+
+# ==============================================================================
 #  НАСТРОЙКИ ПОЛЬЗОВАТЕЛЯ — генерируются бэкендом
 # ==============================================================================
 
@@ -137,30 +179,24 @@ class MultiFilterStrategy(IStrategy):
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         pair = metadata["pair"]
 
-        dataframe["rsi"] = ta.RSI(dataframe["close"], timeperiod=14)
-        dataframe["cci"] = ta.CCI(
-            dataframe["high"], dataframe["low"], dataframe["close"], timeperiod=20
-        )
+        dataframe = compute_indicators(dataframe)
 
         for tf in self._get_extra_timeframes():
             informative_df = self.dp.get_pair_dataframe(pair=pair, timeframe=tf)
             if informative_df is None or informative_df.empty:
                 continue
 
-            informative_df[f"rsi_{tf}"] = ta.RSI(informative_df["close"], timeperiod=14)
-            informative_df[f"cci_{tf}"] = ta.CCI(
-                informative_df["high"], informative_df["low"], informative_df["close"], timeperiod=20
-            )
+            informative_df = compute_indicators(informative_df, suffix=f"_{tf}")
 
             dataframe = merge_informative_pair(
                 dataframe,
-                informative_df[["date", f"rsi_{tf}", f"cci_{tf}"]],
+                informative_df[["date"] + [f"{ind}_{tf}" for ind in INDICATOR_COLUMNS]],
                 self.timeframe,
                 tf,
                 ffill=True,
             )
 
-            for ind in ["rsi", "cci"]:
+            for ind in INDICATOR_COLUMNS:
                 src_col = f"{ind}_{tf}_{tf}"
                 dst_col = f"{ind}_{tf}"
                 if src_col in dataframe.columns:

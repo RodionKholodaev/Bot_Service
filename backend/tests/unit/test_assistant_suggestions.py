@@ -10,10 +10,16 @@
 """
 
 import json
+from typing import get_args
 
 import pytest
 
+from src.schemas.bot import FilterRule
 from src.services.assistant.tools import SUGGESTABLE_FIELDS, normalize_suggestions
+
+# Индикаторы берём из схемы, а не из tools.py: смысл проверки в том, что ассистент
+# пропускает ровно то, что примет POST /bots.
+SCHEMA_INDICATORS = sorted(get_args(FilterRule.model_fields["indicator"].annotation))
 
 
 def _args(*suggestions: dict) -> str:
@@ -165,7 +171,7 @@ def test_no_more_than_eight_suggestions_are_returned():
 
 
 def test_filters_keep_only_supported_indicators_and_timeframes():
-    # Arrange — в продукте есть только rsi/cci и фиксированный набор таймфреймов
+    # Arrange — в продукте фиксированный набор индикаторов и таймфреймов
     raw = _args(
         {
             "field": "filters",
@@ -187,6 +193,22 @@ def test_filters_keep_only_supported_indicators_and_timeframes():
         {"indicator": "rsi", "timeframe": "5m", "condition": "less", "value": 30.0},
         {"indicator": "cci", "timeframe": "1h", "condition": "less", "value": -100.0},
     ]
+
+
+def test_filters_accept_every_indicator_the_schema_supports():
+    # Arrange — набор индикаторов один и тот же у схемы и у ассистента,
+    # иначе совет модели отбивался бы уже при создании бота
+    rules = [
+        {"indicator": indicator, "timeframe": "1h", "condition": "greater", "value": 25}
+        for indicator in SCHEMA_INDICATORS
+    ]
+    raw = _args({"field": "filters", "value": rules, "reason": "по всем индикаторам"})
+
+    # Act
+    result = normalize_suggestions(raw)
+
+    # Assert — не выброшено ни одного правила
+    assert [rule["indicator"] for rule in result[0]["value"]] == SCHEMA_INDICATORS
 
 
 def test_filters_are_dropped_entirely_when_nothing_survives():

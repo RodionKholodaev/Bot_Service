@@ -396,6 +396,10 @@
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
 }
+.pi-badge.pink {
+  background: rgba(244, 114, 182, 0.15);
+  color: #f472b6;
+}
 
 .preview-mini-row {
   display: flex;
@@ -682,6 +686,9 @@
 
   .hero-stats {
     justify-content: center;
+    /* Подписи под цифрами длиннее самих цифр («RSI, CCI, MFI, %B, ADX»),
+       на узком экране три колонки в строку не помещаются. */
+    flex-wrap: wrap;
   }
 
   .hero-card-preview {

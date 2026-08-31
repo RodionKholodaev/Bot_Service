@@ -38,7 +38,9 @@ SUGGESTABLE_FIELDS: dict[str, str] = {
     "stopLoss": "Stop Loss, %",
 }
 
-_INDICATORS = {"rsi", "cci"}
+# Держать в одном составе с FilterRule.indicator в src/schemas/bot.py: то, что не
+# пройдёт схему при создании бота, ассистенту предлагать нечего.
+_INDICATORS = {"rsi", "cci", "mfi", "bb_percent", "adx"}
 _TIMEFRAMES = {"1m", "5m", "15m", "30m", "1h", "4h"}
 _CONDITIONS = {"less", "greater"}
 _PRESETS = {"conservative", "moderate", "aggressive", "custom"}
@@ -79,7 +81,8 @@ SUGGEST_SETTINGS_TOOL: dict[str, Any] = {
                                     "tradingPair — строка вида BTC/USDT. algorithm — long или short. "
                                     "strategyPreset — conservative/moderate/aggressive/custom. "
                                     "filters — массив объектов "
-                                    "{indicator: rsi|cci, timeframe: 1m|5m|15m|30m|1h|4h, "
+                                    "{indicator: rsi|cci|mfi|bb_percent|adx, "
+                                    "timeframe: 1m|5m|15m|30m|1h|4h, "
                                     "condition: less|greater, value: число}."
                                 ),
                             },

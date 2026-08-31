@@ -8,7 +8,13 @@ from src.services.strategy_presets import get_preset
 
 # ── Тип одного фильтра ────────────────────────────────────
 class FilterRule(BaseModel):
-    indicator: Literal["rsi", "cci"]
+    # Список индикаторов продублирован ещё в трёх местах, и все четыре должны совпадать:
+    # шаблон стратегии (templates/multifilter_strategy.template — там же зашиты периоды),
+    # валидатор подсказок ассистента (services/assistant/tools.py) и фронт
+    # (frontend/lib/constants.ts). Индикатор, которого нет в шаблоне, не приведёт к ошибке:
+    # стратегия молча пропустит условие, и бот войдёт по более слабым условиям, чем настроил
+    # пользователь. Совпадение со шаблоном проверяет tests/unit/test_strategy_template_indicators.py.
+    indicator: Literal["rsi", "cci", "mfi", "bb_percent", "adx"]
     timeframe: Literal["1m", "5m", "15m", "30m", "1h", "4h"]
     condition: Literal["less", "greater", "less_equal", "greater_equal"]
     value: float

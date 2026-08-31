@@ -38,7 +38,12 @@ import {
   Trash2,
 } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
-import { MIN_SERVICE_BALANCE_RUB, presetLabel } from '@/lib/constants';
+import {
+  MIN_SERVICE_BALANCE_RUB,
+  presetLabel,
+  INDICATOR_META,
+  indicatorLabel,
+} from '@/lib/constants';
 import type { BotPublic, FilterRule } from '@/lib/types';
 import { SiteFooter } from '@/app/components/SiteFooter';
 import './bot-detail.css';
@@ -87,20 +92,6 @@ const CONDITION_LABEL: Record<string, string> = {
   greater: 'выше',
   less_equal: 'ниже или равен',
   greater_equal: 'выше или равен',
-};
-
-const INDICATOR_LABEL: Record<string, string> = {
-  rsi: 'RSI',
-  cci: 'CCI',
-};
-
-// Периоды индикаторов зашиты в шаблон стратегии и пользователем не задаются
-// (backend/src/templates/multifilter_strategy.template: RSI timeperiod=14,
-// CCI timeperiod=20). Дублируются здесь только ради подписи — меняя шаблон,
-// поправьте и это место, иначе страница покажет несуществующую настройку.
-const INDICATOR_PERIOD: Record<string, number> = {
-  rsi: 14,
-  cci: 20,
 };
 
 // Комиссия тейкера Bybit — 0.055% с объёма за сделку, круг (вход + выход) даёт
@@ -691,13 +682,12 @@ export default function BotDetailPage() {
                     {derived.filters.map((f, idx) => (
                       <div className="bd-filter" key={idx}>
                         <span className="bd-filter-ind">
-                          {INDICATOR_LABEL[f.indicator] ??
-                            f.indicator.toUpperCase()}
+                          {indicatorLabel(f.indicator)}
                         </span>
                         <span className="bd-filter-tf">{f.timeframe}</span>
-                        {INDICATOR_PERIOD[f.indicator] !== undefined && (
+                        {INDICATOR_META[f.indicator] && (
                           <span className="bd-row-label">
-                            период {INDICATOR_PERIOD[f.indicator]}
+                            период {INDICATOR_META[f.indicator].period}
                           </span>
                         )}
                         <span className="bd-filter-arrow">→</span>
@@ -719,7 +709,7 @@ export default function BotDetailPage() {
                       {derived.filters
                         .map(
                           (f) =>
-                            `${INDICATOR_LABEL[f.indicator] ?? f.indicator.toUpperCase()} ${f.timeframe} ${
+                            `${indicatorLabel(f.indicator)} ${f.timeframe} ${
                               CONDITION_LABEL[f.condition] ?? f.condition
                             } ${f.value}`,
                         )

@@ -36,8 +36,8 @@ const LandingPage = () => {
     },
     {
       icon: BarChart2,
-      title: 'RSI & CCI стратегии',
-      desc: 'Готовые шаблоны сигналов на базе популярных индикаторов. Или настройте условия сами.',
+      title: 'Пять индикаторов',
+      desc: 'RSI, CCI, MFI, Bollinger %B и ADX. Возьмите готовый пресет или соберите условия входа сами.',
       color: '#60a5fa',
     },
     {
@@ -60,7 +60,7 @@ const LandingPage = () => {
     },
     {
       icon: Globe,
-      title: 'Binance & Bybit',
+      title: 'Bybit & Binance',
       desc: 'Поддержка ведущих криптобирж. Торговля на фьючерсах с настраиваемым плечом.',
       color: '#34d399',
     },
@@ -70,12 +70,12 @@ const LandingPage = () => {
     {
       num: '01',
       title: 'Подключите биржу',
-      desc: 'Вставьте API-ключ от Binance или Bybit — это займёт минуту.',
+      desc: 'Вставьте API-ключ от Bybit или Binance — это займёт минуту.',
     },
     {
       num: '02',
       title: 'Настройте стратегию',
-      desc: 'Выберите пресет или настройте индикаторы (RSI, CCI) вручную.',
+      desc: 'Выберите готовый пресет или соберите условия входа из пяти индикаторов.',
     },
     {
       num: '03',
@@ -149,13 +149,13 @@ const LandingPage = () => {
             </div>
             <div className="hero-stats">
               <div className="stat-item">
-                <strong>Binance</strong>
-                <span>& Bybit</span>
+                <strong>Bybit</strong>
+                <span>& Binance</span>
               </div>
               <div className="stat-divider" />
               <div className="stat-item">
-                <strong>RSI / CCI</strong>
-                <span>Индикаторы</span>
+                <strong>5 индикаторов</strong>
+                <span>RSI, CCI, MFI и др.</span>
               </div>
               <div className="stat-divider" />
               <div className="stat-item">
@@ -200,6 +200,7 @@ const LandingPage = () => {
               <div className="preview-indicators">
                 <div className="pi-badge blue">RSI 28</div>
                 <div className="pi-badge amber">CCI -95</div>
+                <div className="pi-badge pink">ADX 31</div>
                 <div className="pi-badge green">Сигнал: Вход</div>
               </div>
             </div>

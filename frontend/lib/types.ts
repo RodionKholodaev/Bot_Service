@@ -1,7 +1,10 @@
 export type BotDirection = 'long' | 'short';
 export type StrategyPreset =
   'conservative' | 'moderate' | 'aggressive' | 'custom';
-export type Indicator = 'rsi' | 'cci';
+// Состав должен совпадать с FilterRule.indicator на бэкенде
+// (backend/src/schemas/bot.py) и со списком колонок в шаблоне стратегии.
+// Подписи, периоды и справка — в lib/constants.ts.
+export type Indicator = 'rsi' | 'cci' | 'mfi' | 'bb_percent' | 'adx';
 export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h';
 export type FilterCondition =
   'less' | 'greater' | 'less_equal' | 'greater_equal';

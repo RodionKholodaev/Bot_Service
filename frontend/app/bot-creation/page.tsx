@@ -20,7 +20,11 @@ import {
   Calculator,
 } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
-import { MIN_SERVICE_BALANCE_RUB } from '@/lib/constants';
+import {
+  MIN_SERVICE_BALANCE_RUB,
+  INDICATOR_META,
+  INDICATOR_KEYS,
+} from '@/lib/constants';
 import type {
   BotCreatePayload,
   FilterRule,
@@ -348,19 +352,6 @@ const CreateBotPage = () => {
       useStopLoss: preset.stop_loss_enabled,
     }));
   }, [formData.algorithm, formData.strategyPreset, presets]);
-
-  const indicatorInfo = {
-    rsi: {
-      name: 'RSI (Индекс относительной силы)',
-      description:
-        'Показывает перекупленность или перепроданность актива. Значения ниже 30 — сигнал к покупке, выше 70 — к продаже.',
-    },
-    cci: {
-      name: 'CCI (Индекс товарного канала)',
-      description:
-        'Значения ниже -100 — перепроданность (сигнал на лонг), выше +100 — перекупленность (сигнал на шорт).',
-    },
-  };
 
   const popularPairs = [
     'BTC/USDT',
@@ -901,150 +892,185 @@ const CreateBotPage = () => {
     </div>
   );
 
-  const renderStep3 = () => (
-    <div className="step-content">
-      <div className="step-header">
-        <Settings size={32} className="step-icon" />
-        <h2>Стратегия входа</h2>
-        <p>Выберите готовую стратегию или настройте индикаторы вручную</p>
-      </div>
+  const renderStep3 = () => {
+    // Справка показывается только по индикаторам, которые реально стоят в условиях:
+    // шкалы у них разные, и «Bollinger %B меньше 20» без пояснения ничего не говорит.
+    const usedIndicators = INDICATOR_KEYS.filter((key) =>
+      formData.filters.some((f) => f.indicator === key),
+    );
 
-      <div className="preset-selector">
-        {Object.values(presets).map((preset) => {
-          const visual = PRESET_VISUALS[preset.key] ?? DEFAULT_PRESET_VISUAL;
-          const Icon = visual.icon;
-          const active = formData.strategyPreset === preset.key;
-          return (
-            <button
-              key={preset.key}
-              className={`preset-card ${active ? 'active' : ''}`}
-              onClick={() => handlePresetSelect(preset.key)}
-              style={active ? { borderColor: visual.color } : {}}
-            >
-              <Icon size={24} style={{ color: visual.color }} />
-              <strong>{preset.name}</strong>
-              <span>{preset.description}</span>
-            </button>
-          );
-        })}
-        <button
-          className={`preset-card ${formData.strategyPreset === 'custom' ? 'active' : ''}`}
-          onClick={() => setFormData({ ...formData, strategyPreset: 'custom' })}
-        >
-          <Settings size={24} style={{ color: '#8b5cf6' }} />
-          <strong>Свои настройки</strong>
-          <span>Настроить вручную</span>
-        </button>
-      </div>
+    return (
+      <div className="step-content">
+        <div className="step-header">
+          <Settings size={32} className="step-icon" />
+          <h2>Стратегия входа</h2>
+          <p>Выберите готовую стратегию или настройте индикаторы вручную</p>
+        </div>
 
-      {/* Готовые стратегии живут на бэкенде. Пока не доехали — показываем это, а не
+        <div className="preset-selector">
+          {Object.values(presets).map((preset) => {
+            const visual = PRESET_VISUALS[preset.key] ?? DEFAULT_PRESET_VISUAL;
+            const Icon = visual.icon;
+            const active = formData.strategyPreset === preset.key;
+            return (
+              <button
+                key={preset.key}
+                className={`preset-card ${active ? 'active' : ''}`}
+                onClick={() => handlePresetSelect(preset.key)}
+                style={active ? { borderColor: visual.color } : {}}
+              >
+                <Icon size={24} style={{ color: visual.color }} />
+                <strong>{preset.name}</strong>
+                <span>{preset.description}</span>
+              </button>
+            );
+          })}
+          <button
+            className={`preset-card ${formData.strategyPreset === 'custom' ? 'active' : ''}`}
+            onClick={() =>
+              setFormData({ ...formData, strategyPreset: 'custom' })
+            }
+          >
+            <Settings size={24} style={{ color: '#8b5cf6' }} />
+            <strong>Свои настройки</strong>
+            <span>Настроить вручную</span>
+          </button>
+        </div>
+
+        {/* Готовые стратегии живут на бэкенде. Пока не доехали — показываем это, а не
           пустое место: ручная настройка работает в любом случае. */}
-      {presetsLoading && (
-        <p className="preset-hint">Загружаем готовые стратегии…</p>
-      )}
-      {!presetsLoading && Object.keys(presets).length === 0 && (
-        <p className="preset-hint">
-          Не удалось загрузить готовые стратегии — настройте условия входа
-          вручную.
-        </p>
-      )}
+        {presetsLoading && (
+          <p className="preset-hint">Загружаем готовые стратегии…</p>
+        )}
+        {!presetsLoading && Object.keys(presets).length === 0 && (
+          <p className="preset-hint">
+            Не удалось загрузить готовые стратегии — настройте условия входа
+            вручную.
+          </p>
+        )}
 
-      <div className="indicators-config">
-        <h3>Индикаторы входа</h3>
+        <div className="indicators-config">
+          <h3>Индикаторы входа</h3>
 
-        {formData.filters.map((filter, idx) => (
-          <div key={idx} className="filter-row">
-            <CustomSelect
-              value={filter.indicator}
-              onChange={(val) => {
-                const updated = [...formData.filters];
-                updated[idx] = { ...updated[idx], indicator: val as Indicator };
-                setFilters(updated);
-              }}
-              options={[
-                { value: 'rsi', label: 'RSI' },
-                { value: 'cci', label: 'CCI' },
-              ]}
-            />
+          {formData.filters.map((filter, idx) => (
+            <div key={idx} className="filter-row">
+              <CustomSelect
+                value={filter.indicator}
+                onChange={(val) => {
+                  const indicator = val as Indicator;
+                  const updated = [...formData.filters];
+                  // Значение сбрасывается на типичное для нового индикатора: шкалы разные
+                  // (RSI 0–100, CCI ±200), и оставленное от прежнего число почти всегда
+                  // означает не то, что человек имел в виду.
+                  updated[idx] = {
+                    ...updated[idx],
+                    indicator,
+                    value: INDICATOR_META[indicator].defaultValue,
+                  };
+                  setFilters(updated);
+                }}
+                options={INDICATOR_KEYS.map((key) => ({
+                  value: key,
+                  label: INDICATOR_META[key].label,
+                }))}
+              />
 
-            <CustomSelect
-              value={filter.timeframe}
-              onChange={(val) => {
-                const updated = [...formData.filters];
-                updated[idx] = { ...updated[idx], timeframe: val as Timeframe };
-                setFilters(updated);
-              }}
-              options={[
-                { value: '1m', label: '1m' },
-                { value: '5m', label: '5m' },
-                { value: '15m', label: '15m' },
-                { value: '30m', label: '30m' },
-                { value: '1h', label: '1h' },
-                { value: '4h', label: '4h' },
-              ]}
-            />
+              <CustomSelect
+                value={filter.timeframe}
+                onChange={(val) => {
+                  const updated = [...formData.filters];
+                  updated[idx] = {
+                    ...updated[idx],
+                    timeframe: val as Timeframe,
+                  };
+                  setFilters(updated);
+                }}
+                options={[
+                  { value: '1m', label: '1m' },
+                  { value: '5m', label: '5m' },
+                  { value: '15m', label: '15m' },
+                  { value: '30m', label: '30m' },
+                  { value: '1h', label: '1h' },
+                  { value: '4h', label: '4h' },
+                ]}
+              />
 
-            <CustomSelect
-              value={filter.condition}
-              onChange={(val) => {
-                const updated = [...formData.filters];
-                updated[idx] = {
-                  ...updated[idx],
-                  condition: val as FilterRule['condition'],
-                };
-                setFilters(updated);
-              }}
-              options={[
-                { value: 'less', label: '< меньше' },
-                { value: 'greater', label: '> больше' },
-              ]}
-            />
+              <CustomSelect
+                value={filter.condition}
+                onChange={(val) => {
+                  const updated = [...formData.filters];
+                  updated[idx] = {
+                    ...updated[idx],
+                    condition: val as FilterRule['condition'],
+                  };
+                  setFilters(updated);
+                }}
+                options={[
+                  { value: 'less', label: '< меньше' },
+                  { value: 'greater', label: '> больше' },
+                ]}
+              />
 
-            <input
-              type="number"
-              value={filter.value}
-              onChange={(e) => {
-                const updated = [...formData.filters];
-                updated[idx] = {
-                  ...updated[idx],
-                  value: Number(e.target.value),
-                };
-                setFilters(updated);
-              }}
-              className="form-input filter-input"
-              placeholder="30"
-            />
+              <input
+                type="number"
+                value={filter.value}
+                onChange={(e) => {
+                  const updated = [...formData.filters];
+                  updated[idx] = {
+                    ...updated[idx],
+                    value: Number(e.target.value),
+                  };
+                  setFilters(updated);
+                }}
+                className="form-input filter-input"
+                placeholder={
+                  INDICATOR_META[filter.indicator]?.placeholder ?? ''
+                }
+              />
 
-            <button
-              className="filter-remove-btn"
-              onClick={() =>
-                setFilters(formData.filters.filter((_, i) => i !== idx))
-              }
-            >
-              ✕
-            </button>
-          </div>
-        ))}
+              <button
+                className="filter-remove-btn"
+                onClick={() =>
+                  setFilters(formData.filters.filter((_, i) => i !== idx))
+                }
+              >
+                ✕
+              </button>
+            </div>
+          ))}
 
-        <button
-          className="filter-add-btn"
-          onClick={() =>
-            setFilters([
-              ...formData.filters,
-              {
-                indicator: 'rsi' as Indicator,
-                timeframe: '5m' as Timeframe,
-                condition: 'less',
-                value: 30,
-              },
-            ])
-          }
-        >
-          <span>＋</span> Добавить индикатор
-        </button>
+          <button
+            className="filter-add-btn"
+            onClick={() =>
+              setFilters([
+                ...formData.filters,
+                {
+                  indicator: 'rsi' as Indicator,
+                  timeframe: '5m' as Timeframe,
+                  condition: 'less',
+                  value: INDICATOR_META.rsi.defaultValue,
+                },
+              ])
+            }
+          >
+            <span>＋</span> Добавить индикатор
+          </button>
+
+          {usedIndicators.length > 0 && (
+            <div className="indicator-legend">
+              {usedIndicators.map((key) => (
+                <p className="indicator-legend-item" key={key}>
+                  <strong>{INDICATOR_META[key].name}</strong>, период{' '}
+                  {INDICATOR_META[key].period}.{' '}
+                  {INDICATOR_META[key].description}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderStep4 = () => {
     // FIX: selectedKey ищем только если не dry-run
