@@ -1,19 +1,3 @@
-"""
-LT-4: как /stats/portfolio деградирует от объёма сделок.
-
-get_portfolio_stats тянет все закрытые сделки пользователя за период и считает
-график P&L и просадку в питоне — то есть это и тяжёлый SELECT, и CPU в event loop.
-
-Прогон делается по одному разу на каждый объём данных: 1k, 10k, 100k сделок
-(loadtests/seed_trades.py), и цифры сравниваются между собой. Период задаётся
-через LT4_PERIOD: "all" — весь объём, "1W" — проверка, что фильтр по датам
-реально сокращает работу (если разницы нет, фильтруется не там, где кажется).
-
-Запуск:
-  python loadtests/seed_trades.py 10000
-  locust -f loadtests/lt4_stats.py --host http://127.0.0.1:8000 --web-host 127.0.0.1
-"""
-
 import os
 
 from locust import HttpUser, constant, task
@@ -27,7 +11,6 @@ class StatsUser(HttpUser):
     wait_time = constant(0)
 
     def on_start(self):
-        # См. seed_user.py: системный прокси Windows иначе перехватит localhost.
         self.client.trust_env = False
         resp = self.client.post(
             "/auth/login",

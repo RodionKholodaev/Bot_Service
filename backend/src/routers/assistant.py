@@ -54,7 +54,7 @@ async def chat(
             # стандартный формат для SSE
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
-    # кусочкаси отдаем ответ на фронт
+    # кусочками отдаем ответ на фронт
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
