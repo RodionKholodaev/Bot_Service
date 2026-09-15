@@ -20,7 +20,7 @@ export const Strategii = () => (
       head={['Пресет', 'Тейк-профит', 'Стоп-лосс', 'Характер']}
       rows={[
         [
-          <strong key="a" style={{ color: '#10b981' }}>
+          <strong key="a" style={{ color: 'var(--success-strong)' }}>
             Консервативный
           </strong>,
           '1,5%',
@@ -28,7 +28,7 @@ export const Strategii = () => (
           'Много мелких сделок. Берёт небольшую прибыль часто и быстро выходит из убытка.',
         ],
         [
-          <strong key="a" style={{ color: '#60a5fa' }}>
+          <strong key="a" style={{ color: 'var(--accent-soft)' }}>
             Умеренный
           </strong>,
           '2,5%',
@@ -36,7 +36,7 @@ export const Strategii = () => (
           'Баланс. Три условия входа — сделок заметно меньше, чем у консервативного, а цель по прибыли выше.',
         ],
         [
-          <strong key="a" style={{ color: '#f59e0b' }}>
+          <strong key="a" style={{ color: 'var(--warning)' }}>
             Агрессивный
           </strong>,
           '5%',

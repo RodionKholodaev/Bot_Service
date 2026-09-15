@@ -38,6 +38,7 @@ interface AddKeyForm {
 // свободным выбором обещал бы то, чего сервис не умеет.
 const EXCHANGES = [{ value: 'bybit', label: 'Bybit' }];
 
+// Фирменные цвета бирж, не токены сайта. Незнакомая биржа рисуется акцентом.
 const EXCHANGE_COLORS: Record<string, string> = {
   binance: '#f0b90b',
   bybit: '#f7a600',
@@ -153,10 +154,6 @@ export default function ApiKeysPage() {
 
   return (
     <div className="ak-page">
-      {/* Фоновые декорации */}
-      <div className="ak-bg-glow ak-bg-glow--1" />
-      <div className="ak-bg-glow ak-bg-glow--2" />
-
       {/* Шапка */}
       <div className="ak-header">
         <button className="ak-back-btn" onClick={() => router.back()}>
@@ -352,7 +349,8 @@ export default function ApiKeysPage() {
                   <div
                     className="ak-key-exchange-bar"
                     style={{
-                      background: EXCHANGE_COLORS[key.exchange] ?? '#3b82f6',
+                      background:
+                        EXCHANGE_COLORS[key.exchange] ?? 'var(--accent)',
                     }}
                   />
                   <div className="ak-key-body">
@@ -369,7 +367,8 @@ export default function ApiKeysPage() {
                         <span
                           className="ak-exchange-badge"
                           style={{
-                            color: EXCHANGE_COLORS[key.exchange] ?? '#3b82f6',
+                            color:
+                              EXCHANGE_COLORS[key.exchange] ?? 'var(--accent)',
                           }}
                         >
                           {key.exchange.toUpperCase()}

@@ -18,6 +18,9 @@ import {
 import { LEGAL_LINKS } from '@/lib/legal';
 import './landing.css';
 
+// SVG-атрибуты не читают CSS-переменные — значение повторяет токен --success-strong
+const CHART_GREEN = '#10b981';
+
 const LandingPage = () => {
   const [scrolled, setScrolled] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -113,8 +116,6 @@ const LandingPage = () => {
         {/* Hero */}
         <section className="hero-section" ref={heroRef}>
           <div className="hero-bg">
-            <div className="hero-glow glow-1" />
-            <div className="hero-glow glow-2" />
             <div className="hero-grid" />
           </div>
           <div className="hero-content">
@@ -171,7 +172,7 @@ const LandingPage = () => {
                 <svg viewBox="0 0 200 60" fill="none">
                   <polyline
                     points="0,50 20,44 40,46 60,35 80,30 100,32 120,22 140,18 160,14 180,10 200,8"
-                    stroke="#10b981"
+                    stroke={CHART_GREEN}
                     strokeWidth="2"
                     fill="none"
                     strokeLinecap="round"
@@ -185,8 +186,16 @@ const LandingPage = () => {
                   />
                   <defs>
                     <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                      <stop
+                        offset="0%"
+                        stopColor={CHART_GREEN}
+                        stopOpacity="0.3"
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor={CHART_GREEN}
+                        stopOpacity="0"
+                      />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -268,7 +277,6 @@ const LandingPage = () => {
 
         {/* CTA */}
         <section className="cta-section">
-          <div className="cta-glow" />
           <div className="cta-inner">
             <h2>Готовы начать?</h2>
             <p>Создайте аккаунт и запустите первого бота прямо сейчас.</p>

@@ -142,9 +142,17 @@ const BOT_TYPE_LABEL: Record<BotType, string> = {
 const matchesBotType = (bot: BotSummary, type: BotType): boolean =>
   type === 'all' || (type === 'dry' ? bot.dry_run : !bot.dry_run);
 
-// Палитра графиков — из общей схемы сайта (см. /home, /feedback)
-const COLOR_GREEN = '#34d399';
-const COLOR_RED = '#f87171';
+// Палитра графиков. Canvas не читает CSS-переменные, поэтому значения
+// повторяют токены из app/globals.css — менять надо оба места.
+const COLOR_GREEN = '#34d399'; // --success
+const COLOR_RED = '#f87171'; // --danger
+const COLOR_PAGE = '#111626'; // --bg-page
+const COLOR_TOOLTIP_BG = '#1a1f35'; // --bg-elevated
+const COLOR_TOOLTIP_BORDER = 'rgba(96, 165, 250, 0.3)'; // --accent-soft 30%
+const COLOR_TEXT = '#e4e7f0'; // --text
+const COLOR_TEXT_SECONDARY = '#9ca3af'; // --text-secondary
+const COLOR_TEXT_MUTED = '#6b7280'; // --text-muted
+const COLOR_GRID = 'rgba(255, 255, 255, 0.06)'; // --border-subtle
 
 const formatPnl = (v: number): string => {
   const s = moneySign(v);
@@ -292,7 +300,7 @@ const StatsPage: React.FC = () => {
           pointRadius: 0,
           pointHoverRadius: 4,
           pointHoverBackgroundColor: trendColor,
-          pointHoverBorderColor: '#0a0e1a',
+          pointHoverBorderColor: COLOR_PAGE,
           pointHoverBorderWidth: 2,
           fill: true,
           backgroundColor: (ctx: { chart: ChartJS }) => {
@@ -317,12 +325,12 @@ const StatsPage: React.FC = () => {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(26, 31, 53, 0.95)',
-          borderColor: 'rgba(96, 165, 250, 0.25)',
+          backgroundColor: COLOR_TOOLTIP_BG,
+          borderColor: COLOR_TOOLTIP_BORDER,
           borderWidth: 1,
           padding: 10,
-          titleColor: '#9ca3af',
-          bodyColor: '#e4e7f0',
+          titleColor: COLOR_TEXT_SECONDARY,
+          bodyColor: COLOR_TEXT,
           callbacks: {
             label: (ctx: TooltipItem<'line'>) => {
               const y = ctx.parsed.y ?? 0;
@@ -333,16 +341,20 @@ const StatsPage: React.FC = () => {
       },
       scales: {
         x: {
-          ticks: { color: '#6b7280', font: { size: 10 }, maxTicksLimit: 8 },
-          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: {
+            color: COLOR_TEXT_MUTED,
+            font: { size: 10 },
+            maxTicksLimit: 8,
+          },
+          grid: { color: COLOR_GRID },
         },
         y: {
           ticks: {
-            color: '#6b7280',
+            color: COLOR_TEXT_MUTED,
             font: { size: 10 },
             callback: (v: string | number) => formatSignedUsd(Number(v), 1),
           },
-          grid: { color: 'rgba(255,255,255,0.05)' },
+          grid: { color: COLOR_GRID },
         },
       },
     }),
@@ -372,12 +384,12 @@ const StatsPage: React.FC = () => {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(26, 31, 53, 0.95)',
-          borderColor: 'rgba(96, 165, 250, 0.25)',
+          backgroundColor: COLOR_TOOLTIP_BG,
+          borderColor: COLOR_TOOLTIP_BORDER,
           borderWidth: 1,
           padding: 10,
-          titleColor: '#9ca3af',
-          bodyColor: '#e4e7f0',
+          titleColor: COLOR_TEXT_SECONDARY,
+          bodyColor: COLOR_TEXT,
         },
       },
     }),

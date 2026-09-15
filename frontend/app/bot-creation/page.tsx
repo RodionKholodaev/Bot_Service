@@ -86,12 +86,15 @@ const PRESET_VISUALS: Record<
     color: string;
   }
 > = {
-  conservative: { icon: Shield, color: '#10b981' },
-  moderate: { icon: TrendingUp, color: '#60a5fa' },
-  aggressive: { icon: Target, color: '#f59e0b' },
+  conservative: { icon: Shield, color: 'var(--success-strong)' },
+  moderate: { icon: TrendingUp, color: 'var(--accent-soft)' },
+  aggressive: { icon: Target, color: 'var(--warning)' },
 };
 
-const DEFAULT_PRESET_VISUAL = { icon: Settings, color: '#8b5cf6' };
+const DEFAULT_PRESET_VISUAL = {
+  icon: Settings,
+  color: 'var(--text-secondary)',
+};
 
 // кастомный select для выбора индикаторов (чтобы нормально выглядело))
 const CustomSelect = ({
@@ -939,7 +942,7 @@ const CreateBotPage = () => {
               setFormData({ ...formData, strategyPreset: 'custom' })
             }
           >
-            <Settings size={24} style={{ color: '#8b5cf6' }} />
+            <Settings size={24} style={{ color: 'var(--text-secondary)' }} />
             <strong>Свои настройки</strong>
             <span>Настроить вручную</span>
           </button>

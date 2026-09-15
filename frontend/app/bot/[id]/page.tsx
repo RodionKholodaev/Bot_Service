@@ -250,12 +250,12 @@ export default function BotDetailPage() {
             : 'Очень высокий';
     const riskColor =
       riskScore < 25
-        ? '#34d399'
+        ? 'var(--success)'
         : riskScore < 55
-          ? '#60a5fa'
+          ? 'var(--accent-soft)'
           : riskScore < 80
-            ? '#fbbf24'
-            : '#f87171';
+            ? 'var(--warning)'
+            : 'var(--danger)';
 
     return {
       deposit,

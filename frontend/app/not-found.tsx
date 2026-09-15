@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import './error-pages.css';
 
-const GREEN = '#10b981';
-const RED = '#ef4444';
+// SVG-атрибуты не читают CSS-переменные — значения повторяют токены globals.css
+const GREEN = '#10b981'; // --success-strong
+const RED = '#ef4444'; // --danger-strong
+const ACCENT = '#3b82f6'; // --accent
+const MUTED = '#6b7280'; // --text-muted
+const DASH = 'rgba(156, 163, 175, 0.3)'; // --text-secondary 30%
+const GRID = 'rgba(255, 255, 255, 0.06)'; // --border-subtle
 
 /** Свеча графика: фитиль + полупрозрачное тело с обводкой. */
 function Candle({
@@ -44,8 +49,6 @@ export default function NotFound() {
   return (
     <main className="errpage">
       <div className="errpage-bg">
-        <div className="errpage-glow errpage-glow-1" />
-        <div className="errpage-glow errpage-glow-2" />
         <div className="errpage-grid" />
       </div>
 
@@ -57,7 +60,7 @@ export default function NotFound() {
             aria-label="Свечной график с пропущенной свечой"
           >
             {/* Разметка графика на фоне */}
-            <g stroke="rgba(255,255,255,0.06)" strokeWidth="1">
+            <g stroke={GRID} strokeWidth="1">
               <line x1="0" y1="18" x2="690" y2="18" />
               <line x1="0" y1="100" x2="690" y2="100" />
               <line x1="0" y1="176" x2="690" y2="176" />
@@ -77,7 +80,7 @@ export default function NotFound() {
               height="138"
               rx="18"
               fill="none"
-              stroke="rgba(148,163,184,0.35)"
+              stroke={DASH}
               strokeWidth="2"
               strokeDasharray="10 8"
             />
@@ -86,14 +89,14 @@ export default function NotFound() {
               y="101"
               textAnchor="middle"
               dominantBaseline="central"
-              fill="#5b6b8c"
+              fill={MUTED}
               fontSize="62"
               fontWeight="800"
               letterSpacing="2"
             >
               404
             </text>
-            <circle cx="345" cy="190" r="3.5" fill="#3b82f6" />
+            <circle cx="345" cy="190" r="3.5" fill={ACCENT} />
 
             <Candle x={527} wick={[45, 150]} body={[62, 120]} color={GREEN} />
             <Candle x={578} wick={[65, 165]} body={[82, 132]} color={RED} />

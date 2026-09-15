@@ -210,8 +210,6 @@ const AuthContent = () => {
     <div className="auth-page">
       {/* Background */}
       <div className="auth-bg">
-        <div className="auth-glow g1" />
-        <div className="auth-glow g2" />
         <div className="auth-grid" />
       </div>
 

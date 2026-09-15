@@ -8,7 +8,10 @@ import { GeistSans } from 'geist/font/sans';
    Шрифт Geist подключаем сами через className — переменной --font-geist-sans
    из layout.tsx тут нет, а без неё экран рендерился бы системным шрифтом.
    Экспорт metadata тут не поддерживается — заголовок вкладки ставится
-   компонентом <title>. По той же причине вёрстка нарочно простая. */
+   компонентом <title>. По той же причине вёрстка нарочно простая.
+   Токенов из globals.css здесь тоже нет, поэтому цвета — их копии:
+   фон --bg-page, текст --text, подпись --text-secondary, иконка --text-muted,
+   кнопка --accent с текстом --text-on-accent. */
 
 export default function GlobalError({
   error,
@@ -30,7 +33,7 @@ export default function GlobalError({
           alignItems: 'center',
           justifyContent: 'center',
           padding: '24px',
-          background: '#0f1729',
+          background: '#111626',
           color: '#e4e7f0',
           textAlign: 'center',
         }}
@@ -43,7 +46,7 @@ export default function GlobalError({
             height="44"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#64748b"
+            stroke="#6b7280"
             strokeWidth="1.6"
             strokeLinecap="round"
             strokeLinejoin="round"

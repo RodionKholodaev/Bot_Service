@@ -73,21 +73,21 @@ export const KomissiyaIBalans = () => (
       head={['Цвет', 'Баланс', 'Что делать']}
       rows={[
         [
-          <span key="a" style={{ color: '#34d399', fontWeight: 700 }}>
+          <span key="a" style={{ color: 'var(--success)', fontWeight: 700 }}>
             Зелёный
           </span>,
           'от 1 000 ₽',
           'Всё в порядке, ничего делать не нужно.',
         ],
         [
-          <span key="a" style={{ color: '#fbbf24', fontWeight: 700 }}>
+          <span key="a" style={{ color: 'var(--warning)', fontWeight: 700 }}>
             Жёлтый
           </span>,
           'от 100 до 1 000 ₽',
           'Стоит пополнить в ближайшее время.',
         ],
         [
-          <span key="a" style={{ color: '#f87171', fontWeight: 700 }}>
+          <span key="a" style={{ color: 'var(--danger)', fontWeight: 700 }}>
             Красный
           </span>,
           'меньше 100 ₽',

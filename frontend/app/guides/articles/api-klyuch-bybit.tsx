@@ -87,28 +87,28 @@ export const ApiKlyuchBybit = () => (
       rows={[
         [
           <strong key="a">Unified Trading → Trade</strong>,
-          <span key="b" style={{ color: '#34d399', fontWeight: 700 }}>
+          <span key="b" style={{ color: 'var(--success)', fontWeight: 700 }}>
             Да
           </span>,
           'Открывать и закрывать сделки. Без этого бот не сможет торговать вообще.',
         ],
         [
           <strong key="a">Unified Trading → Positions</strong>,
-          <span key="b" style={{ color: '#34d399', fontWeight: 700 }}>
+          <span key="b" style={{ color: 'var(--success)', fontWeight: 700 }}>
             Да
           </span>,
           'Видеть свои открытые позиции и управлять ими.',
         ],
         [
           <strong key="a">Withdraw (вывод средств)</strong>,
-          <span key="b" style={{ color: '#f87171', fontWeight: 700 }}>
+          <span key="b" style={{ color: 'var(--danger)', fontWeight: 700 }}>
             Нет
           </span>,
           'Позволяет выводить деньги с биржи. Боту это не нужно никогда — оставьте выключенным.',
         ],
         [
           <strong key="a">Internal Transfer</strong>,
-          <span key="b" style={{ color: '#f87171', fontWeight: 700 }}>
+          <span key="b" style={{ color: 'var(--danger)', fontWeight: 700 }}>
             Нет
           </span>,
           'Переводы между счетами. Для торговли не требуется.',

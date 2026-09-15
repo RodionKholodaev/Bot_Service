@@ -1,26 +1,60 @@
 @import 'tailwindcss';
 
+/* Цветовые токены сайта. Тема одна — тёмная, светлой нет.
+   Прозрачные оттенки цветов собираются на месте через
+   color-mix(in srgb, var(--danger) 10%, transparent), а не новыми rgba.
+   Цвета для canvas и SVG-атрибутов живут в JS (chart.js не читает
+   CSS-переменные) и должны совпадать со значениями здесь. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* поверхности */
+  --bg-page: #111626;
+  --bg-card: rgba(26, 31, 53, 0.6);
+  --bg-elevated: #1a1f35; /* модалки, выпадашки, панель помощника */
+  --bg-inset: rgba(10, 14, 26, 0.5); /* поля ввода и колодцы внутри карточек */
+  --bg-subtle: rgba(255, 255, 255, 0.04);
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --overlay: rgba(5, 8, 16, 0.7);
+
+  /* границы */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.2);
+
+  /* текст */
+  --text: #e4e7f0;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-dim: #4b5563;
+  --text-on-accent: #ffffff;
+
+  /* акцент */
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-soft: #60a5fa;
+  --accent-softer: #93c5fd;
+
+  /* семантика */
+  --success: #34d399;
+  --success-strong: #10b981;
+  --danger: #f87171;
+  --danger-strong: #ef4444;
+  --warning: #fbbf24;
+
+  --scrollbar-thumb: color-mix(in srgb, var(--text-secondary) 35%, transparent);
+  --scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--text-secondary) 50%,
+    transparent
+  );
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-page);
+  color: var(--text);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }

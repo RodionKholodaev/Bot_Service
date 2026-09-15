@@ -820,8 +820,8 @@ const TradingBotDashboard = () => {
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
-          color: #e4e7f0;
+          background: var(--bg-page);
+          color: var(--text);
         }
 
         /* Balance Alert */
@@ -835,19 +835,17 @@ const TradingBotDashboard = () => {
         }
 
         .balance-alert.critical {
-          background: linear-gradient(
-            90deg,
-            rgba(239, 68, 68, 0.15) 0%,
-            rgba(220, 38, 38, 0.1) 100%
-          );
-          border-bottom: 2px solid rgba(239, 68, 68, 0.5);
-          color: #fca5a5;
+          background: color-mix(in srgb, var(--danger-strong) 15%, transparent);
+          border-bottom: 2px solid
+            color-mix(in srgb, var(--danger-strong) 50%, transparent);
+          color: var(--danger);
         }
 
         .balance-alert.warning {
-          background: rgba(251, 191, 36, 0.1);
-          border-bottom: 2px solid rgba(251, 191, 36, 0.3);
-          color: #fcd34d;
+          background: color-mix(in srgb, var(--warning) 10%, transparent);
+          border-bottom: 2px solid
+            color-mix(in srgb, var(--warning) 30%, transparent);
+          color: var(--warning);
         }
 
         .btn-alert-action,
@@ -862,25 +860,25 @@ const TradingBotDashboard = () => {
         }
 
         .btn-alert-action {
-          background: #ef4444;
-          color: white;
+          background: var(--danger-strong);
+          color: var(--text-on-accent);
           font-size: 14px;
         }
 
         .btn-alert-action-small {
-          background: rgba(251, 191, 36, 0.2);
-          color: #fbbf24;
+          background: color-mix(in srgb, var(--warning) 20%, transparent);
+          color: var(--warning);
           font-size: 13px;
-          border: 1px solid rgba(251, 191, 36, 0.3);
+          border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
         }
 
         .btn-alert-action:hover {
-          background: #dc2626;
+          background: color-mix(in srgb, var(--danger-strong) 85%, black);
           transform: translateY(-1px);
         }
 
         .btn-alert-action-small:hover {
-          background: rgba(251, 191, 36, 0.3);
+          background: color-mix(in srgb, var(--warning) 30%, transparent);
         }
 
         /* Header */
@@ -889,9 +887,9 @@ const TradingBotDashboard = () => {
           justify-content: space-between;
           align-items: center;
           padding: 20px 40px;
-          background: rgba(26, 31, 53, 0.6);
+          background: var(--bg-card);
           backdrop-filter: blur(20px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid var(--border-subtle);
           flex-shrink: 0;
         }
 
@@ -907,7 +905,7 @@ const TradingBotDashboard = () => {
           gap: 10px;
           font-size: 22px;
           font-weight: 700;
-          color: #60a5fa;
+          color: var(--accent-soft);
         }
 
         .main-nav {
@@ -917,7 +915,7 @@ const TradingBotDashboard = () => {
 
         .nav-item {
           padding: 8px 16px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           text-decoration: none;
           border-radius: 8px;
           font-size: 14px;
@@ -928,13 +926,13 @@ const TradingBotDashboard = () => {
         }
 
         .nav-item:hover {
-          color: #e4e7f0;
-          background: rgba(255, 255, 255, 0.05);
+          color: var(--text);
+          background: var(--bg-subtle);
         }
 
         .nav-item.active {
-          color: #60a5fa;
-          background: rgba(96, 165, 250, 0.1);
+          color: var(--accent-soft);
+          background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
         }
 
         .header-right {
@@ -958,31 +956,44 @@ const TradingBotDashboard = () => {
         }
 
         .balance-indicator.good {
-          background: rgba(16, 185, 129, 0.1);
-          border-color: rgba(16, 185, 129, 0.3);
-          color: #34d399;
+          background: color-mix(
+            in srgb,
+            var(--success-strong) 10%,
+            transparent
+          );
+          border-color: color-mix(
+            in srgb,
+            var(--success-strong) 30%,
+            transparent
+          );
+          color: var(--success);
         }
 
         .balance-indicator.low {
-          background: rgba(251, 191, 36, 0.1);
-          border-color: rgba(251, 191, 36, 0.3);
-          color: #fbbf24;
+          background: color-mix(in srgb, var(--warning) 10%, transparent);
+          border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+          color: var(--warning);
         }
 
         .balance-indicator.critical {
-          background: rgba(239, 68, 68, 0.1);
-          border-color: rgba(239, 68, 68, 0.4);
-          color: #f87171;
+          background: color-mix(in srgb, var(--danger-strong) 10%, transparent);
+          border-color: color-mix(
+            in srgb,
+            var(--danger-strong) 40%,
+            transparent
+          );
+          color: var(--danger);
           animation: pulse-critical 2s ease-in-out infinite;
         }
 
         @keyframes pulse-critical {
           0%,
           100% {
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 0 0
+              color-mix(in srgb, var(--danger-strong) 40%, transparent);
           }
           50% {
-            box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+            box-shadow: 0 0 0 8px transparent;
           }
         }
 
@@ -993,10 +1004,10 @@ const TradingBotDashboard = () => {
 
         .btn-icon {
           padding: 10px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--bg-subtle);
+          border: 1px solid var(--border);
           border-radius: 10px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s;
           display: flex;
@@ -1005,8 +1016,8 @@ const TradingBotDashboard = () => {
         }
 
         .btn-icon:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #e4e7f0;
+          background: var(--bg-hover);
+          color: var(--text);
           transform: translateY(-1px);
         }
 
@@ -1015,7 +1026,7 @@ const TradingBotDashboard = () => {
           flex: 1;
           overflow-y: auto;
           scrollbar-width: thin;
-          scrollbar-color: rgba(156, 163, 175, 0.35) rgba(255, 255, 255, 0.05);
+          scrollbar-color: var(--scrollbar-thumb) var(--bg-subtle);
         }
 
         .dashboard-scroll::-webkit-scrollbar {
@@ -1023,16 +1034,16 @@ const TradingBotDashboard = () => {
         }
 
         .dashboard-scroll::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
+          background: var(--bg-subtle);
         }
 
         .dashboard-scroll::-webkit-scrollbar-thumb {
-          background: rgba(156, 163, 175, 0.35);
+          background: var(--scrollbar-thumb);
           border-radius: 4px;
         }
 
         .dashboard-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(156, 163, 175, 0.5);
+          background: var(--scrollbar-thumb-hover);
         }
 
         .dashboard-main {
@@ -1048,9 +1059,9 @@ const TradingBotDashboard = () => {
           align-items: center;
           margin-bottom: 40px;
           padding: 32px;
-          background: rgba(26, 31, 53, 0.6);
+          background: var(--bg-card);
           border-radius: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid var(--border-subtle);
           animation: fadeIn 0.6s ease-out;
         }
 
@@ -1069,11 +1080,11 @@ const TradingBotDashboard = () => {
           font-size: 32px;
           font-weight: 700;
           margin-bottom: 8px;
-          color: #e4e7f0;
+          color: var(--text);
         }
 
         .home-hero-content p {
-          color: #9ca3af;
+          color: var(--text-secondary);
           font-size: 16px;
         }
 
@@ -1097,24 +1108,25 @@ const TradingBotDashboard = () => {
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-          color: white;
+          background: var(--accent);
+          color: var(--text-on-accent);
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
 
         .btn-primary:hover {
+          background: var(--accent-hover);
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
         }
 
         .btn-secondary {
-          background: rgba(255, 255, 255, 0.05);
-          color: #e4e7f0;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--bg-subtle);
+          color: var(--text);
+          border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-          background: rgba(255, 255, 255, 0.1);
+          background: var(--bg-hover);
           transform: translateY(-2px);
         }
 
@@ -1130,20 +1142,20 @@ const TradingBotDashboard = () => {
           margin: 0 0 40px;
           padding: 16px 24px;
           text-align: center;
-          background: rgba(251, 191, 36, 0.08);
-          border: 1px solid rgba(251, 191, 36, 0.3);
+          background: color-mix(in srgb, var(--warning) 10%, transparent);
+          border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
           border-radius: 16px;
           animation: slideUp 0.6s ease-out;
         }
 
         .low-balance-icon {
           display: flex;
-          color: #fbbf24;
+          color: var(--warning);
           flex-shrink: 0;
         }
 
         .low-balance-text {
-          color: #fbbf24;
+          color: var(--warning);
           font-size: 15px;
           font-weight: 500;
         }
@@ -1161,8 +1173,8 @@ const TradingBotDashboard = () => {
         }
 
         .stat-card {
-          background: rgba(26, 31, 53, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
           border-radius: 16px;
           padding: 24px;
           display: flex;
@@ -1198,7 +1210,7 @@ const TradingBotDashboard = () => {
 
         .stat-card:hover {
           transform: translateY(-4px);
-          border-color: rgba(96, 165, 250, 0.3);
+          border-color: color-mix(in srgb, var(--accent-soft) 30%, transparent);
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         }
 
@@ -1209,8 +1221,8 @@ const TradingBotDashboard = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255, 255, 255, 0.05);
-          color: #9ca3af;
+          background: var(--bg-subtle);
+          color: var(--text-secondary);
         }
 
         .stat-content {
@@ -1219,7 +1231,7 @@ const TradingBotDashboard = () => {
 
         .stat-label {
           font-size: 13px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           margin-bottom: 8px;
           font-weight: 500;
         }
@@ -1227,16 +1239,16 @@ const TradingBotDashboard = () => {
         .stat-value {
           font-size: 28px;
           font-weight: 700;
-          color: #e4e7f0;
+          color: var(--text);
           font-variant-numeric: tabular-nums;
         }
 
         .stat-value.profit {
-          color: #34d399;
+          color: var(--success);
         }
 
         .stat-value.loss {
-          color: #f87171;
+          color: var(--danger);
         }
 
         /* Bots Section */
@@ -1262,7 +1274,7 @@ const TradingBotDashboard = () => {
           gap: 4px;
           background: none;
           border: none;
-          color: #60a5fa;
+          color: var(--accent-soft);
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
@@ -1270,7 +1282,7 @@ const TradingBotDashboard = () => {
         }
 
         .btn-text:hover {
-          color: #93c5fd;
+          color: var(--accent-softer);
           gap: 8px;
         }
 
@@ -1281,15 +1293,15 @@ const TradingBotDashboard = () => {
         }
 
         .bot-card {
-          background: rgba(26, 31, 53, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
           border-radius: 16px;
           padding: 24px;
           transition: all 0.3s;
         }
 
         .bot-card:hover {
-          border-color: rgba(96, 165, 250, 0.3);
+          border-color: color-mix(in srgb, var(--accent-soft) 30%, transparent);
           transform: translateX(4px);
         }
 
@@ -1315,7 +1327,7 @@ const TradingBotDashboard = () => {
         }
 
         .bot-status-indicator.active {
-          background: #34d399;
+          background: var(--success);
           animation: pulse 2s ease-in-out infinite;
         }
 
@@ -1340,13 +1352,13 @@ const TradingBotDashboard = () => {
           flex-wrap: wrap;
           gap: 6px;
           font-size: 13px;
-          color: #9ca3af;
+          color: var(--text-secondary);
         }
 
         /* Параметры бота — отдельными метками, без символов-разделителей */
         .bot-meta > span {
           padding: 1px 8px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid var(--border);
           border-radius: 6px;
         }
 
@@ -1357,10 +1369,10 @@ const TradingBotDashboard = () => {
 
         .btn-icon-small {
           padding: 8px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--bg-subtle);
+          border: 1px solid var(--border);
           border-radius: 8px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s;
           display: flex;
@@ -1369,8 +1381,8 @@ const TradingBotDashboard = () => {
         }
 
         .btn-icon-small:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #e4e7f0;
+          background: var(--bg-hover);
+          color: var(--text);
         }
 
         .bot-stats {
@@ -1387,7 +1399,7 @@ const TradingBotDashboard = () => {
 
         .bot-stat-label {
           font-size: 12px;
-          color: #9ca3af;
+          color: var(--text-secondary);
         }
 
         .bot-stat-value {
@@ -1401,10 +1413,11 @@ const TradingBotDashboard = () => {
           align-items: center;
           gap: 6px;
           padding: 8px 16px;
-          background: rgba(96, 165, 250, 0.1);
-          border: 1px solid rgba(96, 165, 250, 0.2);
+          background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
+          border: 1px solid
+            color-mix(in srgb, var(--accent-soft) 20%, transparent);
           border-radius: 8px;
-          color: #60a5fa;
+          color: var(--accent-soft);
           font-size: 13px;
           font-weight: 600;
           cursor: pointer;
@@ -1412,7 +1425,7 @@ const TradingBotDashboard = () => {
         }
 
         .btn-bot-details:hover {
-          background: rgba(96, 165, 250, 0.2);
+          background: color-mix(in srgb, var(--accent-soft) 20%, transparent);
           transform: translateY(-1px);
         }
 
@@ -1421,10 +1434,10 @@ const TradingBotDashboard = () => {
           flex-direction: column;
           align-items: center; /* центрирует всё по горизонтали */
           padding: 80px 40px;
-          background: rgba(26, 31, 53, 0.6);
-          border: 2px dashed rgba(255, 255, 255, 0.1);
+          background: var(--bg-card);
+          border: 2px dashed var(--border);
           border-radius: 16px;
-          color: #9ca3af;
+          color: var(--text-secondary);
         }
 
         .empty-state svg {
@@ -1436,7 +1449,7 @@ const TradingBotDashboard = () => {
           font-size: 20px;
           font-weight: 600;
           margin-bottom: 8px;
-          color: #e4e7f0;
+          color: var(--text);
         }
 
         .empty-state p {
@@ -1456,8 +1469,8 @@ const TradingBotDashboard = () => {
           align-items: center;
           gap: 16px;
           padding: 20px;
-          background: rgba(26, 31, 53, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
           border-radius: 16px;
           cursor: pointer;
           transition: all 0.3s;
@@ -1466,13 +1479,13 @@ const TradingBotDashboard = () => {
         }
 
         .action-card:hover {
-          background: rgba(26, 31, 53, 0.8);
-          border-color: rgba(96, 165, 250, 0.3);
+          background: var(--bg-elevated);
+          border-color: color-mix(in srgb, var(--accent-soft) 30%, transparent);
           transform: translateY(-2px);
         }
 
         .action-card svg:first-child {
-          color: #60a5fa;
+          color: var(--accent-soft);
           flex-shrink: 0;
         }
 
@@ -1488,11 +1501,11 @@ const TradingBotDashboard = () => {
 
         .action-card p {
           font-size: 13px;
-          color: #9ca3af;
+          color: var(--text-secondary);
         }
 
         .action-card svg:last-child {
-          color: #9ca3af;
+          color: var(--text-secondary);
           flex-shrink: 0;
         }
 
@@ -1503,7 +1516,7 @@ const TradingBotDashboard = () => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
+          background: var(--overlay);
           backdrop-filter: blur(4px);
           display: flex;
           align-items: center;
@@ -1513,8 +1526,8 @@ const TradingBotDashboard = () => {
         }
 
         .modal-content {
-          background: #1a1f35;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--bg-elevated);
+          border: 1px solid var(--border);
           border-radius: 20px;
           padding: 32px;
           max-width: 480px;
@@ -1528,7 +1541,7 @@ const TradingBotDashboard = () => {
         }
 
         .modal-description {
-          color: #9ca3af;
+          color: var(--text-secondary);
           margin-bottom: 24px;
           font-size: 14px;
         }
@@ -1542,10 +1555,10 @@ const TradingBotDashboard = () => {
 
         .amount-btn {
           padding: 16px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--bg-subtle);
+          border: 1px solid var(--border);
           border-radius: 12px;
-          color: #e4e7f0;
+          color: var(--text);
           font-size: 18px;
           font-weight: 600;
           cursor: pointer;
@@ -1554,14 +1567,14 @@ const TradingBotDashboard = () => {
         }
 
         .amount-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(96, 165, 250, 0.3);
+          background: var(--bg-hover);
+          border-color: color-mix(in srgb, var(--accent-soft) 30%, transparent);
         }
 
         .amount-btn.recommended {
-          background: rgba(59, 130, 246, 0.15);
-          border-color: rgba(59, 130, 246, 0.3);
-          color: #60a5fa;
+          background: color-mix(in srgb, var(--accent) 15%, transparent);
+          border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+          color: var(--accent-soft);
           position: relative;
         }
 
@@ -1570,8 +1583,8 @@ const TradingBotDashboard = () => {
           position: absolute;
           top: -8px;
           right: -8px;
-          background: #3b82f6;
-          color: white;
+          background: var(--accent);
+          color: var(--text-on-accent);
           font-size: 10px;
           padding: 2px 8px;
           border-radius: 4px;
@@ -1585,24 +1598,24 @@ const TradingBotDashboard = () => {
         .custom-amount label {
           display: block;
           font-size: 14px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           margin-bottom: 8px;
         }
 
         .custom-amount input {
           width: 100%;
           padding: 14px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--bg-subtle);
+          border: 1px solid var(--border);
           border-radius: 12px;
-          color: #e4e7f0;
+          color: var(--text);
           font-size: 16px;
           font-weight: 600;
         }
 
         .custom-amount input:focus {
           outline: none;
-          border-color: rgba(96, 165, 250, 0.5);
+          border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent);
         }
 
         .modal-actions {
@@ -1624,16 +1637,20 @@ const TradingBotDashboard = () => {
           justify-content: center;
           gap: 12px;
           padding: 60px 20px;
-          background: rgba(26, 31, 53, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
           border-radius: 16px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           font-size: 15px;
         }
 
         .bots-error {
-          color: #fca5a5;
-          border-color: rgba(239, 68, 68, 0.2);
+          color: var(--danger);
+          border-color: color-mix(
+            in srgb,
+            var(--danger-strong) 20%,
+            transparent
+          );
         }
 
         .spin {
@@ -1651,20 +1668,19 @@ const TradingBotDashboard = () => {
 
         /* Bot status indicator (по новым статусам) */
         .bot-status-indicator.running {
-          background: #10b981;
+          background: var(--success-strong);
           animation: pulse 2s ease-in-out infinite;
         }
         .bot-status-indicator.starting {
-          background: #fbbf24;
-          box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+          background: var(--warning);
           animation: pulse 1s ease-in-out infinite;
         }
         .bot-status-indicator.stopped,
         .bot-status-indicator.created {
-          background: #6b7280;
+          background: var(--text-muted);
         }
         .bot-status-indicator.error {
-          background: #ef4444;
+          background: var(--danger-strong);
         }
 
         @keyframes pulse {
@@ -1679,7 +1695,11 @@ const TradingBotDashboard = () => {
 
         /* Bot card подсветка по статусу */
         .bot-card.status-error {
-          border-color: rgba(239, 68, 68, 0.25);
+          border-color: color-mix(
+            in srgb,
+            var(--danger-strong) 20%,
+            transparent
+          );
         }
 
         .bot-title-block {
@@ -1709,9 +1729,10 @@ const TradingBotDashboard = () => {
         }
 
         .badge-dry {
-          background: rgba(168, 85, 247, 0.15);
-          color: #c4b5fd;
-          border: 1px solid rgba(168, 85, 247, 0.3);
+          background: color-mix(in srgb, var(--accent-soft) 15%, transparent);
+          color: var(--accent-soft);
+          border: 1px solid
+            color-mix(in srgb, var(--accent-soft) 30%, transparent);
         }
 
         /* Status row под заголовком карточки */
@@ -1724,7 +1745,7 @@ const TradingBotDashboard = () => {
           border-radius: 8px;
           font-size: 13px;
           font-weight: 500;
-          background: rgba(255, 255, 255, 0.03);
+          background: var(--bg-subtle);
         }
 
         .bot-status-row .status-dot {
@@ -1735,35 +1756,35 @@ const TradingBotDashboard = () => {
         }
 
         .bot-status-row.status-running {
-          color: #6ee7b7;
+          color: var(--success);
         }
         .bot-status-row.status-running .status-dot {
-          background: #10b981;
+          background: var(--success-strong);
         }
         .bot-status-row.status-starting {
-          color: #fcd34d;
+          color: var(--warning);
         }
         .bot-status-row.status-starting .status-dot {
-          background: #fbbf24;
+          background: var(--warning);
         }
         .bot-status-row.status-stopped,
         .bot-status-row.status-created {
-          color: #9ca3af;
+          color: var(--text-secondary);
         }
         .bot-status-row.status-stopped .status-dot,
         .bot-status-row.status-created .status-dot {
-          background: #6b7280;
+          background: var(--text-muted);
         }
         .bot-status-row.status-error {
-          color: #fca5a5;
-          background: rgba(239, 68, 68, 0.08);
+          color: var(--danger);
+          background: color-mix(in srgb, var(--danger-strong) 10%, transparent);
         }
         .bot-status-row.status-error .status-dot {
-          background: #ef4444;
+          background: var(--danger-strong);
         }
 
         .status-error-msg {
-          color: #fca5a5;
+          color: var(--danger);
           opacity: 0.85;
           font-weight: 400;
           overflow: hidden;
@@ -1779,16 +1800,20 @@ const TradingBotDashboard = () => {
         }
 
         .btn-icon-danger:hover:not(:disabled) {
-          background: rgba(239, 68, 68, 0.15) !important;
-          color: #fca5a5 !important;
+          background: color-mix(
+            in srgb,
+            var(--danger-strong) 15%,
+            transparent
+          ) !important;
+          color: var(--danger) !important;
         }
 
         .bot-stat-value.profit {
-          color: #34d399;
+          color: var(--success);
         }
 
         .bot-stat-value.loss {
-          color: #fca5a5;
+          color: var(--danger);
         }
 
         /* Кнопка удаления в модалке */
@@ -1798,8 +1823,8 @@ const TradingBotDashboard = () => {
           justify-content: center;
           gap: 8px;
           padding: 12px 20px;
-          background: #ef4444;
-          color: white;
+          background: var(--danger-strong);
+          color: var(--text-on-accent);
           border: none;
           border-radius: 12px;
           font-size: 15px;
@@ -1809,7 +1834,7 @@ const TradingBotDashboard = () => {
           flex: 1;
         }
         .btn-danger:hover:not(:disabled) {
-          background: #dc2626;
+          background: color-mix(in srgb, var(--danger-strong) 85%, black);
           transform: translateY(-1px);
         }
         .btn-danger:disabled {
@@ -1866,9 +1891,13 @@ const TradingBotDashboard = () => {
           }
 
           .amount-btn.selected {
-            background: rgba(96, 165, 250, 0.25);
-            border-color: rgba(96, 165, 250, 0.6);
-            color: #60a5fa;
+            background: color-mix(in srgb, var(--accent-soft) 20%, transparent);
+            border-color: color-mix(
+              in srgb,
+              var(--accent-soft) 60%,
+              transparent
+            );
+            color: var(--accent-soft);
           }
         }
       `}</style>

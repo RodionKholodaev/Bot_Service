@@ -296,6 +296,8 @@ const FeedbackPage = () => {
                             onMouseEnter={() => setHoverRating(n)}
                             aria-label={`Оценка ${n} из 5`}
                           >
+                            {/* SVG-атрибуты не читают CSS-переменные:
+                                #fbbf24 — это --warning, #4b5563 — --text-dim */}
                             <Star
                               size={26}
                               fill={active ? '#fbbf24' : 'none'}
@@ -371,8 +373,8 @@ const FeedbackPage = () => {
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
-          color: #e4e7f0;
+          background: var(--bg-page);
+          color: var(--text);
         }
 
         /* ── Header (как на главной) ─────────────── */
@@ -381,9 +383,9 @@ const FeedbackPage = () => {
           justify-content: space-between;
           align-items: center;
           padding: 20px 40px;
-          background: rgba(26, 31, 53, 0.6);
+          background: var(--bg-card);
           backdrop-filter: blur(20px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid var(--border-subtle);
           flex-shrink: 0;
         }
 
@@ -399,7 +401,7 @@ const FeedbackPage = () => {
           gap: 10px;
           font-size: 22px;
           font-weight: 700;
-          color: #60a5fa;
+          color: var(--accent-soft);
         }
 
         .main-nav {
@@ -409,7 +411,7 @@ const FeedbackPage = () => {
 
         .nav-item {
           padding: 8px 16px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           text-decoration: none;
           border-radius: 8px;
           font-size: 14px;
@@ -420,13 +422,13 @@ const FeedbackPage = () => {
         }
 
         .nav-item:hover {
-          color: #e4e7f0;
-          background: rgba(255, 255, 255, 0.05);
+          color: var(--text);
+          background: var(--bg-subtle);
         }
 
         .nav-item.active {
-          color: #60a5fa;
-          background: rgba(96, 165, 250, 0.1);
+          color: var(--accent-soft);
+          background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
         }
 
         .header-right {
@@ -448,29 +450,41 @@ const FeedbackPage = () => {
         }
 
         .balance-indicator.good {
-          background: rgba(16, 185, 129, 0.1);
-          border-color: rgba(16, 185, 129, 0.3);
-          color: #34d399;
+          background: color-mix(
+            in srgb,
+            var(--success-strong) 10%,
+            transparent
+          );
+          border-color: color-mix(
+            in srgb,
+            var(--success-strong) 30%,
+            transparent
+          );
+          color: var(--success);
         }
 
         .balance-indicator.low {
-          background: rgba(251, 191, 36, 0.1);
-          border-color: rgba(251, 191, 36, 0.3);
-          color: #fbbf24;
+          background: color-mix(in srgb, var(--warning) 10%, transparent);
+          border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+          color: var(--warning);
         }
 
         .balance-indicator.critical {
-          background: rgba(239, 68, 68, 0.1);
-          border-color: rgba(239, 68, 68, 0.4);
-          color: #f87171;
+          background: color-mix(in srgb, var(--danger-strong) 10%, transparent);
+          border-color: color-mix(
+            in srgb,
+            var(--danger-strong) 40%,
+            transparent
+          );
+          color: var(--danger);
         }
 
         .btn-icon {
           padding: 10px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--bg-subtle);
+          border: 1px solid var(--border);
           border-radius: 10px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s;
           display: flex;
@@ -479,8 +493,8 @@ const FeedbackPage = () => {
         }
 
         .btn-icon:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #e4e7f0;
+          background: var(--bg-hover);
+          color: var(--text);
           transform: translateY(-1px);
         }
 
@@ -489,7 +503,7 @@ const FeedbackPage = () => {
           flex: 1;
           overflow-y: auto;
           scrollbar-width: thin;
-          scrollbar-color: rgba(156, 163, 175, 0.35) rgba(255, 255, 255, 0.05);
+          scrollbar-color: var(--scrollbar-thumb) var(--bg-subtle);
         }
 
         .dashboard-scroll::-webkit-scrollbar {
@@ -497,16 +511,16 @@ const FeedbackPage = () => {
         }
 
         .dashboard-scroll::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
+          background: var(--bg-subtle);
         }
 
         .dashboard-scroll::-webkit-scrollbar-thumb {
-          background: rgba(156, 163, 175, 0.35);
+          background: var(--scrollbar-thumb);
           border-radius: 4px;
         }
 
         .dashboard-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(156, 163, 175, 0.5);
+          background: var(--scrollbar-thumb-hover);
         }
 
         .dashboard-main {
@@ -542,17 +556,18 @@ const FeedbackPage = () => {
           gap: 8px;
           padding: 7px 16px;
           margin-bottom: 22px;
-          background: rgba(96, 165, 250, 0.12);
-          border: 1px solid rgba(96, 165, 250, 0.25);
+          background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
+          border: 1px solid
+            color-mix(in srgb, var(--accent-soft) 20%, transparent);
           border-radius: 999px;
-          color: #8ab4ff;
+          color: var(--accent-soft);
           font-size: 13px;
           font-weight: 600;
         }
 
         .hero-badge-icon {
           display: inline-flex;
-          color: #8ab4ff;
+          color: var(--accent-soft);
         }
 
         .feedback-hero h1 {
@@ -560,11 +575,11 @@ const FeedbackPage = () => {
           font-weight: 800;
           line-height: 1.25;
           margin-bottom: 16px;
-          color: #e4e7f0;
+          color: var(--text);
         }
 
         .feedback-hero p {
-          color: #9ca3af;
+          color: var(--text-secondary);
           font-size: 16px;
           line-height: 1.6;
           max-width: 620px;
@@ -587,31 +602,32 @@ const FeedbackPage = () => {
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-          color: white;
+          background: var(--accent);
+          color: var(--text-on-accent);
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
 
         .btn-primary:hover:not(:disabled) {
+          background: var(--accent-hover);
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
         }
 
         .btn-primary:disabled {
-          background: rgba(255, 255, 255, 0.06);
-          color: #6b7280;
+          background: var(--bg-hover);
+          color: var(--text-muted);
           box-shadow: none;
           cursor: not-allowed;
         }
 
         .btn-secondary {
-          background: rgba(255, 255, 255, 0.05);
-          color: #e4e7f0;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--bg-subtle);
+          color: var(--text);
+          border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-          background: rgba(255, 255, 255, 0.1);
+          background: var(--bg-hover);
           transform: translateY(-2px);
         }
 
@@ -620,8 +636,8 @@ const FeedbackPage = () => {
           display: flex;
           flex-direction: column;
           gap: 26px;
-          background: rgba(26, 31, 53, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
           border-radius: 20px;
           padding: 32px;
           animation: slideUp 0.6s ease-out 0.1s both;
@@ -648,11 +664,11 @@ const FeedbackPage = () => {
         .field-label {
           font-size: 14px;
           font-weight: 600;
-          color: #c7cde0;
+          color: var(--text);
         }
 
         .field-optional {
-          color: #6b7280;
+          color: var(--text-muted);
           font-weight: 500;
         }
 
@@ -666,12 +682,12 @@ const FeedbackPage = () => {
 
         .field-hint {
           font-size: 12px;
-          color: #6b7280;
+          color: var(--text-muted);
         }
 
         .char-count {
           font-size: 12px;
-          color: #4b5563;
+          color: var(--text-dim);
           margin-left: auto;
         }
 
@@ -679,10 +695,10 @@ const FeedbackPage = () => {
         .field-textarea {
           width: 100%;
           padding: 14px 16px;
-          background: rgba(255, 255, 255, 0.04);
-          border: 1.5px solid rgba(255, 255, 255, 0.08);
+          background: var(--bg-subtle);
+          border: 1.5px solid var(--border);
           border-radius: 12px;
-          color: #e4e7f0;
+          color: var(--text);
           font-size: 15px;
           font-family: inherit;
           transition: all 0.2s;
@@ -696,15 +712,16 @@ const FeedbackPage = () => {
 
         .field-input::placeholder,
         .field-textarea::placeholder {
-          color: #4b5563;
+          color: var(--text-dim);
         }
 
         .field-input:focus,
         .field-textarea:focus {
           outline: none;
-          border-color: rgba(96, 165, 250, 0.5);
-          background: rgba(96, 165, 250, 0.04);
-          box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.08);
+          border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent);
+          background: color-mix(in srgb, var(--accent-soft) 5%, transparent);
+          box-shadow: 0 0 0 3px
+            color-mix(in srgb, var(--accent-soft) 10%, transparent);
         }
 
         .field-grid {
@@ -726,10 +743,10 @@ const FeedbackPage = () => {
           align-items: center;
           gap: 8px;
           padding: 10px 16px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1.5px solid rgba(255, 255, 255, 0.08);
+          background: var(--bg-subtle);
+          border: 1.5px solid var(--border);
           border-radius: 12px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           font-size: 14px;
           font-weight: 500;
           font-family: inherit;
@@ -738,16 +755,16 @@ const FeedbackPage = () => {
         }
 
         .topic-chip:hover {
-          background: rgba(96, 165, 250, 0.06);
-          border-color: rgba(96, 165, 250, 0.25);
-          color: #c4d4f0;
+          background: color-mix(in srgb, var(--accent-soft) 5%, transparent);
+          border-color: color-mix(in srgb, var(--accent-soft) 20%, transparent);
+          color: var(--text);
           transform: translateY(-1px);
         }
 
         .topic-chip.active {
-          background: rgba(96, 165, 250, 0.12);
-          border-color: rgba(96, 165, 250, 0.5);
-          color: #60a5fa;
+          background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
+          border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent);
+          color: var(--accent-soft);
         }
 
         .topic-icon {
@@ -779,7 +796,7 @@ const FeedbackPage = () => {
           margin-left: 10px;
           font-size: 13px;
           font-weight: 600;
-          color: #fbbf24;
+          color: var(--warning);
         }
 
         /* ── Error ───────────────────────────────── */
@@ -788,10 +805,11 @@ const FeedbackPage = () => {
           align-items: center;
           gap: 10px;
           padding: 12px 16px;
-          background: rgba(239, 68, 68, 0.08);
-          border: 1px solid rgba(239, 68, 68, 0.2);
+          background: color-mix(in srgb, var(--danger-strong) 10%, transparent);
+          border: 1px solid
+            color-mix(in srgb, var(--danger-strong) 20%, transparent);
           border-radius: 10px;
-          color: #fca5a5;
+          color: var(--danger);
           font-size: 14px;
         }
 
@@ -833,15 +851,20 @@ const FeedbackPage = () => {
         }
 
         .success-icon {
-          color: #34d399;
+          color: var(--success);
           display: flex;
           align-items: center;
           justify-content: center;
           width: 88px;
           height: 88px;
           border-radius: 50%;
-          background: rgba(16, 185, 129, 0.12);
-          border: 1px solid rgba(16, 185, 129, 0.3);
+          background: color-mix(
+            in srgb,
+            var(--success-strong) 10%,
+            transparent
+          );
+          border: 1px solid
+            color-mix(in srgb, var(--success-strong) 30%, transparent);
           margin-bottom: 6px;
           animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
@@ -860,12 +883,12 @@ const FeedbackPage = () => {
         .success-state h2 {
           font-size: 22px;
           font-weight: 700;
-          color: #e4e7f0;
+          color: var(--text);
         }
 
         .success-state p {
           font-size: 15px;
-          color: #9ca3af;
+          color: var(--text-secondary);
           line-height: 1.6;
           max-width: 420px;
         }
@@ -883,17 +906,17 @@ const FeedbackPage = () => {
           text-align: center;
           margin-top: 24px;
           font-size: 13px;
-          color: #6b7280;
+          color: var(--text-muted);
         }
 
         .feedback-footnote a {
-          color: #60a5fa;
+          color: var(--accent-soft);
           text-decoration: none;
           font-weight: 600;
         }
 
         .feedback-footnote a:hover {
-          color: #93c5fd;
+          color: var(--accent-softer);
         }
 
         /* ── Responsive ──────────────────────────── */
