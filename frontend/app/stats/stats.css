@@ -210,16 +210,6 @@
   }
 }
 
-@keyframes statsPulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
 .stats-spin {
   display: inline-flex;
   animation: statsSpin 1s linear infinite;
@@ -434,22 +424,6 @@
   border-color: color-mix(in srgb, var(--accent-soft) 30%, transparent);
 }
 
-.bot-row-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.bot-row-dot.running {
-  background: var(--success-strong);
-  animation: statsPulse 2s ease-in-out infinite;
-}
-
-.bot-row-dot.stopped {
-  background: var(--text-muted);
-}
-
 .bot-row-info {
   flex: 1;
   min-width: 0;
@@ -513,14 +487,6 @@
   gap: 8px;
   font-size: 12px;
   color: var(--text-secondary);
-}
-
-.sb-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--success-strong);
-  flex-shrink: 0;
 }
 
 /* ===== METRIC CARDS ===== */

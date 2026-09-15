@@ -535,9 +535,6 @@ const StatsPage: React.FC = () => {
                       className={`bot-row ${view === b.bot_id ? 'active' : ''}`}
                       onClick={() => setView(b.bot_id)}
                     >
-                      <div
-                        className={`bot-row-dot ${b.status === 'running' ? 'running' : 'stopped'}`}
-                      />
                       <div className="bot-row-info">
                         <div className="bot-row-name">
                           {b.pair}
@@ -565,7 +562,6 @@ const StatsPage: React.FC = () => {
 
               <div className="sb-footer">
                 <div className="sb-footer-row">
-                  <div className="sb-status-dot" />
                   {/* «неактивных», а не «остановленных»: сюда же попадают боты в статусах
                       created, starting и error */}
                   {runningCount} активных, {stoppedCount} неактивн
