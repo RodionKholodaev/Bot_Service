@@ -320,6 +320,7 @@
   color: #60a5fa;
   font-weight: 700;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Algorithm Selector */

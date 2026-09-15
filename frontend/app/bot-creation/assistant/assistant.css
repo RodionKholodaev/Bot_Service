@@ -403,7 +403,7 @@
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.08);
   color: #93c5fd;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 12px;
 }
 
@@ -499,6 +499,7 @@
   font-weight: 700;
   color: var(--ai-text);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .ai-suggestion__apply {
@@ -542,7 +543,7 @@
 .ai-rule {
   padding: 3px 7px;
   border-radius: 6px;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 11px;
 }
 

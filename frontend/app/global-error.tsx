@@ -1,13 +1,14 @@
 'use client'; // error boundary обязан быть клиентским компонентом
 
 import { useEffect } from 'react';
+import { GeistSans } from 'geist/font/sans';
 
 /* Этот файл заменяет собой корневой layout, поэтому рисует свои <html>/<body>,
-   а стили здесь инлайновые: globals.css и шрифты Geist на этом экране уже не
-   подключены. Экспорт metadata тут не поддерживается — заголовок вкладки
-   ставится компонентом <title>. По той же причине вёрстка нарочно простая. */
-
-const FONT = 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+   а стили здесь инлайновые: globals.css на этом экране уже не подключён.
+   Шрифт Geist подключаем сами через className — переменной --font-geist-sans
+   из layout.tsx тут нет, а без неё экран рендерился бы системным шрифтом.
+   Экспорт metadata тут не поддерживается — заголовок вкладки ставится
+   компонентом <title>. По той же причине вёрстка нарочно простая. */
 
 export default function GlobalError({
   error,
@@ -21,6 +22,7 @@ export default function GlobalError({
   return (
     <html lang="ru">
       <body
+        className={GeistSans.className}
         style={{
           margin: 0,
           minHeight: '100vh',
@@ -30,7 +32,6 @@ export default function GlobalError({
           padding: '24px',
           background: '#0f1729',
           color: '#e4e7f0',
-          fontFamily: FONT,
           textAlign: 'center',
         }}
       >
@@ -90,7 +91,7 @@ export default function GlobalError({
               border: 'none',
               borderRadius: '12px',
               color: '#fff',
-              fontFamily: FONT,
+              fontFamily: 'inherit',
               fontSize: '15px',
               fontWeight: 600,
               cursor: 'pointer',

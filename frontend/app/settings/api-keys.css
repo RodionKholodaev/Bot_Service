@@ -6,7 +6,6 @@
   min-height: 100vh;
   background: #0d1117;
   color: #e6edf3;
-  font-family: 'Syne', 'DM Sans', system-ui, sans-serif;
   position: relative;
   overflow-x: hidden;
   padding: 0 0 60px;
@@ -222,7 +221,7 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 .ak-input--mono {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 13px;
 }
 .ak-input--padded {

@@ -15,12 +15,6 @@
   overflow: hidden;
   background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
   color: #e4e7f0;
-  font-family:
-    'SF Pro Display',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
   font-size: 14px;
 }
 
@@ -107,6 +101,7 @@
   font-weight: 600;
   font-size: 15px;
   border: 1.5px solid;
+  font-variant-numeric: tabular-nums;
 }
 
 .bd-balance.good {
@@ -460,6 +455,7 @@
   font-weight: 700;
   margin-top: 5px;
   color: #e4e7f0;
+  font-variant-numeric: tabular-nums;
 }
 
 .bd-kpi-value.profit {
@@ -567,6 +563,7 @@
   font-weight: 600;
   color: #e4e7f0;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .bd-row-value.profit {
@@ -713,6 +710,7 @@
   font-weight: 700;
   margin-top: 6px;
   color: #9ca3af;
+  font-variant-numeric: tabular-nums;
 }
 
 .bd-exit-box.tp .bd-exit-value {

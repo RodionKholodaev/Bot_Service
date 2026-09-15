@@ -373,12 +373,6 @@ const FeedbackPage = () => {
           overflow: hidden;
           background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
           color: #e4e7f0;
-          font-family:
-            'SF Pro Display',
-            -apple-system,
-            BlinkMacSystemFont,
-            'Segoe UI',
-            sans-serif;
         }
 
         /* ── Header (как на главной) ─────────────── */
@@ -450,6 +444,7 @@ const FeedbackPage = () => {
           font-weight: 600;
           font-size: 15px;
           border: 1.5px solid;
+          font-variant-numeric: tabular-nums;
         }
 
         .balance-indicator.good {

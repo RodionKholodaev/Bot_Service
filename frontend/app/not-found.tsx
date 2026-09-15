@@ -90,7 +90,6 @@ export default function NotFound() {
               fontSize="62"
               fontWeight="800"
               letterSpacing="2"
-              fontFamily="Inter, system-ui, sans-serif"
             >
               404
             </text>

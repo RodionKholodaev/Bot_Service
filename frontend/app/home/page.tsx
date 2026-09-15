@@ -822,12 +822,6 @@ const TradingBotDashboard = () => {
           overflow: hidden;
           background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
           color: #e4e7f0;
-          font-family:
-            'SF Pro Display',
-            -apple-system,
-            BlinkMacSystemFont,
-            'Segoe UI',
-            sans-serif;
         }
 
         /* Balance Alert */
@@ -960,6 +954,7 @@ const TradingBotDashboard = () => {
           cursor: pointer;
           transition: all 0.3s;
           border: 1.5px solid;
+          font-variant-numeric: tabular-nums;
         }
 
         .balance-indicator.good {
@@ -1233,6 +1228,7 @@ const TradingBotDashboard = () => {
           font-size: 28px;
           font-weight: 700;
           color: #e4e7f0;
+          font-variant-numeric: tabular-nums;
         }
 
         .stat-value.profit {
@@ -1397,6 +1393,7 @@ const TradingBotDashboard = () => {
         .bot-stat-value {
           font-size: 20px;
           font-weight: 700;
+          font-variant-numeric: tabular-nums;
         }
 
         .btn-bot-details {
@@ -1553,6 +1550,7 @@ const TradingBotDashboard = () => {
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
+          font-variant-numeric: tabular-nums;
         }
 
         .amount-btn:hover {

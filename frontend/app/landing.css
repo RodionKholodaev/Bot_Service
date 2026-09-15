@@ -6,7 +6,6 @@
   overflow: hidden;
   background: linear-gradient(135deg, #0f1729 0%, #1a1f35 100%);
   color: #e4e7f0;
-  font-family: 'Inter', system-ui, sans-serif;
 }
 
 /* ===== SCROLL AREA (как на /home, /feedback и /stats) =====
