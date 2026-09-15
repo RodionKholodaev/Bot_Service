@@ -426,6 +426,104 @@
   color: #93c5fd;
 }
 
+/* ===== ПОШАГОВАЯ РЕГИСТРАЦИЯ =====
+   Шаги и прогресс есть только у регистрации: у входа два поля, дробить нечего.
+   Блок шага перемонтируется по key={step}, поэтому анимация играет заново. */
+.auth-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-step {
+  animation: authStepIn 0.28s ease-out;
+}
+
+@keyframes authStepIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Кнопки шага: «Назад» узкая, основная занимает остаток строки */
+.auth-actions {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.auth-actions .auth-submit {
+  flex: 1;
+}
+
+.auth-prev {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: #cbd5e1;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.auth-prev:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e4e7f0;
+}
+
+.auth-prev:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Прогресс-бар */
+.auth-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.auth-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.2px;
+}
+
+.auth-progress-name {
+  color: #60a5fa;
+}
+
+.auth-progress-track {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.auth-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.45);
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
   .auth-card {
@@ -438,5 +536,11 @@
     left: 16px;
     font-size: 13px;
     padding: 6px 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .auth-prev {
+    padding: 14px 12px;
   }
 }
