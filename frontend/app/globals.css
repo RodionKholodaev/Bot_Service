@@ -60,7 +60,18 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
-  --ring: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 10%, transparent);
+  /* Кольцо фокуса с клавиатуры. 60% — чтобы на тёмном фоне оно
+     держало контраст 3:1, 10% было почти не видно. */
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 60%, transparent);
+
+  /* Шкала z-index. Внутри своего контекста наложения декоративный фон
+     стоит на 0 (пишется числом), содержимое над ним — на --z-base. */
+  --z-base: 1; /* содержимое над декоративным фоном */
+  --z-sticky: 10; /* фиксированные шапки, кнопка «назад», вкладка помощника */
+  --z-dropdown: 20; /* выпадающие списки и подсказки внутри формы */
+  --z-overlay: 30; /* затемнение под боковой панелью */
+  --z-modal: 40; /* модалки и панель помощника */
+  --z-toast: 50; /* уведомления поверх всего */
 }
 
 @theme inline {
@@ -72,4 +83,26 @@ body {
   background: var(--bg-page);
   color: var(--text);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Одно объявление на все спиннеры (.spin на страницах). */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Анимации и переходы почти мгновенные, циклы — один проход:
+   состояние меняется сразу, без движения. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
 }

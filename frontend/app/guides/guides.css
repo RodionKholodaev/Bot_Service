@@ -8,7 +8,7 @@
    (та же причина, что и у префикса `stats-` в stats.css). */
 
 .gd-page {
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -73,7 +73,9 @@
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
   display: inline-flex;
   align-items: center;
 }
@@ -131,7 +133,10 @@
   border-radius: var(--radius-lg);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -156,7 +161,10 @@
   color: var(--text-on-accent);
   background: var(--accent);
   box-shadow: var(--shadow-sm);
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .gd-login-btn:hover {
@@ -260,14 +268,17 @@
   color: var(--text);
   font-size: 15px;
   font-family: inherit;
-  transition: all 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .gd-search::placeholder {
   color: var(--text-dim);
 }
 
-.gd-search:focus {
+.gd-search:focus-visible {
   outline: none;
   border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent);
   background: color-mix(in srgb, var(--accent-soft) 5%, transparent);
@@ -326,7 +337,10 @@
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    transform 0.2s;
 }
 
 .gd-qs-step:hover {
@@ -402,7 +416,10 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   text-decoration: none;
-  transition: all 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    transform 0.2s;
   position: relative;
 }
 
@@ -439,7 +456,9 @@
 .gd-card-arrow {
   color: var(--text-dim);
   flex-shrink: 0;
-  transition: all 0.2s;
+  transition:
+    color 0.2s,
+    transform 0.2s;
 }
 
 .gd-card:hover .gd-card-arrow {
@@ -532,7 +551,10 @@
   text-decoration: none;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
   font-family: inherit;
 }
 
@@ -652,7 +674,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  max-height: calc(100vh - 140px);
+  max-height: calc(100dvh - 140px);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
@@ -684,7 +706,10 @@
   font-size: 13px;
   line-height: 1.5;
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  transition: all 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s,
+    border-color 0.2s;
 }
 
 .gd-toc a:hover {
@@ -749,7 +774,9 @@
   text-decoration: none;
   border-bottom: 1px solid
     color-mix(in srgb, var(--accent-soft) 30%, transparent);
-  transition: all 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .gd-body a:hover {
@@ -1065,7 +1092,7 @@
 .gd-faq-chevron {
   flex-shrink: 0;
   color: var(--accent-soft);
-  transition: transform 0.25s;
+  transition: transform 0.2s;
 }
 
 .gd-faq-item[open] .gd-faq-chevron {
@@ -1102,7 +1129,10 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   text-decoration: none;
-  transition: all 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    transform 0.2s;
 }
 
 .gd-nav-card:hover {

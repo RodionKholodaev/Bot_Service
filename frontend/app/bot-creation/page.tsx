@@ -131,7 +131,7 @@ const CustomSelect = ({
         size={14}
         style={{
           transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-          transition: '0.2s',
+          transition: 'transform 0.2s',
         }}
       />
       {open && (

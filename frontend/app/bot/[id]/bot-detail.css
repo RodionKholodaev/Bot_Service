@@ -9,7 +9,7 @@
    клиентской навигации (та же причина, что у stats.css). */
 
 .bd-page {
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -71,7 +71,9 @@
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
   display: inline-flex;
   align-items: center;
 }
@@ -129,7 +131,10 @@
   border-radius: var(--radius-lg);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -371,7 +376,13 @@
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s,
+    opacity 0.2s;
   font-family: inherit;
 }
 
@@ -755,7 +766,9 @@
   display: block;
   height: 100%;
   border-radius: var(--radius-pill);
-  transition: width 0.4s ease;
+  /* Заполнение — scaleX из page.tsx, а не width: не пересчитывает раскладку */
+  transform-origin: left;
+  transition: transform 0.4s ease;
 }
 
 /* ===== НИЖНЯЯ ПАНЕЛЬ ССЫЛОК ===== */
@@ -841,7 +854,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  z-index: 100;
+  z-index: var(--z-modal);
 }
 
 .bd-modal {

@@ -28,7 +28,7 @@ export default function GlobalError({
         className={GeistSans.className}
         style={{
           margin: 0,
-          minHeight: '100vh',
+          minHeight: '100dvh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

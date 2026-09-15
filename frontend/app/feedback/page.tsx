@@ -157,7 +157,7 @@ const FeedbackPage = () => {
             </span>
           </div>
           <Link href="/settings">
-            <button className="btn-icon">
+            <button className="btn-icon" aria-label="Настройки">
               <Settings size={20} />
             </button>
           </Link>
@@ -369,7 +369,7 @@ const FeedbackPage = () => {
         }
 
         .dashboard-container {
-          height: 100vh;
+          height: 100dvh;
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -416,7 +416,9 @@ const FeedbackPage = () => {
           border-radius: var(--radius-md);
           font-size: 14px;
           font-weight: 500;
-          transition: all 0.2s;
+          transition:
+            color 0.2s,
+            background-color 0.2s;
           display: inline-flex;
           align-items: center;
         }
@@ -486,7 +488,10 @@ const FeedbackPage = () => {
           border-radius: var(--radius-lg);
           color: var(--text-secondary);
           cursor: pointer;
-          transition: all 0.2s;
+          transition:
+            background-color 0.2s,
+            color 0.2s,
+            transform 0.2s;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -596,7 +601,11 @@ const FeedbackPage = () => {
           font-weight: 600;
           font-size: 15px;
           cursor: pointer;
-          transition: all 0.3s;
+          transition:
+            background-color 0.2s,
+            color 0.2s,
+            transform 0.2s,
+            box-shadow 0.2s;
           border: none;
           font-family: inherit;
         }
@@ -701,7 +710,10 @@ const FeedbackPage = () => {
           color: var(--text);
           font-size: 15px;
           font-family: inherit;
-          transition: all 0.2s;
+          transition:
+            border-color 0.2s,
+            background-color 0.2s,
+            box-shadow 0.2s;
         }
 
         .field-textarea {
@@ -715,8 +727,8 @@ const FeedbackPage = () => {
           color: var(--text-dim);
         }
 
-        .field-input:focus,
-        .field-textarea:focus {
+        .field-input:focus-visible,
+        .field-textarea:focus-visible {
           outline: none;
           border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent);
           background: color-mix(in srgb, var(--accent-soft) 5%, transparent);
@@ -750,7 +762,11 @@ const FeedbackPage = () => {
           font-weight: 500;
           font-family: inherit;
           cursor: pointer;
-          transition: all 0.2s;
+          transition:
+            background-color 0.2s,
+            border-color 0.2s,
+            color 0.2s,
+            transform 0.2s;
         }
 
         .topic-chip:hover {
@@ -830,14 +846,7 @@ const FeedbackPage = () => {
           animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
+        /* @keyframes spin — в globals.css */
 
         /* ── Success ─────────────────────────────── */
         .success-state {

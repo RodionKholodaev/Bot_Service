@@ -444,7 +444,7 @@ const StatsPage: React.FC = () => {
             <span>{serviceBalance.toLocaleString('ru-RU')} ₽</span>
           </div>
           <Link href="/settings">
-            <button className="stats-icon-btn">
+            <button className="stats-icon-btn" aria-label="Настройки">
               <Settings size={20} />
             </button>
           </Link>
@@ -630,7 +630,9 @@ const StatsPage: React.FC = () => {
                       <div className="metric-bar">
                         <div
                           className="metric-bar-fill"
-                          style={{ width: `${metrics.winrate}%` }}
+                          style={{
+                            transform: `scaleX(${metrics.winrate / 100})`,
+                          }}
                         />
                       </div>
                     </div>

@@ -21,11 +21,11 @@
 
 /* ── Сдвиг страницы ────────────────────────────────────────────────────── */
 /* На широком экране форма не перекрывается: она уезжает влево и остаётся
-   целиком видимой. На узком — панель ложится поверх с затемнением. */
-
-.create-bot-page {
-  transition: padding-right 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-}
+   целиком видимой. На узком — панель ложится поверх с затемнением.
+   Отступ меняется без анимации: padding-right пересчитывает раскладку
+   формы на каждом кадре, а transform здесь не замена — он сдвинул бы
+   форму, не сузив её, и правый край ушёл бы под панель. Движение даёт
+   сама панель (transform у .ai-panel). */
 
 @media (min-width: 1180px) {
   /* Ровно ширина панели, без запаса: правый край области прокрутки должен
@@ -45,7 +45,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 55;
+    z-index: var(--z-overlay);
     background: var(--overlay);
     backdrop-filter: blur(2px);
     animation: ai-fade 0.25s ease-out;
@@ -58,7 +58,7 @@
   position: fixed;
   right: 0;
   top: 50%;
-  z-index: 56;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -87,7 +87,11 @@
   color: var(--accent-softer);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: all 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .ai-launcher__tab:hover {
@@ -167,7 +171,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 60;
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   width: min(var(--ai-width), 100vw);
@@ -236,7 +240,9 @@
   background: transparent;
   color: var(--ai-muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .ai-panel__actions button:hover {
@@ -307,7 +313,11 @@
   font-size: 13px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.16s;
+  transition:
+    border-color 0.16s,
+    background-color 0.16s,
+    color 0.16s,
+    transform 0.16s;
 }
 
 .ai-welcome__prompts button:hover {
@@ -511,7 +521,10 @@
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .ai-suggestion__apply:hover:not(:disabled) {
@@ -584,7 +597,10 @@
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s,
+    color 0.15s;
 }
 
 .ai-suggestions__apply-all:hover:not(:disabled) {
@@ -695,12 +711,16 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--bg-subtle);
-  transition: all 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .ai-composer__field:focus-within {
   border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent);
   background: var(--bg-hover);
+  box-shadow: var(--ring);
 }
 
 .ai-composer__field textarea {
@@ -708,6 +728,7 @@
   max-height: 120px;
   padding: 4px 0;
   border: none;
+  /* фокус показывает обёртка: .ai-composer__field:focus-within */
   outline: none;
   background: transparent;
   color: var(--ai-text);
@@ -748,7 +769,9 @@
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.15s;
+  transition:
+    background-color 0.15s,
+    opacity 0.15s;
 }
 
 .ai-composer__send {
@@ -783,7 +806,10 @@
   color: var(--ai-dim);
   font-size: 11px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .ai-websearch:hover {
@@ -869,7 +895,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ai-panel,
-  .create-bot-page,
   .ai-launcher,
   .ai-msg,
   .ai-phase {

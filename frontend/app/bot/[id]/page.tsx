@@ -369,7 +369,11 @@ export default function BotDetailPage() {
           </span>
         </div>
         <Link href="/settings">
-          <button className="bd-icon-btn" title="Настройки аккаунта">
+          <button
+            className="bd-icon-btn"
+            title="Настройки аккаунта"
+            aria-label="Настройки аккаунта"
+          >
             <Settings size={20} />
           </button>
         </Link>
@@ -821,7 +825,7 @@ export default function BotDetailPage() {
               <div className="bd-risk-bar">
                 <span
                   style={{
-                    width: `${derived.riskScore}%`,
+                    transform: `scaleX(${derived.riskScore / 100})`,
                     background: derived.riskColor,
                   }}
                 />

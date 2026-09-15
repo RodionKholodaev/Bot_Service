@@ -352,11 +352,15 @@ const TradingBotDashboard = () => {
                 : `${serviceBalance.toLocaleString('ru-RU')} ₽`}
             </span>
           </div>
-          <button className="btn-icon" onClick={() => setShowTopUpModal(true)}>
+          <button
+            className="btn-icon"
+            onClick={() => setShowTopUpModal(true)}
+            aria-label="Пополнить баланс"
+          >
             <Plus size={20} />
           </button>
           <Link href="/settings">
-            <button className="btn-icon">
+            <button className="btn-icon" aria-label="Настройки">
               <Settings size={20} />
             </button>
           </Link>
@@ -575,6 +579,7 @@ const TradingBotDashboard = () => {
                             <button
                               className="btn-icon-small"
                               title="Настройки"
+                              aria-label="Настройки"
                             >
                               <Settings size={16} />
                             </button>
@@ -584,6 +589,7 @@ const TradingBotDashboard = () => {
                             onClick={() => askDeleteConfirm(bot.id)}
                             disabled={isPending}
                             title="Удалить"
+                            aria-label="Удалить"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -816,7 +822,7 @@ const TradingBotDashboard = () => {
         }
 
         .dashboard-container {
-          height: 100vh;
+          height: 100dvh;
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -856,7 +862,9 @@ const TradingBotDashboard = () => {
           border-radius: var(--radius-md);
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition:
+            background-color 0.2s,
+            transform 0.2s;
         }
 
         .btn-alert-action {
@@ -920,7 +928,9 @@ const TradingBotDashboard = () => {
           border-radius: var(--radius-md);
           font-size: 14px;
           font-weight: 500;
-          transition: all 0.2s;
+          transition:
+            color 0.2s,
+            background-color 0.2s;
           display: inline-flex;
           align-items: center;
         }
@@ -950,7 +960,9 @@ const TradingBotDashboard = () => {
           font-weight: 600;
           font-size: 15px;
           cursor: pointer;
-          transition: all 0.3s;
+          transition:
+            transform 0.2s,
+            box-shadow 0.2s;
           border: 1.5px solid;
           font-variant-numeric: tabular-nums;
         }
@@ -1009,7 +1021,10 @@ const TradingBotDashboard = () => {
           border-radius: var(--radius-lg);
           color: var(--text-secondary);
           cursor: pointer;
-          transition: all 0.2s;
+          transition:
+            background-color 0.2s,
+            color 0.2s,
+            transform 0.2s;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1103,7 +1118,10 @@ const TradingBotDashboard = () => {
           font-weight: 600;
           font-size: 15px;
           cursor: pointer;
-          transition: all 0.3s;
+          transition:
+            background-color 0.2s,
+            transform 0.2s,
+            box-shadow 0.2s;
           border: none;
         }
 
@@ -1179,7 +1197,10 @@ const TradingBotDashboard = () => {
           padding: 24px;
           display: flex;
           gap: 16px;
-          transition: all 0.3s;
+          transition:
+            transform 0.2s,
+            border-color 0.2s,
+            box-shadow 0.2s;
           animation: slideUp 0.6s ease-out;
           animation-fill-mode: both;
         }
@@ -1278,7 +1299,7 @@ const TradingBotDashboard = () => {
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: color 0.2s;
         }
 
         .btn-text:hover {
@@ -1297,7 +1318,9 @@ const TradingBotDashboard = () => {
           border: 1px solid var(--border-subtle);
           border-radius: var(--radius-xl);
           padding: 24px;
-          transition: all 0.3s;
+          transition:
+            border-color 0.2s,
+            transform 0.2s;
         }
 
         .bot-card:hover {
@@ -1374,7 +1397,10 @@ const TradingBotDashboard = () => {
           border-radius: var(--radius-md);
           color: var(--text-secondary);
           cursor: pointer;
-          transition: all 0.2s;
+          transition:
+            background-color 0.2s,
+            color 0.2s,
+            opacity 0.2s;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1421,7 +1447,9 @@ const TradingBotDashboard = () => {
           font-size: 13px;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition:
+            background-color 0.2s,
+            transform 0.2s;
         }
 
         .btn-bot-details:hover {
@@ -1473,7 +1501,10 @@ const TradingBotDashboard = () => {
           border: 1px solid var(--border-subtle);
           border-radius: var(--radius-xl);
           cursor: pointer;
-          transition: all 0.3s;
+          transition:
+            background-color 0.2s,
+            border-color 0.2s,
+            transform 0.2s;
           text-align: left;
           color: inherit;
         }
@@ -1521,7 +1552,7 @@ const TradingBotDashboard = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 1000;
+          z-index: var(--z-modal);
           animation: fadeIn 0.2s ease-out;
         }
 
@@ -1562,7 +1593,10 @@ const TradingBotDashboard = () => {
           font-size: 18px;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition:
+            background-color 0.2s,
+            border-color 0.2s,
+            color 0.2s;
           font-variant-numeric: tabular-nums;
         }
 
@@ -1613,9 +1647,10 @@ const TradingBotDashboard = () => {
           font-weight: 600;
         }
 
-        .custom-amount input:focus {
+        .custom-amount input:focus-visible {
           outline: none;
           border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent);
+          box-shadow: var(--ring);
         }
 
         .modal-actions {
@@ -1657,14 +1692,7 @@ const TradingBotDashboard = () => {
           animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
+        /* @keyframes spin — в globals.css */
 
         /* Bot status indicator (по новым статусам) */
         .bot-status-indicator.running {
@@ -1830,7 +1858,10 @@ const TradingBotDashboard = () => {
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition:
+            background-color 0.2s,
+            transform 0.2s,
+            opacity 0.2s;
           flex: 1;
         }
         .btn-danger:hover:not(:disabled) {

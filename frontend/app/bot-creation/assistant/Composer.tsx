@@ -61,6 +61,7 @@ export const Composer = ({
             className="ai-composer__stop"
             onClick={onStop}
             title="Остановить"
+            aria-label="Остановить ответ"
           >
             <Square size={14} />
           </button>
@@ -71,6 +72,7 @@ export const Composer = ({
             onClick={submit}
             disabled={!value.trim()}
             title="Отправить (Enter)"
+            aria-label="Отправить"
           >
             <Send size={15} />
           </button>

@@ -8,7 +8,7 @@
    страницами после клиентской навигации. */
 
 .stats-page {
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -70,7 +70,9 @@
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
   display: inline-flex;
   align-items: center;
 }
@@ -128,7 +130,10 @@
   border-radius: var(--radius-lg);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -288,7 +293,10 @@
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
   font-family: inherit;
 }
 
@@ -329,7 +337,7 @@
      должен оставаться под рукой */
   position: sticky;
   top: 16px;
-  max-height: calc(100vh - 160px);
+  max-height: calc(100dvh - 160px);
   display: flex;
   flex-direction: column;
   background: var(--bg-card);
@@ -364,7 +372,10 @@
   background: var(--bg-subtle);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
   text-align: left;
   font-size: 14px;
   font-weight: 500;
@@ -407,7 +418,9 @@
   border-radius: var(--radius-lg);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
   margin-bottom: 4px;
 }
 
@@ -522,7 +535,10 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: 20px;
-  transition: all 0.3s;
+  transition:
+    transform 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
   animation: statsSlideUp 0.6s ease-out both;
 }
 
@@ -599,7 +615,9 @@
   height: 100%;
   background: var(--accent);
   border-radius: var(--radius-sm);
-  transition: width 0.4s ease;
+  /* Заполнение — scaleX из page.tsx, а не width: не пересчитывает раскладку */
+  transform-origin: left;
+  transition: transform 0.4s ease;
 }
 
 /* ===== CARDS / CHARTS ===== */
@@ -614,7 +632,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: 24px;
-  transition: border-color 0.3s;
+  transition: border-color 0.2s;
   animation: statsSlideUp 0.6s ease-out both;
   min-width: 0;
 }

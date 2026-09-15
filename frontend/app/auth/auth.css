@@ -1,6 +1,6 @@
 /* ===== AUTH PAGE ===== */
 .auth-page {
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--bg-page);
   display: flex;
@@ -64,7 +64,7 @@
   position: fixed;
   top: 24px;
   left: 24px;
-  z-index: 10;
+  z-index: var(--z-sticky);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -76,7 +76,9 @@
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .auth-back:hover {
@@ -90,7 +92,7 @@
    карточкой — он встал бы сбоку от неё. */
 .auth-inner {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
   width: 100%;
   max-width: 440px;
   display: flex;
@@ -170,7 +172,7 @@
 
 .auth-card {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
   width: 100%;
   max-width: 440px;
   background: var(--bg-elevated);
@@ -237,7 +239,9 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   background: transparent;
   color: var(--text-muted);
 }
@@ -275,7 +279,10 @@
   border-radius: var(--radius-lg);
   color: var(--text);
   font-size: 15px;
-  transition: all 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
   outline: none;
   box-sizing: border-box;
 }
@@ -284,7 +291,7 @@
   color: var(--text-dim);
 }
 
-.auth-input:focus {
+.auth-input:focus-visible {
   border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent);
   background: var(--bg-hover);
   box-shadow: var(--ring);
@@ -350,7 +357,11 @@
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s,
+    opacity 0.2s;
   box-shadow: var(--shadow-sm);
   margin-top: 4px;
 }
@@ -371,14 +382,7 @@
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* @keyframes spin — в globals.css */
 
 /* Switch hint */
 .auth-switch {
@@ -450,7 +454,10 @@
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    opacity 0.2s;
   margin-top: 4px;
 }
 
@@ -497,7 +504,9 @@
   height: 100%;
   border-radius: var(--radius-pill);
   background: var(--accent);
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Заполнение — scaleX из page.tsx, а не width: не пересчитывает раскладку */
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ===== RESPONSIVE ===== */

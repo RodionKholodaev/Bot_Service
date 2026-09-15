@@ -73,11 +73,21 @@ export const AssistantPanel = ({
 
           <div className="ai-panel__actions">
             {chat.messages.length > 0 && (
-              <button type="button" onClick={chat.reset} title="Начать заново">
+              <button
+                type="button"
+                onClick={chat.reset}
+                title="Начать заново"
+                aria-label="Начать заново"
+              >
                 <RotateCcw size={15} />
               </button>
             )}
-            <button type="button" onClick={onClose} title="Свернуть (Esc)">
+            <button
+              type="button"
+              onClick={onClose}
+              title="Свернуть (Esc)"
+              aria-label="Свернуть помощника"
+            >
               <X size={17} />
             </button>
           </div>

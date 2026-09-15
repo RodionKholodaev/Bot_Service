@@ -43,6 +43,7 @@ export const AssistantLauncher = ({ open, onOpen }: Props) => {
             type="button"
             className="ai-launcher__hint-close"
             onClick={dismissHint}
+            aria-label="Закрыть подсказку"
           >
             <X size={12} />
           </button>

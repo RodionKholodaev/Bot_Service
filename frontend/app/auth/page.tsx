@@ -499,7 +499,7 @@ const AuthContent = () => {
                   >
                     <div
                       className="auth-progress-fill"
-                      style={{ width: `${(step / LAST_STEP) * 100}%` }}
+                      style={{ transform: `scaleX(${step / LAST_STEP})` }}
                     />
                   </div>
                 </div>
