@@ -26,7 +26,7 @@ import { useRouter } from 'next/navigation';
 import { MIN_SERVICE_BALANCE_RUB, presetLabel } from '@/lib/constants';
 import { apiFetch } from '@/lib/api';
 import { SiteFooter } from '@/app/components/SiteFooter';
-import { formatSignedUsd, profitClass } from '@/lib/money';
+import { formatSignedUsd } from '@/lib/money';
 // ── Типы под BotPublic с бэка ─────────────────────────────
 type BotStatus = 'created' | 'starting' | 'running' | 'stopped' | 'error';
 
@@ -433,9 +433,7 @@ const TradingBotDashboard = () => {
               </div>
               <div className="stat-content">
                 <div className="stat-label">Прибыль за неделю</div>
-                <div
-                  className={`stat-value ${profitClass(stats.weeklyProfit)}`}
-                >
+                <div className="stat-value">
                   {formatSignedUsd(stats.weeklyProfit)}
                 </div>
               </div>
@@ -520,9 +518,6 @@ const TradingBotDashboard = () => {
                     >
                       <div className="bot-header">
                         <div className="bot-info">
-                          <div
-                            className={`bot-status-indicator ${bot.status}`}
-                          ></div>
                           <div className="bot-title-block">
                             <div className="bot-title-row">
                               <h3>{bot.name}</h3>
@@ -597,7 +592,6 @@ const TradingBotDashboard = () => {
                       </div>
 
                       <div className={`bot-status-row status-${bot.status}`}>
-                        <span className="status-dot"></span>
                         <span className="status-text">
                           {statusLabel[bot.status]}
                         </span>
@@ -617,9 +611,7 @@ const TradingBotDashboard = () => {
                       <div className="bot-stats">
                         <div className="bot-stat">
                           <span className="bot-stat-label">Прибыль</span>
-                          <span
-                            className={`bot-stat-value ${profitClass(profit)}`}
-                          >
+                          <span className="bot-stat-value">
                             {formatSignedUsd(profit)}
                           </span>
                         </div>
@@ -1264,14 +1256,6 @@ const TradingBotDashboard = () => {
           font-variant-numeric: tabular-nums;
         }
 
-        .stat-value.profit {
-          color: var(--success);
-        }
-
-        .stat-value.loss {
-          color: var(--danger);
-        }
-
         /* Bots Section */
         .bots-section {
           margin-bottom: 40px;
@@ -1339,29 +1323,6 @@ const TradingBotDashboard = () => {
           display: flex;
           align-items: flex-start;
           gap: 12px;
-        }
-
-        .bot-status-indicator {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          margin-top: 4px;
-          flex-shrink: 0;
-        }
-
-        .bot-status-indicator.active {
-          background: var(--success);
-          animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
         }
 
         .bot-info h3 {
@@ -1694,33 +1655,6 @@ const TradingBotDashboard = () => {
 
         /* @keyframes spin — в globals.css */
 
-        /* Bot status indicator (по новым статусам) */
-        .bot-status-indicator.running {
-          background: var(--success-strong);
-          animation: pulse 2s ease-in-out infinite;
-        }
-        .bot-status-indicator.starting {
-          background: var(--warning);
-          animation: pulse 1s ease-in-out infinite;
-        }
-        .bot-status-indicator.stopped,
-        .bot-status-indicator.created {
-          background: var(--text-muted);
-        }
-        .bot-status-indicator.error {
-          background: var(--danger-strong);
-        }
-
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-
         /* Bot card подсветка по статусу */
         .bot-card.status-error {
           border-color: color-mix(
@@ -1776,39 +1710,19 @@ const TradingBotDashboard = () => {
           background: var(--bg-subtle);
         }
 
-        .bot-status-row .status-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-
         .bot-status-row.status-running {
           color: var(--success);
         }
-        .bot-status-row.status-running .status-dot {
-          background: var(--success-strong);
-        }
         .bot-status-row.status-starting {
           color: var(--warning);
-        }
-        .bot-status-row.status-starting .status-dot {
-          background: var(--warning);
         }
         .bot-status-row.status-stopped,
         .bot-status-row.status-created {
           color: var(--text-secondary);
         }
-        .bot-status-row.status-stopped .status-dot,
-        .bot-status-row.status-created .status-dot {
-          background: var(--text-muted);
-        }
         .bot-status-row.status-error {
           color: var(--danger);
           background: color-mix(in srgb, var(--danger-strong) 10%, transparent);
-        }
-        .bot-status-row.status-error .status-dot {
-          background: var(--danger-strong);
         }
 
         .status-error-msg {
@@ -1834,14 +1748,6 @@ const TradingBotDashboard = () => {
             transparent
           ) !important;
           color: var(--danger) !important;
-        }
-
-        .bot-stat-value.profit {
-          color: var(--success);
-        }
-
-        .bot-stat-value.loss {
-          color: var(--danger);
         }
 
         /* Кнопка удаления в модалке */
