@@ -412,7 +412,6 @@ const StatsPage: React.FC = () => {
 
   const selectedBot =
     view === 'all' ? null : sidebarBots.find((b) => b.bot_id === view);
-  const pnlClass = pnlTone(metrics?.profit);
 
   return (
     <div className="stats-page">
@@ -546,9 +545,7 @@ const StatsPage: React.FC = () => {
                           x{b.leverage}, {presetLabel(b.strategy_preset)}
                         </div>
                       </div>
-                      <div className={`bot-row-pnl ${pnlTone(b.profit)}`}>
-                        {formatUsdt(b.profit)}
-                      </div>
+                      <div className="bot-row-pnl">{formatUsdt(b.profit)}</div>
                     </div>
                   ))
                 ) : (
@@ -609,7 +606,7 @@ const StatsPage: React.FC = () => {
                         </span>
                         <span className="metric-label">Общий P&L</span>
                       </div>
-                      <div className={`metric-value ${pnlClass}`}>
+                      <div className="metric-value">
                         {formatUsdt(metrics.profit)}
                       </div>
                       <div className="metric-sub">За выбранный период</div>
