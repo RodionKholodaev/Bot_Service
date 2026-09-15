@@ -22,7 +22,7 @@ export const FIELD_META: Record<SuggestableField, FieldMeta> = {
   dryRun: {
     label: 'Режим торговли',
     step: 1,
-    format: (v) => (v ? '🧪 Dry Run' : '🔴 Боевой'),
+    format: (v) => (v ? 'Dry Run' : 'Боевой'),
   },
   stakeAmount: { label: 'Депозит бота', step: 1, format: (v) => `${v} USDT` },
   balanceRatio: {
@@ -35,7 +35,7 @@ export const FIELD_META: Record<SuggestableField, FieldMeta> = {
   algorithm: {
     label: 'Направление',
     step: 2,
-    format: (v) => (v === 'long' ? '📈 Лонг' : '📉 Шорт'),
+    format: (v) => (v === 'long' ? 'Лонг' : 'Шорт'),
   },
   strategyPreset: {
     label: 'Стратегия',

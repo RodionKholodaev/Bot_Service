@@ -46,6 +46,7 @@ import {
 } from '@/lib/constants';
 import type { BotPublic, FilterRule } from '@/lib/types';
 import { SiteFooter } from '@/app/components/SiteFooter';
+import { formatSignedUsd, profitClass } from '@/lib/money';
 import './bot-detail.css';
 
 // ── Типы ответов бэкенда, нужные только этой странице ─────
@@ -465,13 +466,9 @@ export default function BotDetailPage() {
                 </div>
                 <div className="bd-hero-meta">
                   <strong>{bot.pair}</strong>
-                  <span className="bd-dot">•</span>
                   <span>{directionLabel}</span>
-                  <span className="bd-dot">•</span>
                   <span>x{bot.leverage}</span>
-                  <span className="bd-dot">•</span>
                   <span>{presetLabel(bot.strategy_preset)}</span>
-                  <span className="bd-dot">•</span>
                   <span>создан {fmtDate(bot.created_at)}</span>
                 </div>
               </div>
@@ -522,10 +519,8 @@ export default function BotDetailPage() {
             <div className="bd-kpi-row">
               <div className="bd-kpi">
                 <div className="bd-kpi-label">P&amp;L за всё время</div>
-                <div
-                  className={`bd-kpi-value ${profit >= 0 ? 'profit' : 'loss'}`}
-                >
-                  {profit >= 0 ? '+' : '−'}${Math.abs(profit).toFixed(2)}
+                <div className={`bd-kpi-value ${profitClass(profit)}`}>
+                  {formatSignedUsd(profit)}
                 </div>
               </div>
               <div className="bd-kpi">
@@ -600,9 +595,7 @@ export default function BotDetailPage() {
               <div className="bd-rows">
                 <div className="bd-row">
                   <span className="bd-row-label">Режим торговли</span>
-                  <span
-                    className={`bd-row-value ${bot.dry_run ? 'accent' : 'loss'}`}
-                  >
+                  <span className="bd-row-value">
                     {bot.dry_run ? 'Dry Run (демо)' : 'Боевой'}
                   </span>
                 </div>
@@ -616,11 +609,7 @@ export default function BotDetailPage() {
                 </div>
                 <div className="bd-row">
                   <span className="bd-row-label">Направление</span>
-                  <span
-                    className={`bd-row-value ${bot.direction === 'long' ? 'profit' : 'loss'}`}
-                  >
-                    {directionLabel}
-                  </span>
+                  <span className="bd-row-value">{directionLabel}</span>
                 </div>
               </div>
             </section>
@@ -643,13 +632,13 @@ export default function BotDetailPage() {
                 <div className="bd-row">
                   <span className="bd-row-label">Размер одной сделки</span>
                   <span className="bd-row-value">
-                    {fmtMoney(derived.riskPercent)}% ·{' '}
-                    {fmtMoney(derived.margin)} USDT
+                    {fmtMoney(derived.margin)} USDT (
+                    {fmtMoney(derived.riskPercent)}%)
                   </span>
                 </div>
                 <div className="bd-row">
                   <span className="bd-row-label">Кредитное плечо</span>
-                  <span className="bd-row-value accent">x{bot.leverage}</span>
+                  <span className="bd-row-value">x{bot.leverage}</span>
                 </div>
                 <div className="bd-row">
                   <span className="bd-row-label">Объём позиции</span>
@@ -801,7 +790,7 @@ export default function BotDetailPage() {
                 </div>
                 <div className="bd-row">
                   <span className="bd-row-label">Комиссия биржи за круг</span>
-                  <span className="bd-row-value warn">
+                  <span className="bd-row-value">
                     ≈ {fmtMoney(derived.feeOfMargin)}% от денег в сделке
                   </span>
                 </div>
@@ -813,7 +802,7 @@ export default function BotDetailPage() {
                 </div>
                 <div className="bd-row">
                   <span className="bd-row-label">Ликвидация примерно при</span>
-                  <span className="bd-row-value loss">
+                  <span className="bd-row-value">
                     {fmtMoney(derived.liquidationMove)}% движения цены против
                     позиции
                   </span>

@@ -50,7 +50,7 @@ export const LegalDoc = ({ title, version, href, children }: LegalDocProps) => (
       <article className="legal-doc">
         <h1>{title}</h1>
         <p className="legal-meta">
-          Сервис {SERVICE_NAME} ({SERVICE_DOMAIN}) · редакция от{' '}
+          Сервис {SERVICE_NAME} ({SERVICE_DOMAIN}), редакция от{' '}
           {formatLegalVersion(version)}
         </p>
         {children}

@@ -102,7 +102,7 @@
     rgba(45, 61, 102, 0.98) 0%,
     rgba(28, 39, 68, 0.98) 100%
   );
-  box-shadow: -6px 0 28px rgba(59, 130, 246, 0.25);
+  box-shadow: -6px 0 28px rgba(0, 0, 0, 0.45);
 }
 
 .ai-launcher__label {
@@ -282,13 +282,8 @@
   height: 44px;
   margin-bottom: 14px;
   border-radius: 14px;
-  background: linear-gradient(
-    135deg,
-    rgba(96, 165, 250, 0.25) 0%,
-    rgba(139, 92, 246, 0.2) 100%
-  );
+  background: rgba(96, 165, 250, 0.12);
   color: #93c5fd;
-  box-shadow: 0 0 24px rgba(96, 165, 250, 0.18);
 }
 
 .ai-welcome h3 {
@@ -598,7 +593,7 @@
 }
 
 .ai-suggestions__apply-all:hover:not(:disabled) {
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .ai-suggestions__apply-all:disabled {

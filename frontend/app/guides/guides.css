@@ -160,13 +160,13 @@
   text-decoration: none;
   color: #fff;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   transition: all 0.2s;
 }
 
 .gd-login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 /* ===== SCROLL AREA ===== */
@@ -218,12 +218,8 @@
 /* ===== HERO ===== */
 .gd-hero {
   padding: 32px;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.1) 0%,
-    rgba(147, 51, 234, 0.1) 100%
-  );
-  border: 1px solid rgba(96, 165, 250, 0.2);
+  background: rgba(26, 31, 53, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   animation: gdFadeIn 0.6s ease-out;
 }
@@ -232,10 +228,7 @@
   font-size: 32px;
   font-weight: 700;
   margin-bottom: 10px;
-  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #e4e7f0;
 }
 
 .gd-hero-sub {
@@ -507,12 +500,8 @@
   justify-content: space-between;
   gap: 20px;
   padding: 26px 30px;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.08) 0%,
-    rgba(147, 51, 234, 0.08) 100%
-  );
-  border: 1px solid rgba(96, 165, 250, 0.2);
+  background: rgba(26, 31, 53, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 18px;
 }
 
@@ -554,12 +543,12 @@
 .gd-btn-primary {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: #fff;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .gd-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .gd-btn-secondary {
@@ -613,12 +602,8 @@
 /* Заголовок статьи */
 .gd-article-head {
   padding: 28px 32px;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.1) 0%,
-    rgba(147, 51, 234, 0.1) 100%
-  );
-  border: 1px solid rgba(96, 165, 250, 0.2);
+  background: rgba(26, 31, 53, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   margin-bottom: 28px;
   animation: gdFadeIn 0.5s ease-out;
@@ -629,10 +614,7 @@
   font-weight: 700;
   line-height: 1.25;
   margin-bottom: 10px;
-  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #e4e7f0;
 }
 
 .gd-article-desc {

@@ -18,6 +18,8 @@ import {
   Loader2,
   DollarSign,
   Calculator,
+  FlaskConical,
+  X,
 } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api';
 import {
@@ -580,7 +582,10 @@ const CreateBotPage = () => {
               className={`mode-btn ${formData.dryRun ? 'mode-btn--active mode-btn--dry' : ''}`}
               onClick={() => handleDryRunToggle(true)}
             >
-              🧪 Dry Run
+              <span className="mode-title">
+                <FlaskConical size={16} aria-hidden="true" />
+                Dry Run
+              </span>
               <span className="mode-desc">
                 Тестовый режим — без реальных денег
               </span>
@@ -590,7 +595,10 @@ const CreateBotPage = () => {
               className={`mode-btn ${!formData.dryRun ? 'mode-btn--active mode-btn--live' : ''}`}
               onClick={() => handleDryRunToggle(false)}
             >
-              🔴 Боевой
+              <span className="mode-title">
+                <DollarSign size={16} aria-hidden="true" />
+                Боевой
+              </span>
               <span className="mode-desc">Реальная торговля</span>
             </button>
           </div>
@@ -1030,11 +1038,12 @@ const CreateBotPage = () => {
 
               <button
                 className="filter-remove-btn"
+                aria-label="Удалить условие"
                 onClick={() =>
                   setFilters(formData.filters.filter((_, i) => i !== idx))
                 }
               >
-                ✕
+                <X size={14} aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -1292,7 +1301,7 @@ const CreateBotPage = () => {
           </div>
           <div className="summary-row">
             <span>Режим:</span>
-            <strong>{formData.dryRun ? '🧪 Dry Run' : '🔴 Боевой'}</strong>
+            <strong>{formData.dryRun ? 'Dry Run' : 'Боевой'}</strong>
           </div>
           <div className="summary-row">
             <span>API-ключ:</span>
@@ -1329,9 +1338,7 @@ const CreateBotPage = () => {
           </div>
           <div className="summary-row">
             <span>Направление:</span>
-            <strong>
-              {formData.algorithm === 'long' ? '📈 Лонг' : '📉 Шорт'}
-            </strong>
+            <strong>{formData.algorithm === 'long' ? 'Лонг' : 'Шорт'}</strong>
           </div>
           <div className="summary-row">
             <span>Стратегия:</span>

@@ -32,37 +32,31 @@ const LandingPage = () => {
       icon: Zap,
       title: 'Быстрый старт',
       desc: 'Запустите первого бота за 5 минут — без знания программирования и технического анализа.',
-      color: '#f59e0b',
     },
     {
       icon: BarChart2,
       title: 'Пять индикаторов',
       desc: 'RSI, CCI, MFI, Bollinger %B и ADX. Возьмите готовый пресет или соберите условия входа сами.',
-      color: '#60a5fa',
     },
     {
       icon: Shield,
       title: 'Take Profit / Stop Loss',
       desc: 'Гибкие условия выхода: фиксированный SL, трейлинг-стоп или торговля без стопа.',
-      color: '#10b981',
     },
     {
       icon: Settings,
       title: 'Управление ботами',
       desc: 'Запуск, остановка, мониторинг состояния и история сделок — всё в одном месте.',
-      color: '#a78bfa',
     },
     {
       icon: Lock,
       title: 'Безопасность ключей',
       desc: 'API-ключи хранятся в зашифрованном виде и используются только для торговли.',
-      color: '#f472b6',
     },
     {
       icon: Globe,
-      title: 'Bybit & Binance',
-      desc: 'Поддержка ведущих криптобирж. Торговля на фьючерсах с настраиваемым плечом.',
-      color: '#34d399',
+      title: 'Bybit',
+      desc: 'Торговля фьючерсами на Bybit с настраиваемым плечом.',
     },
   ];
 
@@ -70,7 +64,7 @@ const LandingPage = () => {
     {
       num: '01',
       title: 'Подключите биржу',
-      desc: 'Вставьте API-ключ от Bybit или Binance — это займёт минуту.',
+      desc: 'Вставьте API-ключ от Bybit — это займёт минуту.',
     },
     {
       num: '02',
@@ -150,7 +144,7 @@ const LandingPage = () => {
             <div className="hero-stats">
               <div className="stat-item">
                 <strong>Bybit</strong>
-                <span>& Binance</span>
+                <span>Биржа</span>
               </div>
               <div className="stat-divider" />
               <div className="stat-item">
@@ -170,7 +164,7 @@ const LandingPage = () => {
             <div className="preview-card">
               <div className="preview-header">
                 <div className="preview-dot green" />
-                <span>BTC/USDT • x10 • Long</span>
+                <span>BTC/USDT x10 Long</span>
                 <span className="preview-pnl">+4.2%</span>
               </div>
               <div className="preview-chart">
@@ -233,11 +227,7 @@ const LandingPage = () => {
               {features.map((f) => {
                 const Icon = f.icon;
                 return (
-                  <div
-                    className="feature-card"
-                    key={f.title}
-                    style={{ '--accent': f.color } as React.CSSProperties}
-                  >
+                  <div className="feature-card" key={f.title}>
                     <div className="feature-icon">
                       <Icon size={22} />
                     </div>

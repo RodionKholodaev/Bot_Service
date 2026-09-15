@@ -232,12 +232,8 @@
   align-items: center;
   gap: 20px;
   padding: 28px 32px;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.1) 0%,
-    rgba(147, 51, 234, 0.1) 100%
-  );
-  border: 1px solid rgba(96, 165, 250, 0.2);
+  background: rgba(26, 31, 53, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   animation: statsFadeIn 0.6s ease-out;
 }
@@ -246,15 +242,27 @@
   font-size: 30px;
   font-weight: 700;
   margin-bottom: 8px;
-  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #e4e7f0;
 }
 
 .stats-hero-sub {
   color: #9ca3af;
   font-size: 15px;
+}
+
+/* Параметры выбранного бота — отдельными метками, без символов-разделителей */
+.stats-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stats-hero-tag {
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  font-size: 13px;
+  color: #9ca3af;
 }
 
 /* Две группы кнопок справа в шапке: период и тип ботов */
@@ -302,7 +310,7 @@
 .stats-period-tab.active {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* ===== LAYOUT: сайдбар + контент ===== */
@@ -427,7 +435,6 @@
 
 .bot-row-dot.running {
   background: #10b981;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
   animation: statsPulse 2s ease-in-out infinite;
 }
 
@@ -504,7 +511,6 @@
   height: 6px;
   border-radius: 50%;
   background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
   flex-shrink: 0;
 }
 
@@ -560,23 +566,6 @@
   background: rgba(255, 255, 255, 0.05);
   color: #9ca3af;
   flex-shrink: 0;
-}
-
-.metric-icon.green {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-}
-.metric-icon.red {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-}
-.metric-icon.blue {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-}
-.metric-icon.amber {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
 }
 
 .metric-label {
@@ -793,18 +782,9 @@
   font-size: 11px;
   font-weight: 700;
   display: inline-block;
-}
-
-.dir-badge.long {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-}
-
-.dir-badge.short {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  color: #d1d6e0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* ===== STATES ===== */
@@ -857,16 +837,6 @@
 .text-red {
   color: #f87171;
 }
-.text-blue {
-  color: #60a5fa;
-}
-.text-white {
-  color: #e4e7f0;
-}
-.text-amber {
-  color: #fbbf24;
-}
-
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1100px) {
   .stats-layout {

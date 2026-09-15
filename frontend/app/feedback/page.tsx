@@ -10,6 +10,11 @@ import {
   AlertCircle,
   Loader2,
   Star,
+  Lightbulb,
+  Bug,
+  MousePointerClick,
+  MessageCircle,
+  type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,11 +27,11 @@ import { apiFetch } from '@/lib/api';
 // ── Темы обращения ────────────────────────────────────────
 type TopicKey = 'idea' | 'bug' | 'ux' | 'other';
 
-const TOPICS: { key: TopicKey; label: string; emoji: string }[] = [
-  { key: 'idea', label: 'Идея / предложение', emoji: '💡' },
-  { key: 'bug', label: 'Нашёл(-а) баг', emoji: '🐛' },
-  { key: 'ux', label: 'Неудобно пользоваться', emoji: '🤔' },
-  { key: 'other', label: 'Другое', emoji: '💬' },
+const TOPICS: { key: TopicKey; label: string; icon: LucideIcon }[] = [
+  { key: 'idea', label: 'Идея / предложение', icon: Lightbulb },
+  { key: 'bug', label: 'Нашёл(-а) баг', icon: Bug },
+  { key: 'ux', label: 'Неудобно пользоваться', icon: MousePointerClick },
+  { key: 'other', label: 'Другое', icon: MessageCircle },
 ];
 
 const MESSAGE_MAX = 2000;
@@ -214,7 +219,9 @@ const FeedbackPage = () => {
                         className={`topic-chip ${topic === t.key ? 'active' : ''}`}
                         onClick={() => setTopic(t.key)}
                       >
-                        <span className="topic-emoji">{t.emoji}</span>
+                        <span className="topic-icon">
+                          <t.icon size={16} aria-hidden="true" />
+                        </span>
                         {t.label}
                       </button>
                     ))}
@@ -558,10 +565,7 @@ const FeedbackPage = () => {
           font-weight: 800;
           line-height: 1.25;
           margin-bottom: 16px;
-          background: linear-gradient(90deg, #c7d2fe 0%, #93c5fd 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+          color: #e4e7f0;
         }
 
         .feedback-hero p {
@@ -590,12 +594,12 @@ const FeedbackPage = () => {
         .btn-primary {
           background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
           color: white;
-          box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
 
         .btn-primary:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
         }
 
         .btn-primary:disabled {
@@ -751,9 +755,8 @@ const FeedbackPage = () => {
           color: #60a5fa;
         }
 
-        .topic-emoji {
-          font-size: 16px;
-          line-height: 1;
+        .topic-icon {
+          display: inline-flex;
         }
 
         /* ── Stars ───────────────────────────────── */

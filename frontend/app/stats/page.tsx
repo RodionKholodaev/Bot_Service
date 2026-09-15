@@ -38,6 +38,7 @@ import './stats.css';
 import { apiFetch } from '@/lib/api';
 import { presetLabel } from '@/lib/constants';
 import { SiteFooter } from '@/app/components/SiteFooter';
+import { formatSignedUsd, moneySign } from '@/lib/money';
 
 ChartJS.register(
   CategoryScale,
@@ -145,10 +146,18 @@ const matchesBotType = (bot: BotSummary, type: BotType): boolean =>
 const COLOR_GREEN = '#34d399';
 const COLOR_RED = '#f87171';
 
-const formatPnl = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+const formatPnl = (v: number): string => {
+  const s = moneySign(v);
+  return `${s > 0 ? '+' : s < 0 ? '-' : ''}${Math.abs(v).toFixed(2)}%`;
+};
 // Знак ставим перед $, минус — обязательно: без него убыток выглядел бы как прибыль
-const formatUsdt = (v: number): string =>
-  `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
+const formatUsdt = formatSignedUsd;
+// Цвет только у суммы со знаком: ноль и пустое значение остаются цветом текста
+const pnlTone = (v: number | null | undefined): string => {
+  if (v == null) return '';
+  const s = moneySign(v);
+  return s > 0 ? 'text-green' : s < 0 ? 'text-red' : '';
+};
 
 const formatDuration = (open: string, close: string | null): string => {
   if (!close) return '—';
@@ -317,7 +326,7 @@ const StatsPage: React.FC = () => {
           callbacks: {
             label: (ctx: TooltipItem<'line'>) => {
               const y = ctx.parsed.y ?? 0;
-              return `$${y >= 0 ? '+' : ''}${y.toFixed(2)} USDT`;
+              return `${formatUsdt(y)} USDT`;
             },
           },
         },
@@ -331,8 +340,7 @@ const StatsPage: React.FC = () => {
           ticks: {
             color: '#6b7280',
             font: { size: 10 },
-            callback: (v: string | number) =>
-              `$${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(1)}`,
+            callback: (v: string | number) => formatSignedUsd(Number(v), 1),
           },
           grid: { color: 'rgba(255,255,255,0.05)' },
         },
@@ -392,8 +400,7 @@ const StatsPage: React.FC = () => {
 
   const selectedBot =
     view === 'all' ? null : sidebarBots.find((b) => b.bot_id === view);
-  const pnlClass = (metrics?.profit ?? 0) >= 0 ? 'text-green' : 'text-red';
-  const ddClass = (metrics?.drawdown ?? 0) <= -2 ? 'text-red' : 'text-amber';
+  const pnlClass = pnlTone(metrics?.profit);
 
   return (
     <div className="stats-page">
@@ -439,15 +446,29 @@ const StatsPage: React.FC = () => {
           <section className="stats-hero">
             <div>
               <h1>{selectedBot ? selectedBot.pair : 'Все боты'}</h1>
-              <p className="stats-hero-sub">
-                {selectedBot
-                  ? `x${selectedBot.leverage} · ${selectedBot.direction} · ${presetLabel(selectedBot.strategy_preset)}${selectedBot.dry_run ? ' · Dry-run' : ''} · ${
-                      selectedBot.status === 'running'
-                        ? 'Работает'
-                        : 'Остановлен'
-                    }`
-                  : 'Общая статистика портфеля'}
-              </p>
+              {selectedBot ? (
+                <div className="stats-hero-tags">
+                  <span className="stats-hero-tag">
+                    x{selectedBot.leverage}
+                  </span>
+                  <span className="stats-hero-tag">
+                    {selectedBot.direction}
+                  </span>
+                  <span className="stats-hero-tag">
+                    {presetLabel(selectedBot.strategy_preset)}
+                  </span>
+                  {selectedBot.dry_run && (
+                    <span className="stats-hero-tag">Dry-run</span>
+                  )}
+                  <span className="stats-hero-tag">
+                    {selectedBot.status === 'running'
+                      ? 'Работает'
+                      : 'Остановлен'}
+                  </span>
+                </div>
+              ) : (
+                <p className="stats-hero-sub">Общая статистика портфеля</p>
+              )}
             </div>
             <div className="stats-hero-controls">
               <div className="stats-period">
@@ -513,12 +534,10 @@ const StatsPage: React.FC = () => {
                           )}
                         </div>
                         <div className="bot-row-sub">
-                          x{b.leverage} · {presetLabel(b.strategy_preset)}
+                          x{b.leverage}, {presetLabel(b.strategy_preset)}
                         </div>
                       </div>
-                      <div
-                        className={`bot-row-pnl ${b.profit >= 0 ? 'text-green' : 'text-red'}`}
-                      >
+                      <div className={`bot-row-pnl ${pnlTone(b.profit)}`}>
                         {formatUsdt(b.profit)}
                       </div>
                     </div>
@@ -537,7 +556,7 @@ const StatsPage: React.FC = () => {
                   <div className="sb-status-dot" />
                   {/* «неактивных», а не «остановленных»: сюда же попадают боты в статусах
                       created, starting и error */}
-                  {runningCount} активных · {stoppedCount} неактивн
+                  {runningCount} активных, {stoppedCount} неактивн
                   {stoppedCount === 1 ? 'ый' : 'ых'}
                 </div>
               </div>
@@ -573,9 +592,7 @@ const StatsPage: React.FC = () => {
                   <div className="metrics-row">
                     <div className="metric-card">
                       <div className="metric-head">
-                        <span
-                          className={`metric-icon ${metrics.profit >= 0 ? 'green' : 'red'}`}
-                        >
+                        <span className="metric-icon">
                           {metrics.profit >= 0 ? (
                             <TrendingUp size={18} />
                           ) : (
@@ -592,14 +609,12 @@ const StatsPage: React.FC = () => {
 
                     <div className="metric-card">
                       <div className="metric-head">
-                        <span className="metric-icon blue">
+                        <span className="metric-icon">
                           <Target size={18} />
                         </span>
                         <span className="metric-label">Winrate</span>
                       </div>
-                      <div className="metric-value text-white">
-                        {metrics.winrate}%
-                      </div>
+                      <div className="metric-value">{metrics.winrate}%</div>
                       <div className="metric-bar">
                         <div
                           className="metric-bar-fill"
@@ -610,27 +625,25 @@ const StatsPage: React.FC = () => {
 
                     <div className="metric-card">
                       <div className="metric-head">
-                        <span className="metric-icon blue">
+                        <span className="metric-icon">
                           <Activity size={18} />
                         </span>
                         <span className="metric-label">Всего сделок</span>
                       </div>
-                      <div className="metric-value text-blue">
-                        {metrics.trades}
-                      </div>
+                      <div className="metric-value">{metrics.trades}</div>
                       <div className="metric-sub">
-                        {metrics.wins} прибыль · {metrics.losses} убыток
+                        Прибыльных {metrics.wins}, убыточных {metrics.losses}
                       </div>
                     </div>
 
                     <div className="metric-card">
                       <div className="metric-head">
-                        <span className="metric-icon amber">
+                        <span className="metric-icon">
                           <ArrowDownRight size={18} />
                         </span>
                         <span className="metric-label">Макс. просадка</span>
                       </div>
-                      <div className={`metric-value ${ddClass}`}>
+                      <div className="metric-value">
                         {metrics.drawdown !== 0
                           ? `${metrics.drawdown.toFixed(1)}%`
                           : '—'}
@@ -645,11 +658,10 @@ const StatsPage: React.FC = () => {
                       <div className="stats-card-head">
                         <span className="card-label">P&L по времени</span>
                         <span
-                          className="card-note"
-                          style={{ color: trendColor, fontWeight: 700 }}
+                          className={`card-note ${pnlTone(lastValue)}`}
+                          style={{ fontWeight: 700 }}
                         >
-                          {lastValue >= 0 ? '+' : '-'}$
-                          {Math.abs(lastValue).toFixed(2)} за период
+                          {formatUsdt(lastValue)} за период
                         </span>
                       </div>
                       <div className="chart-wrap">
@@ -671,7 +683,7 @@ const StatsPage: React.FC = () => {
                       <div className="stats-card-head">
                         <span className="card-label">Распределение сделок</span>
                         <span className="card-note">
-                          {metrics.wins} побед · {metrics.losses} убытков
+                          Прибыльных {metrics.wins}, убыточных {metrics.losses}
                         </span>
                       </div>
                       <div className="donut-row">
@@ -685,9 +697,7 @@ const StatsPage: React.FC = () => {
                               style={{ background: COLOR_GREEN }}
                             />
                             <span className="legend-label">Прибыльные</span>
-                            <span className="legend-value text-green">
-                              {metrics.wins}
-                            </span>
+                            <span className="legend-value">{metrics.wins}</span>
                           </div>
                           <div className="donut-legend-row">
                             <span
@@ -695,7 +705,7 @@ const StatsPage: React.FC = () => {
                               style={{ background: COLOR_RED }}
                             />
                             <span className="legend-label">Убыточные</span>
-                            <span className="legend-value text-red">
+                            <span className="legend-value">
                               {metrics.losses}
                             </span>
                           </div>
@@ -736,9 +746,7 @@ const StatsPage: React.FC = () => {
                               <tr key={t.id}>
                                 <td className="td-pair">{t.pair}</td>
                                 <td>
-                                  <span
-                                    className={`dir-badge ${t.direction === 'long' ? 'long' : 'short'}`}
-                                  >
+                                  <span className="dir-badge">
                                     {t.direction === 'long' ? 'Long' : 'Short'}
                                   </span>
                                 </td>
@@ -749,24 +757,14 @@ const StatsPage: React.FC = () => {
                                     : '—'}
                                 </td>
                                 <td
-                                  className={
-                                    (t.profit_usdt ?? 0) >= 0
-                                      ? 'text-green'
-                                      : 'text-red'
-                                  }
+                                  className={pnlTone(t.profit_usdt)}
                                   style={{ fontWeight: 700 }}
                                 >
                                   {t.profit_usdt != null
                                     ? formatUsdt(t.profit_usdt)
                                     : '—'}
                                 </td>
-                                <td
-                                  className={
-                                    (t.profit_pct ?? 0) >= 0
-                                      ? 'text-green'
-                                      : 'text-red'
-                                  }
-                                >
+                                <td className={pnlTone(t.profit_pct)}>
                                   {t.profit_pct != null
                                     ? formatPnl(t.profit_pct)
                                     : '—'}
