@@ -46,6 +46,21 @@
     var(--text-secondary) 50%,
     transparent
   );
+
+  /* Шкала скруглений. 50% (круги) и 0 пишутся числом. */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* Уровни теней: sm — лёгкий подъём, md — hover карточек и кнопок,
+     lg — модалки, выпадашки и панели поверх страницы. Отступы токенов
+     не имеют: только числа на сетке 4px. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 10%, transparent);
 }
 
 @theme inline {

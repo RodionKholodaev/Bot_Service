@@ -398,7 +398,7 @@ const FeedbackPage = () => {
         .logo {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           font-size: 22px;
           font-weight: 700;
           color: var(--accent-soft);
@@ -413,7 +413,7 @@ const FeedbackPage = () => {
           padding: 8px 16px;
           color: var(--text-secondary);
           text-decoration: none;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           font-size: 14px;
           font-weight: 500;
           transition: all 0.2s;
@@ -441,8 +441,8 @@ const FeedbackPage = () => {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 10px 18px;
-          border-radius: 12px;
+          padding: 12px 20px;
+          border-radius: var(--radius-lg);
           font-weight: 600;
           font-size: 15px;
           border: 1.5px solid;
@@ -480,10 +480,10 @@ const FeedbackPage = () => {
         }
 
         .btn-icon {
-          padding: 10px;
+          padding: 8px;
           background: var(--bg-subtle);
           border: 1px solid var(--border);
-          border-radius: 10px;
+          border-radius: var(--radius-lg);
           color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s;
@@ -516,7 +516,7 @@ const FeedbackPage = () => {
 
         .dashboard-scroll::-webkit-scrollbar-thumb {
           background: var(--scrollbar-thumb);
-          border-radius: 4px;
+          border-radius: var(--radius-sm);
         }
 
         .dashboard-scroll::-webkit-scrollbar-thumb:hover {
@@ -554,12 +554,12 @@ const FeedbackPage = () => {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 7px 16px;
-          margin-bottom: 22px;
+          padding: 8px 16px;
+          margin-bottom: 20px;
           background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
           border: 1px solid
             color-mix(in srgb, var(--accent-soft) 20%, transparent);
-          border-radius: 999px;
+          border-radius: var(--radius-pill);
           color: var(--accent-soft);
           font-size: 13px;
           font-weight: 600;
@@ -592,7 +592,7 @@ const FeedbackPage = () => {
           align-items: center;
           gap: 8px;
           padding: 12px 24px;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           font-weight: 600;
           font-size: 15px;
           cursor: pointer;
@@ -604,13 +604,13 @@ const FeedbackPage = () => {
         .btn-primary {
           background: var(--accent);
           color: var(--text-on-accent);
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+          box-shadow: var(--shadow-sm);
         }
 
         .btn-primary:hover:not(:disabled) {
           background: var(--accent-hover);
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+          box-shadow: var(--shadow-md);
         }
 
         .btn-primary:disabled {
@@ -635,10 +635,10 @@ const FeedbackPage = () => {
         .feedback-card {
           display: flex;
           flex-direction: column;
-          gap: 26px;
+          gap: 28px;
           background: var(--bg-card);
           border: 1px solid var(--border-subtle);
-          border-radius: 20px;
+          border-radius: var(--radius-xl);
           padding: 32px;
           animation: slideUp 0.6s ease-out 0.1s both;
         }
@@ -658,7 +658,7 @@ const FeedbackPage = () => {
         .field {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 12px;
         }
 
         .field-label {
@@ -694,10 +694,10 @@ const FeedbackPage = () => {
         .field-input,
         .field-textarea {
           width: 100%;
-          padding: 14px 16px;
+          padding: 16px 16px;
           background: var(--bg-subtle);
           border: 1.5px solid var(--border);
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           color: var(--text);
           font-size: 15px;
           font-family: inherit;
@@ -720,8 +720,7 @@ const FeedbackPage = () => {
           outline: none;
           border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent);
           background: color-mix(in srgb, var(--accent-soft) 5%, transparent);
-          box-shadow: 0 0 0 3px
-            color-mix(in srgb, var(--accent-soft) 10%, transparent);
+          box-shadow: var(--ring);
         }
 
         .field-grid {
@@ -735,17 +734,17 @@ const FeedbackPage = () => {
         .topic-row {
           display: flex;
           flex-wrap: wrap;
-          gap: 10px;
+          gap: 12px;
         }
 
         .topic-chip {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 10px 16px;
+          padding: 8px 16px;
           background: var(--bg-subtle);
           border: 1.5px solid var(--border);
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           color: var(--text-secondary);
           font-size: 14px;
           font-weight: 500;
@@ -782,7 +781,7 @@ const FeedbackPage = () => {
         .star-btn {
           background: none;
           border: none;
-          padding: 2px;
+          padding: 0;
           line-height: 0;
           cursor: pointer;
           transition: transform 0.15s;
@@ -793,7 +792,7 @@ const FeedbackPage = () => {
         }
 
         .stars-value {
-          margin-left: 10px;
+          margin-left: 12px;
           font-size: 13px;
           font-weight: 600;
           color: var(--warning);
@@ -803,12 +802,12 @@ const FeedbackPage = () => {
         .form-error {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           padding: 12px 16px;
           background: color-mix(in srgb, var(--danger-strong) 10%, transparent);
           border: 1px solid
             color-mix(in srgb, var(--danger-strong) 20%, transparent);
-          border-radius: 10px;
+          border-radius: var(--radius-lg);
           color: var(--danger);
           font-size: 14px;
         }
@@ -846,7 +845,7 @@ const FeedbackPage = () => {
           flex-direction: column;
           align-items: center;
           text-align: center;
-          gap: 14px;
+          gap: 16px;
           padding: 32px 20px;
         }
 
@@ -865,7 +864,7 @@ const FeedbackPage = () => {
           );
           border: 1px solid
             color-mix(in srgb, var(--success-strong) 30%, transparent);
-          margin-bottom: 6px;
+          margin-bottom: 8px;
           animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -896,7 +895,7 @@ const FeedbackPage = () => {
         .success-actions {
           display: flex;
           gap: 12px;
-          margin-top: 10px;
+          margin-top: 12px;
           flex-wrap: wrap;
           justify-content: center;
         }
@@ -959,7 +958,7 @@ const FeedbackPage = () => {
           }
 
           .feedback-card {
-            padding: 22px;
+            padding: 24px;
           }
 
           .topic-chip {

@@ -51,7 +51,7 @@
 .stats-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-size: 22px;
   font-weight: 700;
   color: var(--accent-soft);
@@ -67,7 +67,7 @@
   padding: 8px 16px;
   color: var(--text-secondary);
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
@@ -95,8 +95,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
-  border-radius: 12px;
+  padding: 12px 20px;
+  border-radius: var(--radius-lg);
   font-weight: 600;
   font-size: 15px;
   border: 1.5px solid;
@@ -122,10 +122,10 @@
 }
 
 .stats-icon-btn {
-  padding: 10px;
+  padding: 8px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -158,7 +158,7 @@
 
 .stats-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .stats-scroll::-webkit-scrollbar-thumb:hover {
@@ -229,7 +229,7 @@
   padding: 28px 32px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   animation: statsFadeIn 0.6s ease-out;
 }
 
@@ -255,7 +255,7 @@
 .stats-hero-tag {
   padding: 2px 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   color: var(--text-secondary);
 }
@@ -264,7 +264,7 @@
 .stats-hero-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   flex-shrink: 0;
 }
@@ -273,17 +273,17 @@
   display: flex;
   gap: 4px;
   flex-shrink: 0;
-  padding: 5px;
+  padding: 4px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 .stats-period-tab {
-  padding: 8px 18px;
+  padding: 8px 20px;
   font-size: 13px;
   font-weight: 600;
-  border-radius: 9px;
+  border-radius: var(--radius-md);
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -294,7 +294,7 @@
 
 /* у типа ботов подписи длиннее периода — ужимаем горизонтальные отступы */
 .stats-bot-type .stats-period-tab {
-  padding: 8px 14px;
+  padding: 8px 16px;
 }
 
 .stats-period-tab:hover:not(.active) {
@@ -305,7 +305,7 @@
 .stats-period-tab.active {
   background: var(--accent);
   color: var(--text-on-accent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ===== LAYOUT: сайдбар + контент ===== */
@@ -334,13 +334,13 @@
   flex-direction: column;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
   animation: statsSlideUp 0.6s ease-out both;
 }
 
 .sb-header {
-  padding: 18px 16px 14px;
+  padding: 20px 16px 16px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -350,16 +350,16 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .sb-all-btn {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid transparent;
   background: var(--bg-subtle);
   color: var(--text-secondary);
@@ -383,7 +383,7 @@
 }
 
 .sb-bots {
-  padding: 14px 12px;
+  padding: 16px 12px;
   flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -396,15 +396,15 @@
 
 .sb-bots::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .bot-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s;
@@ -453,9 +453,9 @@
 
 /* метка симуляции: в общем списке боевого бота от dry-run иначе не отличить */
 .bot-row-badge {
-  margin-left: 6px;
-  padding: 1px 5px;
-  border-radius: 5px;
+  margin-left: 4px;
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -469,7 +469,7 @@
 .bot-row-sub {
   font-size: 11px;
   color: var(--text-secondary);
-  margin-top: 2px;
+  margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -490,7 +490,7 @@
 }
 
 .sb-footer {
-  padding: 14px 16px;
+  padding: 16px 16px;
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -520,7 +520,7 @@
 .metric-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   padding: 20px;
   transition: all 0.3s;
   animation: statsSlideUp 0.6s ease-out both;
@@ -542,20 +542,20 @@
 .metric-card:hover {
   transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--accent-soft) 30%, transparent);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .metric-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .metric-icon {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -584,13 +584,13 @@
   margin-top: 8px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .metric-bar {
   height: 5px;
   background: var(--bg-hover);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   margin-top: 12px;
   overflow: hidden;
 }
@@ -598,7 +598,7 @@
 .metric-bar-fill {
   height: 100%;
   background: var(--accent);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   transition: width 0.4s ease;
 }
 
@@ -612,7 +612,7 @@
 .stats-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   padding: 24px;
   transition: border-color 0.3s;
   animation: statsSlideUp 0.6s ease-out both;
@@ -628,7 +628,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .card-label {
@@ -673,13 +673,13 @@
 .donut-legend-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .legend-square {
   width: 11px;
   height: 11px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 
@@ -697,11 +697,11 @@
 
 .donut-divider {
   margin-top: 4px;
-  padding-top: 14px;
+  padding-top: 16px;
   border-top: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .donut-divider-label {
@@ -730,7 +730,7 @@
 
 .table-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .trades-table {
@@ -777,8 +777,8 @@
 }
 
 .dir-badge {
-  padding: 3px 10px;
-  border-radius: 6px;
+  padding: 3px 8px;
+  border-radius: var(--radius-md);
   font-size: 11px;
   font-weight: 700;
   display: inline-block;
@@ -803,7 +803,7 @@
   padding: 60px 20px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   color: var(--text-secondary);
   font-size: 15px;
 }
@@ -883,7 +883,7 @@
   .stats-hero {
     flex-direction: column;
     align-items: flex-start;
-    padding: 22px;
+    padding: 24px;
   }
 
   .stats-hero h1 {
@@ -907,7 +907,7 @@
   }
 
   .stats-card {
-    padding: 18px;
+    padding: 20px;
   }
 
   .donut-row {

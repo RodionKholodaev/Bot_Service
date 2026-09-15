@@ -52,7 +52,7 @@
 .bd-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-size: 22px;
   font-weight: 700;
   color: var(--accent-soft);
@@ -68,7 +68,7 @@
   padding: 8px 16px;
   color: var(--text-secondary);
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
@@ -96,8 +96,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
-  border-radius: 12px;
+  padding: 12px 20px;
+  border-radius: var(--radius-lg);
   font-weight: 600;
   font-size: 15px;
   border: 1.5px solid;
@@ -123,10 +123,10 @@
 }
 
 .bd-icon-btn {
-  padding: 10px;
+  padding: 8px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -159,7 +159,7 @@
 
 .bd-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .bd-scroll::-webkit-scrollbar-thumb:hover {
@@ -228,14 +228,14 @@
   padding: 24px 28px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   animation: bdFadeIn 0.5s ease-out;
 }
 
 .bd-hero-top {
   display: flex;
   align-items: flex-start;
-  gap: 18px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
@@ -243,7 +243,7 @@
   width: 46px;
   height: 46px;
   flex: none;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   display: grid;
   place-items: center;
   background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
@@ -259,7 +259,7 @@
 .bd-hero-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -283,7 +283,7 @@
 .bd-hero-meta > * {
   padding: 2px 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 .bd-hero-meta strong {
@@ -301,9 +301,9 @@
 .bd-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 11px;
-  border-radius: 999px;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
   font-size: 11.5px;
   font-weight: 600;
   border: 1px solid transparent;
@@ -360,17 +360,13 @@
   background: currentColor;
 }
 
-.bd-badge.running .bd-status-dot {
-  box-shadow: 0 0 8px currentColor;
-}
-
 /* ===== КНОПКИ ===== */
 .bd-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 18px;
-  border-radius: 10px;
+  padding: 12px 20px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -388,13 +384,13 @@
 .bd-btn-start {
   background: var(--accent);
   color: var(--text-on-accent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .bd-btn-start:hover:not(:disabled) {
   background: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-md);
 }
 
 .bd-btn-stop {
@@ -437,8 +433,8 @@
 }
 
 .bd-kpi {
-  padding: 13px 15px;
-  border-radius: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
   background: var(--bg-inset);
 }
@@ -454,7 +450,7 @@
 .bd-kpi-value {
   font-size: 20px;
   font-weight: 700;
-  margin-top: 5px;
+  margin-top: 4px;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
@@ -471,7 +467,7 @@
 .bd-section-title {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   flex-wrap: wrap;
   margin-top: 4px;
 }
@@ -496,8 +492,8 @@
 .bd-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  padding: 20px 22px;
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
   animation: bdFadeIn 0.5s ease-out;
 }
 
@@ -508,7 +504,7 @@
 .bd-card-head {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
@@ -517,7 +513,7 @@
   width: 30px;
   height: 30px;
   flex: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: grid;
   place-items: center;
   background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
@@ -546,7 +542,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 11px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -583,23 +579,23 @@
 .bd-filters {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
 }
 
 .bd-filter {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 13px 15px;
-  border-radius: 12px;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
   background: var(--bg-inset);
   flex-wrap: wrap;
 }
 
 .bd-filter-ind {
-  padding: 5px 11px;
-  border-radius: 8px;
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
   color: var(--accent-softer);
   font-size: 13px;
@@ -608,8 +604,8 @@
 }
 
 .bd-filter-tf {
-  padding: 5px 10px;
-  border-radius: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   font-size: 12.5px;
@@ -639,11 +635,11 @@
 
 .bd-note {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-start;
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid color-mix(in srgb, var(--accent-soft) 20%, transparent);
   background: color-mix(in srgb, var(--accent) 5%, transparent);
   font-size: 13px;
@@ -655,12 +651,12 @@
   color: var(--accent-soft);
   flex: none;
   display: inline-flex;
-  margin-top: 1px;
+  margin-top: 0;
 }
 
 .bd-empty {
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 1px dashed var(--border);
   color: var(--text-muted);
   font-size: 13px;
@@ -675,8 +671,8 @@
 }
 
 .bd-exit-box {
-  padding: 14px 15px;
-  border-radius: 12px;
+  padding: 16px 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
   background: var(--bg-inset);
 }
@@ -709,7 +705,7 @@
 .bd-exit-value {
   font-size: 24px;
   font-weight: 700;
-  margin-top: 6px;
+  margin-top: 8px;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -749,7 +745,7 @@
 
 .bd-risk-bar {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--bg-hover);
   overflow: hidden;
   margin-top: 8px;
@@ -758,7 +754,7 @@
 .bd-risk-bar span {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: width 0.4s ease;
 }
 
@@ -769,8 +765,8 @@
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
-  padding: 16px 22px;
-  border-radius: 16px;
+  padding: 16px 24px;
+  border-radius: var(--radius-xl);
   border: 1px solid var(--border-subtle);
   background: var(--bg-card);
   font-size: 12.5px;
@@ -795,9 +791,9 @@
 .bd-banner {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -817,7 +813,7 @@
 .bd-banner-icon {
   flex: none;
   display: inline-flex;
-  margin-top: 1px;
+  margin-top: 0;
 }
 
 .bd-state {
@@ -825,7 +821,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 16px;
   padding: 80px 20px;
   color: var(--text-secondary);
 }
@@ -852,11 +848,11 @@
   width: min(460px, 100%);
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 26px;
+  border-radius: var(--radius-xl);
+  padding: 28px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .bd-modal h2 {
@@ -873,7 +869,7 @@
 .bd-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
   margin-top: 4px;
 }
 
@@ -898,8 +894,8 @@
 }
 
 .bd-open-trade {
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 12px 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid color-mix(in srgb, var(--warning) 20%, transparent);
   background: color-mix(in srgb, var(--warning) 5%, transparent);
   font-size: 13px;

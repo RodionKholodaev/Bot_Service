@@ -68,7 +68,7 @@ export default function GlobalError({
               fontWeight: 800,
               lineHeight: 1.15,
               letterSpacing: '-0.5px',
-              margin: '0 0 14px',
+              margin: '0 0 16px',
             }}
           >
             Сервис временно недоступен
@@ -89,7 +89,7 @@ export default function GlobalError({
             type="button"
             onClick={() => window.location.reload()}
             style={{
-              padding: '13px 26px',
+              padding: '12px 28px',
               background: '#3b82f6',
               border: 'none',
               borderRadius: '12px',

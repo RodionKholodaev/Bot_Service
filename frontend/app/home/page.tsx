@@ -853,7 +853,7 @@ const TradingBotDashboard = () => {
           margin-left: auto;
           padding: 8px 20px;
           border: none;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
@@ -902,7 +902,7 @@ const TradingBotDashboard = () => {
         .logo {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           font-size: 22px;
           font-weight: 700;
           color: var(--accent-soft);
@@ -917,7 +917,7 @@ const TradingBotDashboard = () => {
           padding: 8px 16px;
           color: var(--text-secondary);
           text-decoration: none;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           font-size: 14px;
           font-weight: 500;
           transition: all 0.2s;
@@ -945,8 +945,8 @@ const TradingBotDashboard = () => {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 10px 18px;
-          border-radius: 12px;
+          padding: 12px 20px;
+          border-radius: var(--radius-lg);
           font-weight: 600;
           font-size: 15px;
           cursor: pointer;
@@ -999,14 +999,14 @@ const TradingBotDashboard = () => {
 
         .balance-indicator:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          box-shadow: var(--shadow-md);
         }
 
         .btn-icon {
-          padding: 10px;
+          padding: 8px;
           background: var(--bg-subtle);
           border: 1px solid var(--border);
-          border-radius: 10px;
+          border-radius: var(--radius-lg);
           color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s;
@@ -1039,7 +1039,7 @@ const TradingBotDashboard = () => {
 
         .dashboard-scroll::-webkit-scrollbar-thumb {
           background: var(--scrollbar-thumb);
-          border-radius: 4px;
+          border-radius: var(--radius-sm);
         }
 
         .dashboard-scroll::-webkit-scrollbar-thumb:hover {
@@ -1060,7 +1060,7 @@ const TradingBotDashboard = () => {
           margin-bottom: 40px;
           padding: 32px;
           background: var(--bg-card);
-          border-radius: 20px;
+          border-radius: var(--radius-xl);
           border: 1px solid var(--border-subtle);
           animation: fadeIn 0.6s ease-out;
         }
@@ -1099,7 +1099,7 @@ const TradingBotDashboard = () => {
           align-items: center;
           gap: 8px;
           padding: 12px 24px;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           font-weight: 600;
           font-size: 15px;
           cursor: pointer;
@@ -1110,13 +1110,13 @@ const TradingBotDashboard = () => {
         .btn-primary {
           background: var(--accent);
           color: var(--text-on-accent);
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+          box-shadow: var(--shadow-sm);
         }
 
         .btn-primary:hover {
           background: var(--accent-hover);
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+          box-shadow: var(--shadow-md);
         }
 
         .btn-secondary {
@@ -1144,7 +1144,7 @@ const TradingBotDashboard = () => {
           text-align: center;
           background: color-mix(in srgb, var(--warning) 10%, transparent);
           border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
-          border-radius: 16px;
+          border-radius: var(--radius-xl);
           animation: slideUp 0.6s ease-out;
         }
 
@@ -1175,7 +1175,7 @@ const TradingBotDashboard = () => {
         .stat-card {
           background: var(--bg-card);
           border: 1px solid var(--border-subtle);
-          border-radius: 16px;
+          border-radius: var(--radius-xl);
           padding: 24px;
           display: flex;
           gap: 16px;
@@ -1211,13 +1211,13 @@ const TradingBotDashboard = () => {
         .stat-card:hover {
           transform: translateY(-4px);
           border-color: color-mix(in srgb, var(--accent-soft) 30%, transparent);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+          box-shadow: var(--shadow-md);
         }
 
         .stat-icon {
           width: 56px;
           height: 56px;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1295,7 +1295,7 @@ const TradingBotDashboard = () => {
         .bot-card {
           background: var(--bg-card);
           border: 1px solid var(--border-subtle);
-          border-radius: 16px;
+          border-radius: var(--radius-xl);
           padding: 24px;
           transition: all 0.3s;
         }
@@ -1322,7 +1322,7 @@ const TradingBotDashboard = () => {
           width: 12px;
           height: 12px;
           border-radius: 50%;
-          margin-top: 6px;
+          margin-top: 4px;
           flex-shrink: 0;
         }
 
@@ -1350,7 +1350,7 @@ const TradingBotDashboard = () => {
         .bot-meta {
           display: flex;
           flex-wrap: wrap;
-          gap: 6px;
+          gap: 4px;
           font-size: 13px;
           color: var(--text-secondary);
         }
@@ -1359,7 +1359,7 @@ const TradingBotDashboard = () => {
         .bot-meta > span {
           padding: 1px 8px;
           border: 1px solid var(--border);
-          border-radius: 6px;
+          border-radius: var(--radius-md);
         }
 
         .bot-actions {
@@ -1371,7 +1371,7 @@ const TradingBotDashboard = () => {
           padding: 8px;
           background: var(--bg-subtle);
           border: 1px solid var(--border);
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s;
@@ -1411,12 +1411,12 @@ const TradingBotDashboard = () => {
         .btn-bot-details {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           padding: 8px 16px;
           background: color-mix(in srgb, var(--accent-soft) 10%, transparent);
           border: 1px solid
             color-mix(in srgb, var(--accent-soft) 20%, transparent);
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           color: var(--accent-soft);
           font-size: 13px;
           font-weight: 600;
@@ -1436,7 +1436,7 @@ const TradingBotDashboard = () => {
           padding: 80px 40px;
           background: var(--bg-card);
           border: 2px dashed var(--border);
-          border-radius: 16px;
+          border-radius: var(--radius-xl);
           color: var(--text-secondary);
         }
 
@@ -1471,7 +1471,7 @@ const TradingBotDashboard = () => {
           padding: 20px;
           background: var(--bg-card);
           border: 1px solid var(--border-subtle);
-          border-radius: 16px;
+          border-radius: var(--radius-xl);
           cursor: pointer;
           transition: all 0.3s;
           text-align: left;
@@ -1528,7 +1528,7 @@ const TradingBotDashboard = () => {
         .modal-content {
           background: var(--bg-elevated);
           border: 1px solid var(--border);
-          border-radius: 20px;
+          border-radius: var(--radius-xl);
           padding: 32px;
           max-width: 480px;
           width: 90%;
@@ -1557,7 +1557,7 @@ const TradingBotDashboard = () => {
           padding: 16px;
           background: var(--bg-subtle);
           border: 1px solid var(--border);
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           color: var(--text);
           font-size: 18px;
           font-weight: 600;
@@ -1587,7 +1587,7 @@ const TradingBotDashboard = () => {
           color: var(--text-on-accent);
           font-size: 10px;
           padding: 2px 8px;
-          border-radius: 4px;
+          border-radius: var(--radius-sm);
           font-weight: 700;
         }
 
@@ -1604,10 +1604,10 @@ const TradingBotDashboard = () => {
 
         .custom-amount input {
           width: 100%;
-          padding: 14px;
+          padding: 16px;
           background: var(--bg-subtle);
           border: 1px solid var(--border);
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           color: var(--text);
           font-size: 16px;
           font-weight: 600;
@@ -1639,7 +1639,7 @@ const TradingBotDashboard = () => {
           padding: 60px 20px;
           background: var(--bg-card);
           border: 1px solid var(--border-subtle);
-          border-radius: 16px;
+          border-radius: var(--radius-xl);
           color: var(--text-secondary);
           font-size: 15px;
         }
@@ -1721,7 +1721,7 @@ const TradingBotDashboard = () => {
           align-items: center;
           gap: 4px;
           padding: 2px 8px;
-          border-radius: 6px;
+          border-radius: var(--radius-md);
           font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.5px;
@@ -1742,7 +1742,7 @@ const TradingBotDashboard = () => {
           gap: 8px;
           margin: 12px 0 16px;
           padding: 8px 12px;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           font-size: 13px;
           font-weight: 500;
           background: var(--bg-subtle);
@@ -1826,7 +1826,7 @@ const TradingBotDashboard = () => {
           background: var(--danger-strong);
           color: var(--text-on-accent);
           border: none;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;

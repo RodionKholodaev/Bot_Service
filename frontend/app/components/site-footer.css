@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-align: center;
 }
 
@@ -26,7 +26,7 @@
   content: '';
   align-self: stretch;
   height: 1px;
-  margin: 48px -40px 14px; /* 14px + gap 10px = 24px до ссылок, как было */
+  margin: 48px -40px 16px; /* 14px + gap 10px = 24px до ссылок, как было */
   background: var(--bg-hover);
 }
 
@@ -62,11 +62,11 @@
   }
 
   .site-footer::before {
-    margin: 36px -20px 14px;
+    margin: 36px -20px 16px;
   }
 
   .site-footer-links {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 }

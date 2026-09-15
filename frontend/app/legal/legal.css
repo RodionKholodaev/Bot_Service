@@ -35,7 +35,7 @@
 .legal-back {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -90,7 +90,7 @@
 
 .legal-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 /* ===== ТЕКСТ ДОКУМЕНТА ===== */
@@ -119,21 +119,21 @@
 }
 
 .legal-doc h2 {
-  margin: 40px 0 14px;
+  margin: 40px 0 16px;
   font-size: 19px;
   font-weight: 700;
   color: var(--text);
 }
 
 .legal-doc h3 {
-  margin: 26px 0 10px;
+  margin: 28px 0 12px;
   font-size: 16px;
   font-weight: 600;
   color: var(--text);
 }
 
 .legal-doc p {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
 }
 
 .legal-doc ul,
@@ -168,7 +168,7 @@
   padding: 16px 20px;
   border: 1px solid color-mix(in srgb, var(--accent-soft) 20%, transparent);
   border-left: 3px solid var(--accent-soft);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--accent-soft) 5%, transparent);
   color: var(--text);
 }
@@ -180,9 +180,9 @@
 /* Реквизиты и контакты — в рамке, чтобы их было видно с прокрутки. */
 .legal-details {
   margin: 0 0 20px;
-  padding: 18px 22px;
+  padding: 20px 24px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--bg-subtle);
 }
 
@@ -192,7 +192,7 @@
 
 @media (max-width: 640px) {
   .legal-topbar {
-    padding: 14px 20px;
+    padding: 16px 20px;
   }
 
   .legal-doc {
